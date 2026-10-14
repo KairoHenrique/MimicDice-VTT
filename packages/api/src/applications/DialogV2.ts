@@ -28,7 +28,7 @@ export class DialogV2 extends ApplicationV2 {
     id: "dialog-{id}",
     classes: ["dialog"],
     tag: "dialog",
-    window: { title: "", frame: true, positioned: true, icon: false, controls: [], minimizable: false, resizable: false, contentTag: "form", contentClasses: ["dialog-form"] },
+    window: { title: "", frame: true, positioned: true, icon: false, controls: [], minimizable: false, resizable: true, contentTag: "form", contentClasses: ["dialog-form"] },
     position: { width: 400 },
   };
 

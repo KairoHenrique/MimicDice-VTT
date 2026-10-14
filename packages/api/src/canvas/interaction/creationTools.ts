@@ -14,6 +14,8 @@ export interface CreationTool {
   /** Minimum drag in pixels before the tool creates anything; 0 means a click is enough. */
   minimumDrag: number;
   snapMode: "corner" | "center" | "half";
+  /** Only a pressed-and-held drag creates it, so stray clicks never leave objects behind. */
+  requiresHold?: boolean;
   build(origin: Point, destination: Point, context: CreationContext, freehandPoints?: number[]): PlainObject | null;
 }
 
@@ -32,7 +34,8 @@ function wallTool(door: number): CreationTool {
   return {
     documentName: "Wall",
     minimumDrag: MIN_SHAPE_SIZE,
-    snapMode: "half",
+    snapMode: "corner",
+    requiresHold: true,
     build: (origin, destination) => ({ c: [origin.x, origin.y, destination.x, destination.y].map(Math.round), door, ds: CONST.WALL_DOOR_STATES.CLOSED }),
   };
 }

@@ -56,6 +56,7 @@ export const SOCKET_EVENTS = Object.freeze({
   CANVAS_PING: "canvasPing",
   TOKEN_DRAG: "tokenDrag",
   TABLE_ACTIVITY: "tableActivity",
+  LOOT_PICKUP: "lootPickup",
 });
 
 export const MAX_DOCUMENT_BYTES = 1024 * 1024;

@@ -1,8 +1,8 @@
 # MimicDice VTT
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.1-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-> **Versão atual: 1.2.0.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
+> **Versão atual: 1.2.1.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
 
 Mesa virtual (VTT) para jogar RPG com os amigos. Você hospeda a mesa no seu próprio computador, envia o link de convite e os jogadores entram pelo navegador, sem precisar de assinatura nem de servidor na nuvem.
 

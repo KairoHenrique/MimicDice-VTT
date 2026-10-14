@@ -127,6 +127,8 @@ export class NoteDocument extends CanvasDocumentMixin(BaseNote) {
 export class DrawingDocument extends CanvasDocumentMixin(BaseDrawing) {
   override getUserLevel(user: UserLike = currentGame()?.user): number {
     if (user?.isGM) return DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+    const editors = this._source.editors;
+    if (user && Array.isArray(editors) && editors.includes(user.id)) return DOCUMENT_OWNERSHIP_LEVELS.OWNER;
     return authoredLevel(this, user, super.getUserLevel(user));
   }
 }

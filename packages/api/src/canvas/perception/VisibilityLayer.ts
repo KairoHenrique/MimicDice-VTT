@@ -69,6 +69,11 @@ export class VisibilityLayer extends CanvasLayer {
     this.#dirty = true;
   }
 
+  /** The GM looking through a token sees only what it sees now: everything else stays fully black. */
+  #remembersExploration(canvas: any): boolean {
+    return canvas.scene._source.fog?.exploration !== false && currentGame()?.user?.isGM !== true;
+  }
+
   protected override async _draw(): Promise<void> {
     const canvas = currentCanvas();
     const dimensions = canvas.dimensions as SceneDimensions;
@@ -80,7 +85,7 @@ export class VisibilityLayer extends CanvasLayer {
     this.#overlaySprite.scale.set(1 / this.#textureScale);
     this.addChild(this.#overlaySprite);
     this.#fogStore = new FogExplorationStore(canvas.scene.id, currentGame()?.userId ?? "", canvas.app.renderer, this.#explorationTexture);
-    if (canvas.scene._source.fog?.exploration !== false) await this.#fogStore.restore();
+    if (this.#remembersExploration(canvas)) await this.#fogStore.restore();
     this.#dirty = true;
     canvas.app.ticker.add(this.#tick);
   }
@@ -197,7 +202,7 @@ export class VisibilityLayer extends CanvasLayer {
     const darkness = new PIXI.Graphics().beginFill(0x000000, 1).drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height).endFill();
     renderer.render(darkness, { renderTexture: overlayTexture, clear: true, transform });
     darkness.destroy();
-    if (canvas.scene._source.fog?.exploration !== false && this.#explorationTexture) {
+    if (this.#remembersExploration(canvas) && this.#explorationTexture) {
       const exploredNow = this.#visibleAreaGraphics(PIXI.BLEND_MODES.NORMAL);
       renderer.render(exploredNow, { renderTexture: this.#explorationTexture, clear: false, transform });
       exploredNow.destroy({ children: true });

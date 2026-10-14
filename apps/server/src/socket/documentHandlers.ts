@@ -36,6 +36,15 @@ function broadcastToViewers(scope: DocumentHandlerScope, world: ActiveWorld, out
   }
 }
 
+/** For changes the server makes on someone's behalf: every connected user, the requester included, gets their view. */
+export function broadcastToEveryViewer(io: Server, presence: PresenceTracker, world: ActiveWorld, outcome: Parameters<typeof buildViewerResponses>[0]): void {
+  for (const user of world.users.listPublicUsers()) {
+    if (!presence.isActive(user._id)) continue;
+    const viewer = { userId: user._id, isGameMaster: isGameMasterRole(user.role) };
+    for (const response of buildViewerResponses(outcome, viewer)) io.to(userRoom(user._id)).emit(SOCKET_EVENTS.MODIFY_DOCUMENT, response);
+  }
+}
+
 async function modifyUser(scope: DocumentHandlerScope, world: ActiveWorld, request: ModifyDocumentRequest): Promise<ModifyDocumentResponse> {
   if (request.action !== "update") throw HttpError.forbidden("Usuários são gerenciados pelo mestre no menu Jogadores");
   const isGameMaster = world.users.isGameMaster(scope.userId);

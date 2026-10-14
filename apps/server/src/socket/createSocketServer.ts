@@ -21,6 +21,7 @@ import { attachPackageEventRelay } from "./packageEventRelay";
 import { PresenceTracker } from "./PresenceTracker";
 import { SlidingWindowLimiter } from "./SlidingWindowLimiter";
 import { attachTokenDragRelay } from "./tokenDragRelay";
+import { attachLootPickupHandler } from "./lootPickupHandler";
 import { TableSessionIdleCloser } from "../world/TableSessionIdleCloser";
 
 interface SocketIdentity {
@@ -186,6 +187,7 @@ export function createSocketServer(context: ServerContext, httpServer: HttpServe
     registerDocumentHandlers(context, io, socket, presence, identityOf(socket).userId);
     attachPackageEventRelay(context, socket);
     attachTokenDragRelay(context, io, socket, identityOf(socket).userId);
+    attachLootPickupHandler(context, io, socket, presence, identityOf(socket).userId);
   });
 
   return io;

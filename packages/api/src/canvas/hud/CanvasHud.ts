@@ -7,6 +7,7 @@ import { currentConfig, currentGame, currentUi } from "../../runtime";
 import type { PlaceableObject } from "../placeables/PlaceableObject";
 import type { Token } from "../placeables/Token";
 import type { AmbientLight, Note, Tile, Wall } from "../placeables/simplePlaceables";
+import { defaultDrawingColor, drawingEditFields, editorFields, readEditors, textFields } from "./drawingFields";
 import { buildForm, readForm, type FormFieldSpec } from "./hudForms";
 
 const MAX_ITEM_SUGGESTIONS = 200;
@@ -32,8 +33,6 @@ export interface MenuEntry {
 }
 
 const MENU_VIEWPORT_MARGIN_PX = 8;
-
-const MAX_TEXT_LENGTH = 2000;
 
 /** Context menus and small configuration dialogs for placeables (DOM only; user text is never parsed as HTML). */
 export class CanvasHud {
@@ -135,9 +134,41 @@ export class CanvasHud {
     const authorName = authorId && authorId !== user?.id ? currentGame()?.users?.get(authorId)?.name : null;
     const entries: MenuEntry[] = [];
     if (authorName) entries.push({ heading: true, label: `Feito por ${authorName}`, icon: "" });
+    if (object.document.documentName === "Drawing") entries.push(...this.#drawingEntries(object.document, user));
     if (user?.isGM) entries.push(this.#lockAuthoredEntry(object.document, kind));
     entries.push({ label: `Apagar ${kind}`, icon: "fa-solid fa-trash", onSelect: () => object.document.delete() });
     this.#openMenu(entries, event);
+  }
+
+  #drawingEntries(document: any, user: any): MenuEntry[] {
+    const isText = document.shape?.type === CONST.DRAWING_TYPES.TEXT;
+    const entries: MenuEntry[] = [{ label: isText ? "Editar texto e cor" : "Mudar cor e linha", icon: "fa-solid fa-palette", onSelect: () => this.configureDrawing(document) }];
+    if (user?.isGM) entries.push({ label: "Quem pode editar e mover", icon: "fa-solid fa-user-pen", onSelect: () => this.configureDrawingEditors(document) });
+    return entries;
+  }
+
+  async configureDrawing(document: any): Promise<void> {
+    const isText = document.shape?.type === CONST.DRAWING_TYPES.TEXT;
+    const values = await this.#formDialog(isText ? "Editar texto" : "Editar desenho", drawingEditFields(document._source));
+    if (!values) return;
+    if (isText && (typeof values.text !== "string" || !values.text.trim())) {
+      currentUi()?.notifications?.warn("O texto não pode ficar vazio.");
+      return;
+    }
+    const fillChanged = "fillColor" in values && Number(document.fillType) === CONST.DRAWING_FILL_TYPES.NONE && Number(values.fillAlpha) > 0;
+    await document.update(fillChanged ? { ...values, fillType: CONST.DRAWING_FILL_TYPES.SOLID } : values);
+  }
+
+  /** GM-only: players allowed to edit and move a drawing they did not make. */
+  async configureDrawingEditors(document: any): Promise<void> {
+    if (!currentGame()?.user?.isGM) return;
+    const fields = editorFields(document._source);
+    if (fields.length === 0) {
+      currentUi()?.notifications?.info("Não há outros jogadores para liberar.");
+      return;
+    }
+    const values = await this.#formDialog("Quem pode editar e mover", fields);
+    if (values) await document.update({ editors: readEditors(values) });
   }
 
   #lockAuthoredEntry(document: any, kind: string): MenuEntry {
@@ -197,9 +228,7 @@ export class CanvasHud {
         const sceneId = token.document.parent?.id ?? null;
         const encounter = combat ?? (await currentConfig().Combat.documentClass.create({ scene: sceneId, active: true, round: 0, turn: null, started: false }));
         if (!encounter) return;
-        await encounter.createEmbeddedDocuments("Combatant", [
-          { tokenId: token.id, sceneId, actorId: token.document.actorId ?? null, name: String(token.document.name ?? "Token"), img: token.document.texture?.src ?? null, hidden: token.document.hidden === true },
-        ]);
+        await encounter.addTokens([token]);
       },
     };
   }
@@ -274,8 +303,12 @@ export class CanvasHud {
       return typeof source === "string" && source.trim() ? { ...data, texture: { src: source.trim() } } : null;
     }
     if (documentName === "Drawing" && (data.shape as PlainObject | undefined)?.type === CONST.DRAWING_TYPES.TEXT) {
-      const values = await this.#formDialog("Texto no mapa", [{ name: "text", label: "Texto", type: "text", value: "", maxLength: MAX_TEXT_LENGTH }]);
-      return typeof values?.text === "string" && values.text.trim() ? { ...data, text: values.text.trim() } : null;
+      const values = await this.#formDialog("Texto no mapa", textFields(data));
+      return typeof values?.text === "string" && values.text.trim() ? { ...data, ...values, text: values.text.trim() } : null;
+    }
+    if (documentName === "Drawing") {
+      const color = defaultDrawingColor();
+      return { strokeColor: color, fillColor: color, ...data };
     }
     return data;
   }

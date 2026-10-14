@@ -14,7 +14,7 @@ export class ActorCategoryManager extends DomApplication {
     id: "actor-category-manager",
     classes: ["md-category-manager"],
     tag: "section",
-    window: { title: "Categorias de atores", frame: true, positioned: true, icon: "fa-solid fa-tags", controls: [], minimizable: false, resizable: false, contentTag: "section", contentClasses: [] },
+    window: { title: "Categorias de atores", frame: true, positioned: true, icon: "fa-solid fa-tags", controls: [], minimizable: false, resizable: true, contentTag: "section", contentClasses: [] },
     position: { width: 440 },
   };
 

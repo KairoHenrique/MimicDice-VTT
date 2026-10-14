@@ -19,7 +19,7 @@ export class UserManagement extends DomApplication {
   static override DEFAULT_OPTIONS: Partial<ApplicationConfiguration> = {
     id: "user-management",
     classes: ["user-management"],
-    window: { title: "Jogadores da mesa", frame: true, positioned: true, icon: false, controls: [], minimizable: true, resizable: false, contentTag: "section", contentClasses: [] },
+    window: { title: "Jogadores da mesa", frame: true, positioned: true, icon: false, controls: [], minimizable: true, resizable: true, contentTag: "section", contentClasses: [] },
     position: { width: 500 },
   };
 

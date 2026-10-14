@@ -17,7 +17,7 @@ export class ModuleManagement extends DomApplication {
   static override DEFAULT_OPTIONS: Partial<ApplicationConfiguration> = {
     id: "module-management",
     classes: ["module-management"],
-    window: { title: "Gerenciar módulos", frame: true, positioned: true, icon: false, controls: [], minimizable: true, resizable: false, contentTag: "section", contentClasses: [] },
+    window: { title: "Gerenciar módulos", frame: true, positioned: true, icon: false, controls: [], minimizable: true, resizable: true, contentTag: "section", contentClasses: [] },
     position: { width: 560 },
   };
 

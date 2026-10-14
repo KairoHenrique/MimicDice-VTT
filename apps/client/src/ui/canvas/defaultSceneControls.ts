@@ -62,20 +62,20 @@ function clearTool(layerName: string, label: string): SceneControlTool {
   });
 }
 
-/** GM-only: locks every drawing of the viewed scene so players cannot move, edit or erase them; unlocks if all are locked. */
-function lockAllDrawingsTool(): SceneControlTool {
-  return tool("lockAll", 98, "Travar/destravar todos os desenhos", "fa-solid fa-lock", {
+/** GM-only: locks the selected drawings so players cannot move, edit or erase them; unlocks them if all are locked. */
+function lockSelectedDrawingsTool(): SceneControlTool {
+  return tool("lockAll", 98, "Travar/destravar os desenhos selecionados", "fa-solid fa-lock", {
     button: true,
     visible: game.user.isGM,
     onChange: async () => {
-      const drawings: any[] = canvas.scene?.getEmbeddedCollection("Drawing").map((drawing: any) => drawing) ?? [];
+      const drawings: any[] = (canvas.drawings?.controlled ?? []).map((drawing: any) => drawing.document);
       if (drawings.length === 0) {
-        ui.notifications.info("Não há desenhos nesta cena.");
+        ui.notifications.info("Selecione os desenhos que quer travar (ferramenta Selecionar ou Shift+clique) e clique de novo.");
         return;
       }
       const lock = drawings.some((drawing: any) => drawing.locked !== true);
       await canvas.scene.updateEmbeddedDocuments("Drawing", drawings.map((drawing: any) => ({ _id: drawing.id, locked: lock })));
-      ui.notifications.info(lock ? `${drawings.length} desenho(s) travado(s).` : "Desenhos liberados para os jogadores.");
+      ui.notifications.info(lock ? `${drawings.length} desenho(s) travado(s).` : `${drawings.length} desenho(s) liberado(s) para os jogadores.`);
     },
   });
 }
@@ -121,7 +121,7 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
         ellipse: tool("ellipse", 3, "Elipse", "fa-solid fa-circle"),
         freehand: tool("freehand", 4, "Mão livre", "fa-solid fa-signature"),
         text: tool("text", 5, "Texto", "fa-solid fa-font"),
-        lockAll: lockAllDrawingsTool(),
+        lockAll: lockSelectedDrawingsTool(),
         clear: clearTool("drawings", "desenhos"),
       },
     },

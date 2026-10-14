@@ -26,6 +26,8 @@ export type SheetValueKind = (typeof SHEET_VALUE_KINDS)[number];
 export const SHEET_TEXT_SIZES = ["sm", "md", "lg", "xl", "xxl"] as const;
 export const SHEET_TEXT_ALIGNS = ["left", "center", "right"] as const;
 export const SHEET_LIST_COLUMN_TYPES = ["text", "number", "checkbox"] as const;
+export const SHEET_ROLL_MODES = ["sum", "highest", "lowest"] as const;
+export type SheetRollMode = (typeof SHEET_ROLL_MODES)[number];
 
 const localIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,24}$/);
 const documentIdSchema = z.string().regex(/^[A-Za-z0-9]{16}$/);
@@ -78,6 +80,10 @@ export const sheetComponentSchema = z
     columns: z.array(sheetListColumnSchema).max(MAX_LIST_COLUMNS).optional(),
     hint: z.string().trim().max(160).optional(),
     rollable: z.boolean().optional(),
+    /** How a dice pool counts: the sum (default), only the highest die or only the lowest die. */
+    rollMode: z.enum(SHEET_ROLL_MODES).optional(),
+    /** A table that lists the character's inventory items instead of rows stored in the sheet. */
+    linkItems: z.boolean().optional(),
     gmOnly: z.boolean().optional(),
     style: sheetComponentStyleSchema.optional(),
   })

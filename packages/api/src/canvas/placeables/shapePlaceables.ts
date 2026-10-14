@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import { CONST } from "../../constants";
-import { currentCanvas } from "../../runtime";
+import { currentCanvas, currentGame } from "../../runtime";
 import { ControlIcon } from "../containers";
 import type { Rectangle } from "../geometry";
 import { Ray } from "../geometryClasses";
@@ -9,6 +9,37 @@ import { colorToNumber, loadTexture } from "../textures";
 import { PlaceableObject } from "./PlaceableObject";
 
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+const MIN_STROKE_HIT_PX = 8;
+
+function distanceToSegmentSquared(x: number, y: number, ax: number, ay: number, bx: number, by: number): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / lengthSquared));
+  const px = ax + t * dx - x;
+  const py = ay + t * dy - y;
+  return px * px + py * py;
+}
+
+/** Open strokes answer clicks only near the line itself, so the empty space around a sketch stays free to draw on. */
+class StrokeHitArea {
+  readonly #toleranceSquared: number;
+
+  constructor(
+    private readonly points: readonly number[],
+    tolerance: number,
+  ) {
+    this.#toleranceSquared = tolerance * tolerance;
+  }
+
+  contains(x: number, y: number): boolean {
+    const points = this.points;
+    for (let index = 0; index + 3 < points.length; index += 2) {
+      if (distanceToSegmentSquared(x, y, points[index], points[index + 1], points[index + 2], points[index + 3]) <= this.#toleranceSquared) return true;
+    }
+    return false;
+  }
+}
 
 export class Drawing extends PlaceableObject {
   static override embeddedName = "Drawing";
@@ -17,6 +48,11 @@ export class Drawing extends PlaceableObject {
   override _onClickRight(event: PIXI.FederatedPointerEvent): void {
     currentCanvas()?.hud?.showAuthoredMenu?.(this, event);
   }
+
+  override _onClickLeft2(): void {
+    if (this.document.isOwner && (!this.document.locked || currentGame()?.user?.isGM)) void currentCanvas()?.hud?.configureDrawing?.(this.document);
+  }
+
   text: PIXI.Text | null = null;
 
   override get bounds(): Rectangle {
@@ -46,8 +82,13 @@ export class Drawing extends PlaceableObject {
     this.alpha = this.document.hidden ? 0.5 : 1;
     this.angle = Number(this.document.rotation) || 0;
     this.pivot.set(0, 0);
-    this.hitArea = new PIXI.Rectangle(Math.min(0, width), Math.min(0, height), Math.abs(width) || 10, Math.abs(height) || 10);
+    this.hitArea = this.#isOpenStroke() ? new StrokeHitArea(this.document.shape.points, Math.max(MIN_STROKE_HIT_PX, Number(this.document.strokeWidth) || 0)) : new PIXI.Rectangle(Math.min(0, width), Math.min(0, height), Math.abs(width) || 10, Math.abs(height) || 10);
     this.cursor = this.layer?.active ? "pointer" : "default";
+  }
+
+  #isOpenStroke(): boolean {
+    const shape = this.document.shape;
+    return shape?.type === CONST.DRAWING_TYPES.POLYGON && Number(this.document.fillType) === CONST.DRAWING_FILL_TYPES.NONE && (shape.points?.length ?? 0) >= 4;
   }
 
   #drawShape(width: number, height: number): void {

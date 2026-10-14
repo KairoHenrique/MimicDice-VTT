@@ -3,6 +3,7 @@ import { h } from "../../views/dom";
 import { DiceTray } from "../dice/DiceTray";
 import { DicePool } from "../dice/DicePool";
 import { buildDicePoolPanel } from "../dice/dicePoolPanel";
+import { DICE_ORDERS, orderDice, readDiceOrder, saveDiceOrder, type DiceOrder } from "../dice/diceOrder";
 import { combinePoolWithInput } from "../dice/rollCommands";
 import { DomApplication } from "../DomApplication";
 import { ChatComposer, MAX_CHAT_TEXT_LENGTH } from "./ChatComposer";
@@ -28,6 +29,7 @@ export class ChatLog extends DomApplication {
   readonly #pool = new DicePool();
   #composer: ChatComposer | null = null;
   #log: HTMLOListElement | null = null;
+  #diceOrder: DiceOrder = readDiceOrder();
   #unread = 0;
 
   get tabName(): string {
@@ -47,21 +49,28 @@ export class ChatLog extends DomApplication {
   buildContent(): Node[] {
     this.#log = h("ol", { id: "chat-log", class: "chat-log", "aria-live": "polite" });
     this.#log.addEventListener("click", (event) => void this.#onLogClick(event));
-    return [this.#log, this.#buildRollForm()];
+    const filter = h("div", { class: "chat-filter" }, h("i", { class: "fa-solid fa-arrow-down-wide-short", "aria-hidden": "true" }), this.#buildDiceOrderSelect());
+    return [filter, this.#log, this.#buildRollForm()];
   }
 
   override async _onRender(context: object, options: RenderOptions): Promise<void> {
     await super._onRender(context, options);
     const messages = (this.collection?.contents ?? []).filter((message: any) => message.visible);
     messages.sort((left: any, right: any) => left.timestamp - right.timestamp);
-    const elements = await Promise.all(messages.map((message: any) => message.renderHTML()));
+    const elements = await Promise.all(messages.map((message: any) => this.#renderMessage(message)));
     this.#log?.replaceChildren(...elements);
     this.scrollBottom();
   }
 
+  async #renderMessage(message: any): Promise<HTMLElement> {
+    const element: HTMLElement = await message.renderHTML();
+    orderDice(element, this.#diceOrder);
+    return element;
+  }
+
   async postOne(message: any, { before, notify = false }: { before?: string; notify?: boolean } = {}): Promise<void> {
     if (!this.#log || !message.visible) return;
-    const element = await message.renderHTML();
+    const element = await this.#renderMessage(message);
     const anchor = before ? this.#log.querySelector(`[data-message-id="${CSS.escape(before)}"]`) : null;
     const shouldAnimate = notify && message.isRoll && message.isContentVisible && this.#builtInAnimationEnabled();
     if (shouldAnimate) element.classList.add("rolling");
@@ -78,7 +87,7 @@ export class ChatLog extends DomApplication {
   async updateMessage(message: any): Promise<void> {
     const existing = this.#log?.querySelector(`[data-message-id="${CSS.escape(message.id)}"]`);
     if (!existing) return this.postOne(message);
-    existing.replaceWith(await message.renderHTML());
+    existing.replaceWith(await this.#renderMessage(message));
   }
 
   deleteMessage(messageId: string): void {
@@ -152,6 +161,17 @@ export class ChatLog extends DomApplication {
     }
     form.append(poolPanel.element, messageRow, audienceRow);
     return form;
+  }
+
+  #buildDiceOrderSelect(): HTMLSelectElement {
+    const select = h("select", { name: "diceOrder", class: "dice-order", "aria-label": "Ordem dos dados no chat", title: "Ordem dos dados no chat" });
+    for (const [order, label] of Object.entries(DICE_ORDERS)) select.append(h("option", { value: order, selected: order === this.#diceOrder }, label));
+    select.addEventListener("change", () => {
+      this.#diceOrder = select.value === "rolled" ? "rolled" : "highest";
+      saveDiceOrder(this.#diceOrder);
+      if (this.#log) orderDice(this.#log, this.#diceOrder);
+    });
+    return select;
   }
 
   async #confirmFlush(): Promise<void> {

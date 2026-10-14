@@ -1,9 +1,11 @@
 import express, { Router, type Request, type Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import { roleHasPermission, type ConfiguredPermissions, type UserPermissionName } from "@tabbletop/common";
-import { browseFilesQuerySchema, createDirectoryRequestSchema, uploadFileQuerySchema, type FileUploadResult } from "@tabbletop/protocol";
+import { browseFilesQuerySchema, createDirectoryRequestSchema, shareFolderRequestSchema, uploadFileQuerySchema, type FileUploadResult } from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
 import type { FileStorage } from "../../files/FileStorage";
+import { PlayerFileArea } from "../../files/PlayerFileArea";
+import { PlayerFolderSharing } from "../../files/PlayerFolderSharing";
 import type { ServerContext } from "../../ServerContext";
 import { authenticatedState, parseRequestBody, requireSession } from "../requestGuards";
 
@@ -33,29 +35,49 @@ function parseQuery<T>(schema: { safeParse(input: unknown): { success: true; dat
   return result.data;
 }
 
+/** The GM reaches every folder; a player only their own and what the group shared. */
+function requestAccess(response: Response, storage: FileStorage, sharing: PlayerFolderSharing): { isGameMaster: boolean; userId: string; area: PlayerFileArea } {
+  const { session, world } = authenticatedState(response);
+  const playerName = (userId: string) => world.users.getUser(userId)?.name ?? null;
+  return { isGameMaster: world.users.isGameMaster(session.userId), userId: session.userId, area: new PlayerFileArea(storage, sharing, playerName) };
+}
+
 export function createFileRoutes(context: ServerContext, storage: FileStorage): Router {
   const router = Router();
   router.use(requireSession(context));
+  const sharing = new PlayerFolderSharing(context.config.configPath);
   const uploadRateLimiter = rateLimit({ windowMs: 60_000, limit: 40, standardHeaders: "draft-7", legacyHeaders: false });
 
   router.get("/browse", async (request, response) => {
     assertPermission(response, "FILES_BROWSE");
     const query = parseQuery(browseFilesQuerySchema, request);
-    response.json(await storage.browse(query.target, parseExtensionFilter(query.extensions)));
+    const extensions = parseExtensionFilter(query.extensions);
+    const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
+    response.json(isGameMaster ? await area.labelPlayerFolders(await storage.browse(query.target, extensions)) : await area.browse(userId, query.target, extensions));
   });
 
   router.post("/upload", uploadRateLimiter, express.raw({ type: () => true, limit: MAX_UPLOAD_BYTES }), async (request, response) => {
     assertPermission(response, "FILES_UPLOAD");
     const query = parseQuery(uploadFileQuerySchema, request);
     if (!Buffer.isBuffer(request.body)) throw HttpError.badRequest("Arquivo ausente");
-    const storedPath = await storage.upload(query.target, query.name, request.body);
-    response.status(201).json({ path: storedPath } satisfies FileUploadResult);
+    const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
+    const target = isGameMaster ? query.target : area.writableTarget(userId, query.target);
+    response.status(201).json({ path: await storage.upload(target, query.name, request.body) } satisfies FileUploadResult);
   });
 
   router.post("/directory", uploadRateLimiter, async (request, response) => {
     assertPermission(response, "FILES_UPLOAD");
     const { target } = parseRequestBody(createDirectoryRequestSchema, request);
-    response.status(201).json({ path: await storage.createDirectory(target) });
+    const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
+    response.status(201).json({ path: await storage.createDirectory(isGameMaster ? target : area.newFolderTarget(userId, target)) });
+  });
+
+  router.post("/share", uploadRateLimiter, async (request, response) => {
+    assertPermission(response, "FILES_UPLOAD");
+    const { target, shared } = parseRequestBody(shareFolderRequestSchema, request);
+    const { userId, area } = requestAccess(response, storage, sharing);
+    await area.setShared(userId, target, shared);
+    response.status(204).end();
   });
 
   return router;

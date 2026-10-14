@@ -24,7 +24,7 @@ export function readResource(raw: unknown): ResourceValue {
 
 export function sheetRollButton(context: BoardContext, component: SheetComponent, formula: string, content: Node[]): HTMLButtonElement {
   const button = h("button", { type: "button", class: "md-roll", title: `Rolar ${formula}`, disabled: !context.actor.isOwner }, ...content);
-  button.addEventListener("click", () => rollFromSheet(context.actor, formula, component.label || "Rolagem", context.extraRollData()));
+  button.addEventListener("click", () => rollFromSheet(context.actor, formula, component.label || "Rolagem", context.extraRollData(), component.rollMode));
   return button;
 }
 

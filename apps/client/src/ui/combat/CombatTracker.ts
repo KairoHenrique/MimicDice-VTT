@@ -2,7 +2,7 @@ import type { ApplicationConfiguration } from "@tabbletop/api";
 import { h } from "../../views/dom";
 import { DomApplication } from "../DomApplication";
 import { SIDEBAR_CONTENT_ID } from "../sidebar/DocumentDirectory";
-import { addTokensToCombat, confirmEndCombat, viewedCombat } from "./combatActions";
+import { addTokensToCombat, confirmEndCombat, revealAllCombatants, viewedCombat } from "./combatActions";
 import { playersSeeTurnMovement, TABLE_RULES_CHANGED_HOOK } from "../../game/tableRules";
 import { buildCombatantRow } from "./combatantRow";
 import { enableTurnOrderDragging } from "./turnOrderDragging";
@@ -103,6 +103,7 @@ export class CombatTracker extends DomApplication {
       "div",
       { class: "combat-tools", role: "toolbar", "aria-label": "Ferramentas do mestre" },
       actionButton("fa-solid fa-user-plus", "Adicionar os tokens selecionados", () => addTokensToCombat(), { shortLabel: "Adicionar" }),
+      actionButton("fa-solid fa-eye", "Mostrar todos os combatentes para os jogadores", () => revealAllCombatants(combat), { shortLabel: "Mostrar todos" }),
       actionButton("fa-solid fa-rotate-left", "Limpar todas as iniciativas", () => combat.resetAll(), { shortLabel: "Zerar" }),
       actionButton("fa-solid fa-flag-checkered", "Encerrar combate", () => confirmEndCombat(combat), { shortLabel: "Encerrar" }),
     );

@@ -18,7 +18,7 @@ export class DocumentOwnershipConfig extends DomApplication {
   static override DEFAULT_OPTIONS: Partial<ApplicationConfiguration> = {
     classes: ["document-ownership"],
     tag: "form",
-    window: { title: "Visibilidade", frame: true, positioned: true, icon: "fa-solid fa-eye", controls: [], minimizable: false, resizable: false, contentTag: "section", contentClasses: [] },
+    window: { title: "Visibilidade", frame: true, positioned: true, icon: "fa-solid fa-eye", controls: [], minimizable: false, resizable: true, contentTag: "section", contentClasses: [] },
     position: { width: 420 },
   };
 

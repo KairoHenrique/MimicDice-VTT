@@ -18,6 +18,12 @@ async function ensureCombat(): Promise<any | null> {
   return CONFIG.Combat.documentClass.create({ scene: canvas.scene.id, active: true, round: 0, turn: null, started: false });
 }
 
+/** Reveals every hidden combatant to the players at once. */
+export async function revealAllCombatants(combat: any): Promise<void> {
+  const updates = combat.combatants.filter((combatant: any) => combatant.hidden).map((combatant: any) => ({ _id: combatant.id, hidden: false }));
+  if (updates.length > 0) await combat.updateEmbeddedDocuments("Combatant", updates);
+}
+
 /** Adds the given tokens (or the selected ones) to the viewed encounter, creating it when needed and skipping duplicates. */
 export async function addTokensToCombat(tokens: any[] = selectedTokens()): Promise<void> {
   if (tokens.length === 0) {
@@ -26,24 +32,8 @@ export async function addTokensToCombat(tokens: any[] = selectedTokens()): Promi
   }
   const combat = await ensureCombat();
   if (!combat) return;
-  const present = new Set(combat.combatants.map((combatant: any) => combatant.tokenId));
-  const firstSort = combat.hasManualOrder ? combat.nextManualSort : 0;
-  const additions = tokens
-    .filter((token) => !present.has(token.id))
-    .map((token, index) => ({
-      sort: combat.hasManualOrder ? firstSort + index * 10 : 0,
-      tokenId: token.id,
-      sceneId: token.document.parent?.id ?? canvas.scene?.id ?? null,
-      actorId: token.document.actorId ?? null,
-      name: String(token.document.name ?? token.actor?.name ?? "Token"),
-      img: token.document.texture?.src ?? token.actor?.img ?? null,
-      hidden: token.document.hidden === true,
-    }));
-  if (additions.length === 0) {
-    ui.notifications.info("Esses tokens já estão no combate.");
-    return;
-  }
-  await combat.createEmbeddedDocuments("Combatant", additions);
+  const added = await combat.addTokens(tokens);
+  if (added.length === 0) ui.notifications.info("Esses tokens já estão no combate.");
 }
 
 export async function removeTokensFromCombat(tokens: any[]): Promise<void> {

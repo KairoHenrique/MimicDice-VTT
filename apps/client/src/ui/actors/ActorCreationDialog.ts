@@ -21,7 +21,7 @@ export class ActorCreationDialog extends DomApplication {
     id: "actor-creation",
     classes: ["md-create-actor"],
     tag: "form",
-    window: { title: "Criar personagem", frame: true, positioned: true, icon: "fa-solid fa-user-plus", controls: [], minimizable: false, resizable: false, contentTag: "section", contentClasses: [] },
+    window: { title: "Criar personagem", frame: true, positioned: true, icon: "fa-solid fa-user-plus", controls: [], minimizable: false, resizable: true, contentTag: "section", contentClasses: [] },
     position: { width: 520 },
   };
 

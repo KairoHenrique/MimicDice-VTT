@@ -77,6 +77,28 @@
   color: var(--color-accent);
 }
 
+.file-picker-entry.directory {
+  position: relative;
+}
+
+.file-picker-share {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 12px;
+  border-radius: var(--radius);
+}
+
+.file-picker-share[aria-pressed="true"] {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
 .file-picker-thumb {
   width: 80px;
   height: 80px;

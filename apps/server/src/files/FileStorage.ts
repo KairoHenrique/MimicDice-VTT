@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { mkdir, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { FileBrowseResult } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
@@ -29,9 +29,13 @@ export class FileStorage {
   async browse(target: string, extensions: ReadonlySet<string> | null): Promise<FileBrowseResult> {
     const segments = parseTarget(target);
     if (segments.length === 0) return { target: "", dirs: [...BROWSABLE_ROOTS], files: [], writable: false };
+    return this.listFolder(segments, extensions);
+  }
+
+  /** Lists one folder (creating it inside uploads); `segments` must come from `parseTarget`. */
+  async listFolder(segments: readonly string[], extensions: ReadonlySet<string> | null): Promise<FileBrowseResult> {
     const directory = this.#resolve(segments);
     if (segments[0] === UPLOADS_ROOT) await mkdir(directory, { recursive: true });
-
     let entries;
     try {
       entries = await readdir(directory, { withFileTypes: true });
@@ -50,8 +54,16 @@ export class FileStorage {
     return { target: prefix, dirs: dirs.sort(byName), files: files.sort(byName), writable: segments[0] === UPLOADS_ROOT };
   }
 
+  async isDirectory(segments: readonly string[]): Promise<boolean> {
+    try {
+      return (await stat(this.#resolve(segments))).isDirectory();
+    } catch {
+      return false;
+    }
+  }
+
   async upload(target: string, requestedName: string, content: Uint8Array): Promise<string> {
-    const segments = this.#writableSegments(target);
+    const segments = writableSegments(target);
     const fileName = sanitizeFileName(requestedName);
     const extension = uploadExtension(fileName);
     if (!isAllowedUploadExtension(extension)) throw HttpError.badRequest("Tipo de arquivo não permitido");
@@ -72,16 +84,10 @@ export class FileStorage {
   }
 
   async createDirectory(target: string): Promise<string> {
-    const segments = this.#writableSegments(target);
+    const segments = writableSegments(target);
     if (segments.length < 2) throw HttpError.badRequest("Informe o nome da nova pasta");
     await mkdir(this.#resolve(segments), { recursive: true });
     return segments.join("/");
-  }
-
-  #writableSegments(target: string): string[] {
-    const segments = parseTarget(target);
-    if (segments[0] !== UPLOADS_ROOT) throw HttpError.forbidden("Só é possível enviar arquivos para a pasta uploads");
-    return segments;
   }
 
   #resolve(segments: readonly string[]): string {
@@ -92,7 +98,13 @@ export class FileStorage {
   }
 }
 
-function parseTarget(target: string): string[] {
+function writableSegments(target: string): string[] {
+  const segments = parseTarget(target);
+  if (segments[0] !== UPLOADS_ROOT) throw HttpError.forbidden("Só é possível enviar arquivos para a pasta uploads");
+  return segments;
+}
+
+export function parseTarget(target: string): string[] {
   const segments = target.replace(/\\/g, "/").split("/").filter((segment) => segment.length > 0);
   if (segments.length > MAX_PATH_DEPTH) throw HttpError.badRequest("Caminho inválido");
   for (const segment of segments) {

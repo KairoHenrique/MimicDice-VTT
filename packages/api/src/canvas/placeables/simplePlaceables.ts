@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import { itemNamesMatch, requiredDoorItem, type PlainObject } from "@tabbletop/common";
 import { CONST } from "../../constants";
+import { Hooks } from "../../hooks/Hooks";
 import { currentCanvas, currentGame, currentUi } from "../../runtime";
 import type { Point, Rectangle, Segment } from "../geometry";
 import { colorToNumber, loadTexture } from "../textures";
@@ -13,6 +14,9 @@ function userCarriesItem(itemName: string): boolean {
   const actors: any[] = currentGame()?.actors?.contents ?? [];
   return actors.some((actor) => actor.isOwner && Array.from((actor.items?.values?.() ?? []) as Iterable<any>).some((item) => itemNamesMatch(item.name, itemName)));
 }
+
+const NOTE_CLICK_SLOP_PX = 5;
+const NOTE_DOUBLE_CLICK_MS = 360;
 
 const labelStyle = (fontSize: number, fill = 0xffffff) =>
   new PIXI.TextStyle({ fontFamily: "Signika, Arial, sans-serif", fontSize, fill, stroke: 0x111111, strokeThickness: 4, align: "center" });
@@ -181,17 +185,20 @@ export class Wall extends PlaceableObject {
     return ["door"];
   }
 
+  /** Both ends land on grid corners, so a wall drawn off the grid also ends up on it once moved. */
   override getMoveUpdate(deltaX: number, deltaY: number, snap: boolean): PlainObject {
     const [ax, ay, bx, by] = this.coords;
-    let start = { x: ax + deltaX, y: ay + deltaY };
-    if (snap) start = currentCanvas().grid.getSnappedPoint(start, { mode: "half" });
-    const shiftX = start.x - ax;
-    const shiftY = start.y - ay;
-    return { _id: this.id, c: [ax + shiftX, ay + shiftY, bx + shiftX, by + shiftY].map(Math.round) };
+    const grid = currentCanvas().grid;
+    const place = (x: number, y: number) => (snap ? grid.getSnappedPoint({ x, y }, { mode: "corner" }) : { x, y });
+    const start = place(ax + deltaX, ay + deltaY);
+    const end = place(bx + deltaX, by + deltaY);
+    return { _id: this.id, c: [start.x, start.y, end.x, end.y].map(Math.round) };
   }
 
   override previewOffset(deltaX: number, deltaY: number): void {
-    this.position.set(deltaX, deltaY);
+    const [ax, ay] = this.coords;
+    const [nextX, nextY] = this.getMoveUpdate(deltaX, deltaY, true).c as number[];
+    this.position.set((nextX ?? ax) - ax, (nextY ?? ay) - ay);
   }
 
   override _onClickLeft2(): void {
@@ -313,6 +320,7 @@ export class Note extends PlaceableObject {
   }
 
   protected override async _draw(): Promise<void> {
+    this.#listenForClicks();
     const texture = await loadTexture(this.document.texture?.src ?? "icons/svg/book.svg");
     if (this.destroyed) return;
     this.icon = new PIXI.Sprite(texture ?? PIXI.Texture.WHITE);
@@ -347,13 +355,51 @@ export class Note extends PlaceableObject {
     return ["texture", "fontSize", "textColor"];
   }
 
+  override get answersOnEveryLayer(): boolean {
+    return true;
+  }
+
+  override canDragWithoutControl(user: any): boolean {
+    return Boolean(user?.isGM) || this.document.testUserPermission?.(user, "OWNER") === true;
+  }
+
+  get #canEdit(): boolean {
+    return this.canDragWithoutControl(currentGame()?.user);
+  }
+
+  #pressedAt: Point | null = null;
+  #pendingOpen: ReturnType<typeof setTimeout> | null = null;
+
+  #listenForClicks(): void {
+    if (this.listenerCount("pointertap") > 0) return;
+    this.on("pointerdown", (event: PIXI.FederatedPointerEvent) => {
+      this.#pressedAt = event.button === 0 ? { x: event.clientX, y: event.clientY } : null;
+    });
+    this.on("pointertap", (event: PIXI.FederatedPointerEvent) => {
+      const pressedAt = this.#pressedAt;
+      if (!pressedAt || Math.hypot(event.clientX - pressedAt.x, event.clientY - pressedAt.y) > NOTE_CLICK_SLOP_PX) return;
+      if (this.#pendingOpen) return;
+      this.#pendingOpen = setTimeout(() => {
+        this.#pendingOpen = null;
+        if (!this.destroyed) this.activate();
+      }, NOTE_DOUBLE_CLICK_MS);
+    });
+  }
+
+  /** Shows what the note says; the app answers the `activateNote` hook, falling back to the linked journal. */
+  activate(): void {
+    if (Hooks.call("activateNote", this, {}) === false) return;
+    this.document.entry?.sheet?.render(true);
+  }
+
   override _onClickLeft2(): void {
-    const entry = this.document.entry;
-    if (entry) entry.sheet?.render(true);
-    else currentCanvas()?.hud?.configureNote?.(this);
+    if (this.#pendingOpen) clearTimeout(this.#pendingOpen);
+    this.#pendingOpen = null;
+    if (this.#canEdit) void currentCanvas()?.hud?.configureNote?.(this);
+    else this.activate();
   }
 
   override _onClickRight(event: PIXI.FederatedPointerEvent): void {
-    if (currentGame()?.user?.isGM) currentCanvas()?.hud?.configureNote?.(this, event);
+    if (this.#canEdit) void currentCanvas()?.hud?.configureNote?.(this, event);
   }
 }

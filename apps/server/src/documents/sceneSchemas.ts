@@ -168,6 +168,7 @@ export const drawingSchema = z.object({
   hidden: z.boolean().default(false),
   locked: z.boolean().default(false),
   interface: z.boolean().default(false),
+  editors: z.array(documentIdSchema).max(64).default([]),
 });
 
 export const measuredTemplateSchema = z.object({

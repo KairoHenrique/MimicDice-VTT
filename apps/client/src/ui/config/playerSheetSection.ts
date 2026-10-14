@@ -4,6 +4,7 @@ import { h } from "../../views/dom";
 import { applyTemplateToActor } from "../actors/actorAssignment";
 import { isPlayerCharacter } from "../actors/actorRoles";
 import { defaultTemplateFor, findSheetTemplate, setDefaultTemplate } from "../sheets/layout/sheetTemplateStore";
+import { SheetTemplateEditor } from "../sheets/layout/editor/SheetTemplateEditor";
 import { templatesForRole } from "../sheets/layout/templateDialogs";
 
 async function applyDefaultToEveryPlayer(): Promise<void> {
@@ -42,6 +43,8 @@ function defaultTemplateSelect(rerender: () => void): HTMLElement {
 export function buildPlayerSheetSection(rerender: () => void, checkboxRow: (label: string, checked: boolean, onChange: (checked: boolean) => void) => HTMLElement): HTMLElement {
   const applyAll = h("button", { type: "button" }, h("i", { class: "fa-solid fa-users-gear", "aria-hidden": "true" }), " Aplicar agora em todos os jogadores");
   applyAll.addEventListener("click", () => void applyDefaultToEveryPlayer());
+  const blankModel = h("button", { type: "button" }, h("i", { class: "fa-solid fa-file-circle-plus", "aria-hidden": "true" }), " Criar modelo de ficha do zero");
+  blankModel.addEventListener("click", () => SheetTemplateEditor.open("player"));
   const editing = checkboxRow("Jogadores podem editar a própria ficha e escolher qualquer modelo", playersEditSheets(), (checked) => {
     void setPlayersEditSheets(checked)
       .catch(() => ui.notifications.error("Não foi possível salvar essa configuração."))
@@ -53,7 +56,7 @@ export function buildPlayerSheetSection(rerender: () => void, checkboxRow: (labe
     h("h3", {}, "Fichas dos jogadores"),
     h("p", { class: "hint" }, "Com a edição desligada, o jogador só preenche a ficha. Para deixar um jogador alternar entre fichas, abra a ficha dele e use \"Modelos do jogador\"."),
     defaultTemplateSelect(rerender),
-    h("div", { class: "gm-rules-actions" }, applyAll),
+    h("div", { class: "gm-rules-actions" }, applyAll, blankModel),
     editing,
   );
 }

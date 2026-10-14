@@ -1,6 +1,6 @@
-import { MAX_PIPS, type SheetComponent } from "@tabbletop/protocol";
+import { MAX_PIPS, type SheetComponent, type SheetRollMode } from "@tabbletop/protocol";
 import { isValidComputedFormula, isValidRollFormula } from "../formulaChecks";
-import { checkRow, numberRow, textareaRow, textRow } from "./inspectorControls";
+import { checkRow, choiceRow, numberRow, textareaRow, textRow } from "./inspectorControls";
 import { buildListColumnsEditor } from "./listColumnsEditor";
 
 export type ComponentPatch = (patch: Partial<SheetComponent>) => void;
@@ -15,6 +15,16 @@ function formulaRow(component: SheetComponent, patch: ComponentPatch, kind: "rol
     }
     patch({ formula: formula || undefined });
   }, { maxlength: 300, placeholder: kind === "roll" ? "1d20 + @forca" : "floor((@forca - 10) / 2)", hint });
+}
+
+const ROLL_MODE_CHOICES: ReadonlyArray<readonly [SheetRollMode, string]> = [
+  ["sum", "Somar todos os dados"],
+  ["highest", "Só o maior dado"],
+  ["lowest", "Só o menor dado"],
+];
+
+function rollModeRow(component: SheetComponent, patch: ComponentPatch): HTMLElement {
+  return choiceRow("Resultado da rolagem", component.rollMode ?? "sum", ROLL_MODE_CHOICES, "rollMode", (mode) => patch({ rollMode: mode === "sum" ? undefined : mode }));
 }
 
 function initialNumberRow(component: SheetComponent, patch: ComponentPatch, label = "Valor inicial"): HTMLElement {
@@ -37,6 +47,7 @@ export function buildKindFields(component: SheetComponent, patch: ComponentPatch
         numberRow("Mínimo", component.min, "min", (value) => patch({ min: value })),
         numberRow("Passo", component.step, "step", (value) => patch({ step: value && value > 0 ? value : undefined }), { min: 0, step: 0.5 }),
         formulaRow(component, patch, "roll", "Opcional: mostra um dado ao lado do número."),
+        rollModeRow(component, patch),
         checkRow("Mostrar botão de rolar", component.rollable !== false, "rollable", (checked) => patch({ rollable: checked ? undefined : false })),
       ];
     case "resource":
@@ -51,9 +62,14 @@ export function buildKindFields(component: SheetComponent, patch: ComponentPatch
     case "select":
       return [optionsRow(component, patch), textRow("Opção inicial", typeof component.initial === "string" ? component.initial : "", "initial", (value) => patch({ initial: value || undefined }))];
     case "list":
-      return [buildListColumnsEditor(component.columns ?? [], (columns) => patch({ columns })), formulaRow(component, patch, "roll", "Opcional: cada linha ganha um dado. Use @linha.<coluna>, ex.: 1d20 + @linha.bonus")];
+      return [
+        checkRow("Mostrar os itens do personagem (inventário)", component.linkItems === true, "linkItems", (checked) => patch({ linkItems: checked || undefined })),
+        buildListColumnsEditor(component.columns ?? [], (columns) => patch({ columns })),
+        formulaRow(component, patch, "roll", "Opcional: cada linha ganha um dado. Use @linha.<coluna>, ex.: 1d20 + @linha.bonus"),
+        rollModeRow(component, patch),
+      ];
     case "roll":
-      return [formulaRow(component, patch, "roll", "Use @atalhos de outros componentes, ex.: 1d20 + @forca")];
+      return [formulaRow(component, patch, "roll", "Use @atalhos de outros componentes, ex.: 1d20 + @forca"), rollModeRow(component, patch)];
     case "computed":
       return [formulaRow(component, patch, "computed", "Sem dados. Ex.: floor((@forca - 10) / 2). Outros componentes podem usar @ deste atalho.")];
     case "title":

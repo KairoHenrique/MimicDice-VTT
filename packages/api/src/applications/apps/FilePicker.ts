@@ -13,6 +13,9 @@ export interface FilePickerBrowseResult {
   files: string[];
   extensions: string[];
   writable: boolean;
+  parent?: string | null;
+  labels?: Record<string, string>;
+  shareable?: Record<string, boolean>;
 }
 
 export interface FilePickerOptions extends Partial<ApplicationConfiguration> {
@@ -98,7 +101,7 @@ export class FilePicker extends ApplicationV2 {
     if (options.extensions?.length) params.set("extensions", options.extensions.join(","));
     const response = await fetch(`/api/files/browse?${params}`, { credentials: "same-origin" });
     if (!response.ok) throw new Error(await readErrorMessage(response));
-    const body = (await response.json()) as Pick<FilePickerBrowseResult, "target" | "dirs" | "files" | "writable">;
+    const body = (await response.json()) as Pick<FilePickerBrowseResult, "target" | "dirs" | "files" | "writable" | "parent" | "labels" | "shareable">;
     return { ...body, private: false, gridSize: null, extensions: options.extensions ?? [] };
   }
 
@@ -135,6 +138,17 @@ export class FilePicker extends ApplicationV2 {
     });
     if (!response.ok) throw new Error(await readErrorMessage(response));
     return ((await response.json()) as { path: string }).path;
+  }
+
+  /** Shares one of the user's own folders with the whole group, or makes it private again. */
+  static async setFolderShared(target: string, shared: boolean): Promise<void> {
+    const response = await fetch("/api/files/share", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target: normalizeDataPath(target), shared }),
+    });
+    if (!response.ok) throw new Error(await readErrorMessage(response));
   }
 
   static fromButton(button: HTMLElement): FilePicker {
@@ -216,7 +230,18 @@ export class FilePicker extends ApplicationV2 {
       },
       upload: (files) => void this.#uploadFiles(files),
       createFolder: (name) => void this.#createFolder(name),
+      share: (path, shared) => void this.#share(path, shared),
     });
+  }
+
+  async #share(path: string, shared: boolean): Promise<void> {
+    try {
+      await FilePicker.setFolderShared(path, shared);
+      currentUi()?.notifications?.info(shared ? "Pasta visível para todo o grupo." : "Pasta visível só para você (e o mestre).");
+      await this.browse(this.target);
+    } catch (error) {
+      currentUi()?.notifications?.error(error instanceof Error ? error.message : "Não foi possível mudar quem vê a pasta");
+    }
   }
 
   override _replaceHTML(result: unknown, content: HTMLElement): void {

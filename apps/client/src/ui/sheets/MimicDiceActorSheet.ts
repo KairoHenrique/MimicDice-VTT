@@ -8,16 +8,19 @@ import { GenericDocumentSheet } from "./GenericDocumentSheet";
 import { BoardContext } from "./layout/boardContext";
 import { buildBoardView } from "./layout/boardView";
 import { BoardEditor } from "./layout/editor/BoardEditor";
+import { SheetTemplateEditor } from "./layout/editor/SheetTemplateEditor";
 import { allComponents, EMPTY_LAYOUT, readLayout } from "./layout/sheetLayoutRules";
 import { exportActorSheet } from "./layout/sheetExchange";
 import { defaultTemplateFor } from "./layout/sheetTemplateStore";
 import { valueRootForActorType } from "./layout/sheetValueRoot";
 import { chooseTemplateDialog, roleSelect, saveTemplateDialog } from "./layout/templateDialogs";
+import { buildRollPrivacyToggle } from "./npcRollPrivacy";
 import { buildRollFormulasSection } from "./rollFormulasSection";
 import { buildSystemFieldsEditor } from "./systemFieldsEditor";
 import { actorVariants, chooseActorVariantsDialog, chooseVariantDialog } from "./sheetVariants";
 import { playersEditSheets } from "../../game/tableRules";
 import { buildAppearanceStrip } from "../actors/appearances";
+import { draggedItem, giveItemToActor } from "../items/inventorySync";
 
 type SheetTab = "sheet" | "rolls" | "items";
 
@@ -78,6 +81,8 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     const meta = h("div", { class: "md-meta" });
     if (game.user.isGM) {
       meta.append(this.#roleControl(role), this.#ownerControl());
+      const rollPrivacy = buildRollPrivacyToggle(this.document);
+      if (rollPrivacy) meta.append(rollPrivacy);
     } else {
       const presentation = ROLE_PRESENTATION[role];
       meta.append(h("span", { class: `md-role-badge role-${role}` }, h("i", { class: presentation.icon }), ` ${presentation.label}`));
@@ -122,6 +127,7 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     if (game.user.isGM) {
       toolbar.append(
         toolbarButton("fa-solid fa-floppy-disk", "Salvar como modelo", () => saveTemplateDialog(this.layout, role, this.document.name)),
+        toolbarButton("fa-solid fa-file-circle-plus", "Novo modelo do zero", () => SheetTemplateEditor.open(role)),
         toolbarButton("fa-solid fa-layer-group", "Modelos do jogador", () => chooseActorVariantsDialog(this.document)),
       );
     }
@@ -154,6 +160,22 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
   override async _onFirstRender(context: object, options: object): Promise<void> {
     await super._onFirstRender(context, options as never);
     void this.#giveDefaultSheetIfMissing();
+    this.#acceptItemDrops();
+  }
+
+  /** Dropping an Items-tab entry on the sheet puts a copy in this character's inventory. */
+  #acceptItemDrops(): void {
+    const root = this.element;
+    if (!root) return;
+    root.addEventListener("dragover", (event) => {
+      if (this.document.isOwner && event.dataTransfer?.types.includes("text/plain")) event.preventDefault();
+    });
+    root.addEventListener("drop", (event) => {
+      const item = draggedItem(event.dataTransfer?.getData("text/plain"));
+      if (!item || item.parent === this.document) return;
+      event.preventDefault();
+      void giveItemToActor(this.document, item);
+    });
   }
 
   /** Actors created elsewhere (imports, quick "Criar", tokens) start with the default sheet of their type. */

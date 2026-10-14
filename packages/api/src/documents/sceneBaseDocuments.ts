@@ -233,6 +233,7 @@ export class BaseDrawing extends Document {
       hidden: new BooleanField(),
       locked: new BooleanField(),
       interface: new BooleanField(),
+      editors: new ArrayField(new StringField()),
       ...placeableFields(),
     };
   }

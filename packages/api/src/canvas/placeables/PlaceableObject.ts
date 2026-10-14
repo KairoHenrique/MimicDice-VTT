@@ -151,8 +151,14 @@ export abstract class PlaceableObject extends PIXI.Container {
   }
 
   canDrag(user: any = currentGame()?.user): boolean {
-    const mayMove = this.canControl(user) || (Boolean(this.layer?.active) && this.canDragWithoutControl(user));
+    const reachable = Boolean(this.layer?.active) || this.answersOnEveryLayer;
+    const mayMove = this.canControl(user) || (reachable && this.canDragWithoutControl(user));
     return mayMove && !this.document.locked && !isFrozenByGameMaster(user);
+  }
+
+  /** Objects that take clicks and drags while another layer is active (their layer keeps its children interactive). */
+  get answersOnEveryLayer(): boolean {
+    return false;
   }
 
   /** Objects a user may drag around without controlling them (no selection, vision or sheet). */
@@ -212,7 +218,7 @@ export abstract class PlaceableObject extends PIXI.Container {
   }
 
   #onPointerDown(event: PIXI.FederatedPointerEvent): void {
-    if (!this.layer?.active) return;
+    if (!this.layer?.active && !this.answersOnEveryLayer) return;
     if (event.button === 2) {
       event.stopPropagation();
       this._onClickRight(event);

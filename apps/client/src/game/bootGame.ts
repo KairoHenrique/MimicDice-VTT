@@ -18,6 +18,9 @@ import { registerCoreSheets } from "./coreSheets";
 import { listenForPings, registerPingKeybinding } from "./canvasPings";
 import { registerLiveTokenDrag } from "./liveTokenDrag";
 import { registerBoardContextMenu } from "./boardContextMenu";
+import { registerLootPickup } from "./lootPickup";
+import { installInventorySync } from "../ui/items/inventorySync";
+import { installNoteViewer } from "../ui/notes/NoteViewer";
 import { registerContextHelp } from "../ui/help/contextHelp";
 import { installScenePause } from "./scenePause";
 import { installTableSession } from "./tableSession";
@@ -117,6 +120,7 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   registerPingKeybinding(socket);
   listenForPullToScene(socket);
   registerBoardContextMenu(socket);
+  registerLootPickup(socket);
   registerContextHelp();
   registerLiveTokenDrag(socket);
   syncLightAreasOnSceneLoad();
@@ -130,6 +134,8 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   installEffectRules();
   installLayerRules();
   installLayersPanel();
+  installInventorySync();
+  installNoteViewer();
   installTokenDragRule();
   trackTurnMovement();
   installCombatTurnBanner();

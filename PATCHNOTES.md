@@ -1,5 +1,47 @@
 # Notas de versão
 
+## 1.2.1
+
+### Arquivos e pastas
+
+- Jogadores **não veem mais** os uploads e as pastas do mestre.
+- Cada jogador tem a **sua pasta**, onde pode criar subpastas. Cada subpasta pode ficar **só para ele** ou **visível para o grupo** (o mestre sempre vê).
+- O mestre vê a pasta **Pastas dos jogadores**, com a pasta de cada jogador, e pode abrir, editar e colocar arquivos nelas.
+- Pastas que um jogador libera para o grupo aparecem para os outros em **Pastas compartilhadas**.
+
+### Combate
+
+- Quem entra num combate **já iniciado** vai para o **fim da rodada atual** e, na rodada seguinte, passa a seguir a iniciativa.
+- NPCs e inimigos entram **ocultos** dos jogadores. O botão **Mostrar todos** revela todos de uma vez.
+
+### Mapa
+
+- **Itens no mapa:** o mestre arrasta um item para o mapa e ele vira um objeto. Um jogador perto dele pega com o botão direito e o item vai para o inventário.
+- **Paredes:** só são criadas **segurando e arrastando** (clique solto não cria mais paredes sem querer), e ao editar as pontas encaixam no grid.
+- **Fog do mestre:** quando o mestre entra na visão de um token, o que está fora da visão fica **totalmente preto**, como para o jogador.
+- **Notas:** o mestre (e o dono) consegue arrastar as notas de qualquer ferramenta. Clicar no ícone abre uma **janela com o texto da nota** (e as páginas do diário ligado).
+
+### Desenhos e textos
+
+- O **preview** mostra a forma certa (retângulo, elipse, mão livre, texto e moldes) na cor de quem desenha, sem a reta seguindo o mouse.
+- **Linhas a mão livre** agora podem ser selecionadas e apagadas clicando na própria linha.
+- **Cor:** clique direito ou duplo clique muda a cor, a espessura e o preenchimento do desenho, ou o texto, a cor e o tamanho da letra.
+- **Textos** podem ser editados. Só o criador mexe neles, além de quem o mestre liberar em **Quem pode editar e mover**.
+- O cadeado da barra de desenhos trava **só os desenhos selecionados**, não todos.
+
+### Fichas e inventário
+
+- **Inventário sincronizado:** arrastar um item para a ficha ou o token dá o item ao personagem, a ficha atualiza na hora para todos e editar o item na aba Itens atualiza as cópias (mantendo a quantidade de cada um).
+- Tabelas da ficha podem **mostrar os itens do personagem** (opção no editor da ficha).
+- **Resultado da rolagem:** cada campo rolável escolhe entre **somar todos os dados**, **só o maior** ou **só o menor**.
+- Rolagens pela ficha de **NPCs e inimigos ficam escondidas** dos jogadores. O botão **Rolagens: só o mestre / todos veem** na ficha muda isso.
+- **Modelo de ficha do zero:** dá para criar um modelo sem precisar de um personagem (botão na ficha ou nas configurações).
+
+### Chat e janelas
+
+- Os dados no chat aparecem do **maior para o menor**. Um filtro no topo do chat troca para a **ordem da rolagem**.
+- As janelas pop-up podem ser **redimensionadas** pelo canto inferior direito.
+
 ## 1.2.0
 
 ### Mapa em camadas (estilo Owlbear + editor de imagem)

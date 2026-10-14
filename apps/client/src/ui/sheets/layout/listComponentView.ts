@@ -20,11 +20,58 @@ function cellInput(column: SheetListColumn, value: ListCell | undefined, editabl
   return h("td", {}, input);
 }
 
+function rollCell(context: BoardContext, component: SheetComponent, formula: string, rowName: string, row: ListRow): HTMLElement {
+  const roll = h("button", { type: "button", class: "md-roll", title: `Rolar ${formula}`, disabled: !context.actor.isOwner }, h("i", { class: "fa-solid fa-dice-d20" }));
+  roll.addEventListener("click", () => rollFromSheet(context.actor, formula, rowName, { ...context.extraRollData(), linha: row }, component.rollMode));
+  return h("td", { class: "md-list-action" }, roll);
+}
+
+function itemRowValues(item: any, columns: readonly SheetListColumn[]): ListRow {
+  const [first, ...rest] = columns;
+  const system = (item.system ?? {}) as Record<string, unknown>;
+  const row = readListRows([Object.fromEntries(rest.map((column) => [column.key, system[column.key]]))], rest)[0] ?? {};
+  return first ? { ...emptyRow(rest), ...row, [first.key]: item.name } : row;
+}
+
+/** The character's real inventory as a table: the first column is the item name, the others are stored in each item. */
+function buildItemListControl(context: BoardContext, component: SheetComponent, columns: readonly SheetListColumn[]): HTMLElement {
+  const items = (Array.from(context.actor.items?.values() ?? []) as any[]).sort((left, right) => (left.sort ?? 0) - (right.sort ?? 0) || String(left.name).localeCompare(String(right.name)));
+  const formula = component.formula?.trim();
+  const head = h("tr", {}, ...columns.map((column) => h("th", { scope: "col" }, column.label)), formula ? h("th", { "aria-label": "Rolar" }) : null, context.editable ? h("th", { "aria-label": "Remover" }) : null);
+  const body = h("tbody", {});
+  for (const item of items.slice(0, MAX_LIST_ROWS)) {
+    const row = itemRowValues(item, columns);
+    const update = (columnKey: string) => (next: ListCell) => {
+      const isName = columnKey === columns[0]?.key;
+      if (isName && String(next).trim() === "") return;
+      void item.update(isName ? { name: String(next).trim().slice(0, 256) } : { [`system.${columnKey}`]: next });
+    };
+    const tr = h("tr", { "data-item-id": item.id }, ...columns.map((column) => cellInput(column, row[column.key], context.editable, update(column.key))));
+    if (formula) tr.append(rollCell(context, component, formula, item.name, row));
+    if (context.editable) {
+      const remove = h("button", { type: "button", class: "md-icon-button danger", title: `Tirar "${item.name}" do inventário` }, h("i", { class: "fa-solid fa-xmark" }));
+      remove.addEventListener("click", () => void item.deleteDialog());
+      tr.append(h("td", { class: "md-list-action" }, remove));
+    }
+    body.append(tr);
+  }
+  const wrapper = h("div", { class: "md-list-wrapper" }, h("table", { class: "md-list" }, h("thead", {}, head), body));
+  if (items.length === 0) wrapper.append(h("p", { class: "hint md-empty" }, "Nenhum item no inventário. Arraste um item da aba Itens para a ficha."));
+  if (context.editable && items.length < MAX_LIST_ROWS) {
+    const add = h("button", { type: "button", class: "md-list-add" }, h("i", { class: "fa-solid fa-plus" }), " Item");
+    add.addEventListener("click", () => void context.actor.createEmbeddedDocuments("Item", [{ name: "Novo item", type: CONFIG.Item.documentClass.TYPES.find((type: string) => type !== "base") ?? "base" }]));
+    wrapper.append(add);
+  }
+  wrapper.addEventListener("change", (event) => event.stopPropagation());
+  return wrapper;
+}
+
 /** Repeatable rows (inventory, spells, attacks); each row can roll the table formula with `@linha.<coluna>`. */
 export function buildListControl(context: BoardContext, component: SheetComponent): HTMLElement | null {
   const key = component.key;
   const columns = component.columns ?? [];
   if (!key || columns.length === 0) return h("p", { class: "hint" }, "Tabela sem colunas.");
+  if (component.linkItems) return buildItemListControl(context, component, columns);
   const rows = readListRows(context.store.read(key), columns);
   const save = (next: ListRow[]) => void context.actor.update({ [context.store.pathOf(key)]: next });
   const formula = component.formula?.trim();
@@ -34,12 +81,7 @@ export function buildListControl(context: BoardContext, component: SheetComponen
   rows.forEach((row, rowIndex) => {
     const update = (columnKey: string) => (next: ListCell) => save(rows.map((entry, index) => (index === rowIndex ? { ...entry, [columnKey]: next } : entry)));
     const tr = h("tr", {}, ...columns.map((column) => cellInput(column, row[column.key], context.editable, update(column.key))));
-    if (formula) {
-      const roll = h("button", { type: "button", class: "md-roll", title: `Rolar ${formula}`, disabled: !context.actor.isOwner }, h("i", { class: "fa-solid fa-dice-d20" }));
-      const rowName = String(row[columns[0].key] ?? component.label ?? "");
-      roll.addEventListener("click", () => rollFromSheet(context.actor, formula, rowName, { ...context.extraRollData(), linha: row }));
-      tr.append(h("td", { class: "md-list-action" }, roll));
-    }
+    if (formula) tr.append(rollCell(context, component, formula, String(row[columns[0].key] ?? component.label ?? ""), row));
     if (context.editable) {
       const remove = h("button", { type: "button", class: "md-icon-button danger", title: "Remover linha" }, h("i", { class: "fa-solid fa-xmark" }));
       remove.addEventListener("click", () => save(rows.filter((_, index) => index !== rowIndex)));

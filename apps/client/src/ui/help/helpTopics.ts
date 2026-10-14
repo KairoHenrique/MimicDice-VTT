@@ -77,17 +77,17 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     steps: [
       "Todos podem desenhar. O desenho fica por cima de tudo, inclusive dos tokens.",
       "Escolha retângulo, elipse, mão livre ou texto e arraste no mapa.",
-      "Clique direito no seu desenho para apagá-lo.",
-      "O mestre pode apagar qualquer desenho e travar desenhos. Desenho travado não pode ser movido, editado nem apagado por jogadores.",
+      "Clique direito no seu desenho para mudar a cor, editar o texto ou apagá-lo. Duplo clique também abre a edição.",
+      "O mestre pode apagar qualquer desenho, travar os desenhos selecionados e escolher quem pode editar e mover cada um. Desenho travado não pode ser movido, editado nem apagado por jogadores.",
     ],
   },
   {
     id: "tool:lockAll",
-    title: "Travar todos os desenhos",
+    title: "Travar desenhos selecionados",
     icon: "fa-solid fa-lock",
     audience: "gm",
-    summary: "Congela de uma vez todos os desenhos da cena.",
-    steps: ["Um clique trava todos os desenhos da cena. Se todos já estiverem travados, o clique destrava.", "Para um desenho só, use o clique direito nele."],
+    summary: "Congela só os desenhos que você escolher.",
+    steps: ["Selecione os desenhos (ferramenta Selecionar, Shift+clique ou arrastando uma caixa) e clique no cadeado.", "Se todos os selecionados já estiverem travados, o clique destrava.", "Para um desenho só, também dá para usar o clique direito nele."],
   },
   {
     id: "tool:clear",

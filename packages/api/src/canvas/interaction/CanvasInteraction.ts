@@ -9,6 +9,7 @@ import type { Wall } from "../placeables/simplePlaceables";
 import { colorToNumber } from "../textures";
 import { CREATION_TOOLS, type CreationTool } from "./creationTools";
 import { handleCanvasDrop } from "./canvasDrop";
+import { paintCreationPreview } from "./creationPreview";
 
 const CLICK_TOLERANCE_PX = 4;
 const FREEHAND_SAMPLE_PX = 8;
@@ -16,13 +17,16 @@ const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 3;
 const GHOST_ALPHA = 0.6;
 const CONFIRM_OFFSET_PX = 18;
+const HOLD_TO_CREATE_MS = 150;
+const ENDPOINT_GRAB_PX = 14;
 
 type Session =
   | { kind: "pan"; startClient: Point; startPivot: Point; button: number }
   | { kind: "select"; origin: Point; additive: boolean }
   | { kind: "ruler"; origin: Point }
-  | { kind: "create"; origin: Point; tool: CreationTool; points: number[] }
-  | { kind: "move"; origin: Point; objects: PlaceableObject[] };
+  | { kind: "create"; origin: Point; tool: CreationTool; points: number[]; startedAt: number }
+  | { kind: "move"; origin: Point; objects: PlaceableObject[] }
+  | { kind: "endpoint"; wall: Wall; index: 0 | 1 };
 
 export type MovePathMode = "modifier" | "always" | "never";
 
@@ -83,6 +87,13 @@ export class CanvasInteraction {
   }
 
   beginObjectDrag(placeable: PlaceableObject, event: PIXI.FederatedPointerEvent): void {
+    if (placeable.document.documentName === "Wall") {
+      const index = this.#grabbedEndpoint(placeable as Wall, this.#toWorld(event));
+      if (index !== null) {
+        this.#session = { kind: "endpoint", wall: placeable as Wall, index };
+        return;
+      }
+    }
     const pool = placeable.controlled ? (placeable.layer.controlled as PlaceableObject[]) : [placeable];
     const objects = pool.filter((object) => object.canDrag());
     if (objects.length === 0) return;
@@ -116,7 +127,7 @@ export class CanvasInteraction {
     const tool = CREATION_TOOLS[layerName]?.[this.#activeTool()];
     if (tool && this.#mayCreate(tool.documentName)) {
       const origin = event.shiftKey ? world : this.canvas.grid.getSnappedPoint(world, { mode: tool.snapMode });
-      this.#session = { kind: "create", origin, tool, points: [world.x, world.y] };
+      this.#session = { kind: "create", origin, tool, points: [world.x, world.y], startedAt: performance.now() };
       return;
     }
     if (this.#activeTool() === "ruler") {
@@ -157,6 +168,55 @@ export class CanvasInteraction {
       case "ruler":
         this.#previewRuler(session.origin, this.canvas.grid.getSnappedPoint(world, { mode: "center" }));
         break;
+      case "endpoint":
+        this.#previewEndpoint(session, this.#wallPoint(world, event.shiftKey));
+        break;
+    }
+  }
+
+  #grabbedEndpoint(wall: Wall, world: Point): 0 | 1 | null {
+    if (!wall.controlled) return null;
+    const [ax, ay, bx, by] = wall.coords;
+    const reach = ENDPOINT_GRAB_PX / (this.canvas.stage.scale.x || 1);
+    if (Math.hypot(world.x - ax, world.y - ay) <= reach) return 0;
+    if (Math.hypot(world.x - bx, world.y - by) <= reach) return 1;
+    return null;
+  }
+
+  #wallPoint(world: Point, free: boolean): Point {
+    return free ? world : this.canvas.grid.getSnappedPoint(world, { mode: "corner" });
+  }
+
+  #endpointCoords(session: Extract<Session, { kind: "endpoint" }>, point: Point): number[] {
+    const coords = [...session.wall.coords];
+    coords[session.index * 2] = point.x;
+    coords[session.index * 2 + 1] = point.y;
+    return coords.map(Math.round);
+  }
+
+  #previewEndpoint(session: Extract<Session, { kind: "endpoint" }>, point: Point): void {
+    const [ax, ay, bx, by] = this.#endpointCoords(session, point);
+    session.wall.alpha = GHOST_ALPHA;
+    this.#drawOverlay((graphics) => {
+      graphics.lineStyle(4, 0x3b82f6, 1).moveTo(ax, ay).lineTo(bx, by);
+      graphics.lineStyle(0).beginFill(0x3b82f6).drawCircle(ax, ay, 6).drawCircle(bx, by, 6).endFill();
+    });
+  }
+
+  async #commitEndpoint(session: Extract<Session, { kind: "endpoint" }>, point: Point): Promise<void> {
+    const wall = session.wall;
+    if (wall.destroyed) return;
+    wall.alpha = 1;
+    const c = this.#endpointCoords(session, point);
+    const unchanged = c.every((value, index) => value === Math.round(wall.coords[index] ?? 0));
+    if (unchanged || (c[0] === c[2] && c[1] === c[3])) {
+      wall.refresh();
+      return;
+    }
+    try {
+      await wall.document.update({ c });
+    } catch {
+      if (!wall.destroyed) wall.refresh();
     }
   }
 
@@ -165,14 +225,7 @@ export class CanvasInteraction {
     const lastY = session.points[session.points.length - 1];
     if (Math.hypot(world.x - lastX, world.y - lastY) >= FREEHAND_SAMPLE_PX) session.points.push(world.x, world.y);
     const destination = freeSnap ? world : this.canvas.grid.getSnappedPoint(world, { mode: session.tool.snapMode });
-    const origin = session.origin;
-    this.#drawOverlay((graphics) => {
-      graphics.lineStyle(3, 0x3b82f6, 1);
-      if (session.tool.documentName === "Wall") graphics.moveTo(origin.x, origin.y).lineTo(destination.x, destination.y);
-      else if (session.tool.documentName === "MeasuredTemplate") graphics.beginFill(0xff6400, 0.25).drawCircle(origin.x, origin.y, Math.hypot(destination.x - origin.x, destination.y - origin.y)).endFill();
-      else if (session.points.length > 4 && session.tool.build(origin, destination, this.#creationContext(false), session.points)?.shape?.type === "p") graphics.drawPolygon(session.points);
-      else graphics.beginFill(0x3b82f6, 0.15).drawRect(Math.min(origin.x, destination.x), Math.min(origin.y, destination.y), Math.abs(destination.x - origin.x), Math.abs(destination.y - origin.y)).endFill();
-    });
+    this.#drawOverlay((graphics) => paintCreationPreview(graphics, session.tool, session.origin, destination, this.#creationContext(false), session.points, currentGame()?.user?.color));
   }
 
   /** Path from the token's current center to where it would land, with the distance it walks. */
@@ -244,6 +297,9 @@ export class CanvasInteraction {
         break;
       case "select":
         this.#commitSelection(session.origin, world, session.additive);
+        break;
+      case "endpoint":
+        void this.#commitEndpoint(session, this.#wallPoint(world, event.shiftKey));
         break;
       case "pan":
         this.#openBoardMenuOnRightClick(session, event, world);
@@ -329,9 +385,18 @@ export class CanvasInteraction {
     return walls.some((wall) => wall.blocks("move") && segmentsCross(from, to, wall.segment));
   }
 
+  /** Hold tools need a deliberate press: held long enough and dragged across at least half a grid square. */
+  #isDeliberateDrag(session: Extract<Session, { kind: "create" }>, destination: Point): boolean {
+    if (performance.now() - session.startedAt < HOLD_TO_CREATE_MS) return false;
+    const grid = this.canvas.grid;
+    const minimumLength = grid.isGridless ? session.tool.minimumDrag : grid.size / 2;
+    return Math.hypot(destination.x - session.origin.x, destination.y - session.origin.y) >= minimumLength;
+  }
+
   async #commitCreation(session: Extract<Session, { kind: "create" }>, destination: Point, world: Point): Promise<void> {
     const dragged = Math.hypot(world.x - session.origin.x, world.y - session.origin.y);
     if (dragged < session.tool.minimumDrag) return;
+    if (session.tool.requiresHold && !this.#isDeliberateDrag(session, destination)) return;
     const data = session.tool.build(session.origin, destination, this.#creationContext(true), session.points);
     if (!data) return;
     const prepared = await this.canvas.hud.prepareCreation(session.tool.documentName, data);

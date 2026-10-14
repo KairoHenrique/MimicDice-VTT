@@ -168,7 +168,16 @@ export interface FileBrowseResult {
   dirs: string[];
   files: string[];
   writable: boolean;
+  /** Where "Voltar" goes; null hides it. Absent means the plain parent folder. */
+  parent?: string | null;
+  /** Friendly names for folders whose path is an id (a player's folder). */
+  labels?: Record<string, string>;
+  /** The user's own folders here that they may share with the group, and whether each one is shared. */
+  shareable?: Record<string, boolean>;
 }
+
+export const shareFolderRequestSchema = z.object({ target: filePathSchema.min(1), shared: z.boolean() });
+export type ShareFolderRequest = z.infer<typeof shareFolderRequestSchema>;
 
 export interface FileUploadResult {
   path: string;

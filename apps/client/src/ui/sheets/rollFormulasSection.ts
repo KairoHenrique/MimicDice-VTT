@@ -1,4 +1,7 @@
+import type { SheetRollMode } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
+import { sheetRollModeFor } from "./npcRollPrivacy";
+import { applyRollMode } from "./rollModes";
 import { rollAsSpeaker } from "../dice/rollCommands";
 
 /** Free-form roll buttons live in the world flag scope so they work with any (or no) game system. */
@@ -21,12 +24,14 @@ function actorOf(document: any): any {
   return document.documentName === "Actor" ? document : (document.actor ?? null);
 }
 
-export function rollFromSheet(document: any, formula: string, label: string, extraRollData: Record<string, unknown> = {}): void {
+export function rollFromSheet(document: any, rawFormula: string, label: string, extraRollData: Record<string, unknown> = {}, mode?: SheetRollMode): void {
+  const formula = applyRollMode(rawFormula, mode);
   if (!Roll.validate(formula)) {
     ui.notifications.warn(`A fórmula "${formula}" não é uma rolagem válida.`);
     return;
   }
-  void rollAsSpeaker(formula, { actor: actorOf(document), flavor: label, extraRollData }).catch((error: Error) => ui.notifications.error(error.message));
+  const actor = actorOf(document);
+  void rollAsSpeaker(formula, { actor, flavor: label, extraRollData, rollMode: sheetRollModeFor(actor) }).catch((error: Error) => ui.notifications.error(error.message));
 }
 
 function formulaRow(document: any, entry: RollFormula, index: number, editable: boolean): HTMLElement {

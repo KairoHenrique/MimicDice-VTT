@@ -69,6 +69,14 @@ describe("locked drawings", () => {
     expect(() => policy(false).assertAuthoredNotLocked(player, drawingDefinition, { ...lockedDrawing, locked: false })).not.toThrow();
   });
 
+  it("lets only the author, the GM and the players the GM allowed edit a drawing", () => {
+    const gmText = { _id: "DrawingId0000002", author: gameMaster.userId, editors: [player.userId] };
+    const otherPlayer = { userId: "PlayerId00000002", role: USER_ROLES.PLAYER };
+    expect(() => policy(false).assertOwner(player, drawingDefinition, gmText, sceneAncestor)).not.toThrow();
+    expect(() => policy(false).assertOwner(otherPlayer, drawingDefinition, gmText, sceneAncestor)).toThrow(/Sem permissão/);
+    expect(() => policy(false).assertOwner(player, drawingDefinition, { ...gmText, editors: [] }, sceneAncestor)).toThrow(/Sem permissão/);
+  });
+
   it("leaves pinned tokens to the placement rule", () => {
     expect(() => policy(false).assertAuthoredNotLocked(player, tokenDefinition, { _id: "TokenId000000001", locked: true })).not.toThrow();
   });

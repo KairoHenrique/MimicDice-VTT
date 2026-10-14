@@ -40,6 +40,20 @@ export function selectRow<T extends string>(label: string, value: T, choices: Re
   return row(label, select, focusKey);
 }
 
+/** One choice out of a few, all visible at once (a radio group). */
+export function choiceRow<T extends string>(label: string, value: T, choices: ReadonlyArray<readonly [T, string]>, focusKey: string, onChange: (value: T) => void): HTMLElement {
+  const name = controlId();
+  const options = choices.map(([choice, text]) => {
+    const input = h("input", { type: "radio", name, value: choice, checked: choice === value });
+    input.dataset.focusKey = `${focusKey}-${choice}`;
+    input.addEventListener("change", () => {
+      if (input.checked) onChange(choice);
+    });
+    return h("label", { class: "md-insp-check" }, input, h("span", {}, text));
+  });
+  return h("fieldset", { class: "md-insp-choices" }, h("legend", {}, label), ...options);
+}
+
 export function checkRow(label: string, checked: boolean, focusKey: string, onChange: (checked: boolean) => void): HTMLElement {
   const input = h("input", { type: "checkbox", checked });
   input.dataset.focusKey = focusKey;

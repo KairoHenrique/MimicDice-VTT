@@ -30,8 +30,13 @@ function authoredViewLevel(source: PlainObject, viewer: Viewer): ViewLevel {
   return VIEW_LEVELS.HIDDEN;
 }
 
+/** Players the GM allowed to edit and move someone else's drawing. */
+function isGrantedEditor(source: PlainObject, viewer: Viewer): boolean {
+  return Array.isArray(source.editors) && source.editors.includes(viewer.userId);
+}
+
 function authoredOwnershipLevel(source: PlainObject, viewer: Viewer): number {
-  if (viewer.isGameMaster || isAuthor(source, viewer)) return DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+  if (viewer.isGameMaster || isAuthor(source, viewer) || isGrantedEditor(source, viewer)) return DOCUMENT_OWNERSHIP_LEVELS.OWNER;
   return authoredViewLevel(source, viewer) === VIEW_LEVELS.FULL ? DOCUMENT_OWNERSHIP_LEVELS.OBSERVER : DOCUMENT_OWNERSHIP_LEVELS.NONE;
 }
 

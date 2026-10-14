@@ -205,7 +205,7 @@ export const EMBEDDED_DOCUMENT_TYPES: Readonly<Record<string, DocumentTypeDefini
   AmbientLight: scenePlaceable("AmbientLight", "lights", { gmOnlyWhenField: "hidden" }),
   Note: scenePlaceable("Note", "notes"),
   /** Players may sketch and place templates; the author owns them, but only the GM locks or unlocks them. */
-  Drawing: scenePlaceable("Drawing", "drawings", { accessModel: "authored", createPermission: "DRAWING_CREATE", gmOnlyWhenField: "hidden", gmOnlyFields: ["locked"] }),
+  Drawing: scenePlaceable("Drawing", "drawings", { accessModel: "authored", createPermission: "DRAWING_CREATE", gmOnlyWhenField: "hidden", gmOnlyFields: ["locked", "editors"] }),
   MeasuredTemplate: scenePlaceable("MeasuredTemplate", "templates", { accessModel: "authored", createPermission: "TEMPLATE_CREATE", gmOnlyWhenField: "hidden", gmOnlyFields: ["locked"] }),
 });
 

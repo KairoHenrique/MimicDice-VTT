@@ -284,11 +284,46 @@ function compareManualOrder(left: Combatant, right: Combatant): number {
 const MANUAL_ORDER_FLAG = "manualTurnOrder";
 const ORDER_FLAG_SCOPE = "world";
 const SORT_STEP = 10;
+const JOINED_ROUND_FLAG = "joinedRound";
+
+/** Round in which a combatant joined an encounter already running; it acts last in that round only. */
+function joinedRound(combatant: Combatant): number | null {
+  const value = (combatant._source.flags as any)?.[ORDER_FLAG_SCOPE]?.[JOINED_ROUND_FLAG];
+  return typeof value === "number" ? value : null;
+}
+
+function moveToEnd(ordered: Combatant[], isMoved: (combatant: Combatant) => boolean): Combatant[] {
+  const moved = ordered.filter(isMoved);
+  return moved.length === 0 ? ordered : [...ordered.filter((combatant) => !moved.includes(combatant)), ...moved];
+}
 
 /** A combat encounter: turn order by initiative (or the GM's manual order), rounds, and the GM's controls to run it. */
 export class Combat extends ClientDocumentMixin(BaseCombat) {
   get hasManualOrder(): boolean {
     return this._source.flags?.[ORDER_FLAG_SCOPE]?.[MANUAL_ORDER_FLAG] === true;
+  }
+
+  /**
+   * Adds tokens that are not in the encounter yet. NPCs and enemies join hidden; joining a running encounter puts
+   * the newcomer at the end of the current round, and from the next round on it follows its initiative.
+   */
+  async addTokens(tokens: readonly any[]): Promise<Combatant[]> {
+    const present = new Set(Array.from(this.combatants?.values() ?? [], (combatant: any) => combatant.tokenId));
+    const firstSort = this.hasManualOrder ? this.nextManualSort : 0;
+    const additions = tokens
+      .filter((token) => !present.has(token.id))
+      .map((token, index) => ({
+        sort: this.hasManualOrder ? firstSort + index * SORT_STEP : 0,
+        tokenId: token.id,
+        sceneId: token.document.parent?.id ?? null,
+        actorId: token.document.actorId ?? null,
+        name: String(token.document.name ?? token.actor?.name ?? "Token"),
+        img: token.document.texture?.src ?? token.actor?.img ?? null,
+        hidden: token.document.hidden === true || !token.actor?.hasPlayerOwner,
+        ...(this.started ? { flags: { [ORDER_FLAG_SCOPE]: { [JOINED_ROUND_FLAG]: this.round } } } : {}),
+      }));
+    if (additions.length === 0) return [];
+    return ((await this.createEmbeddedDocuments("Combatant", additions)) ?? []) as Combatant[];
   }
 
   /** `sort` for a combatant joining a manual order, so it goes after everyone already placed. */
@@ -334,8 +369,7 @@ export class Combat extends ClientDocumentMixin(BaseCombat) {
   /** Back to ordering by initiative, keeping the turn with the same combatant. */
   async sortByInitiative(): Promise<unknown> {
     const currentId = this.combatant?.id ?? null;
-    const ordered: Combatant[] = Array.from(this.combatants?.values() ?? []) as Combatant[];
-    ordered.sort(compareTurnOrder);
+    const ordered = this.#orderedTurns(this.round, false);
     const turn = currentId ? ordered.findIndex((combatant) => combatant.id === currentId) : -1;
     return this.update({ [`flags.${ORDER_FLAG_SCOPE}.-=${MANUAL_ORDER_FLAG}`]: null, ...(this.started && turn >= 0 ? { turn } : {}) });
   }
@@ -348,7 +382,7 @@ export class Combat extends ClientDocumentMixin(BaseCombat) {
   }
 
   #turnUpdate(round: number, index: number): PlainObject {
-    const turns = this.turns;
+    const turns = this.#orderedTurns(round, this.hasManualOrder);
     const bounded = turns.length === 0 ? null : Math.min(Math.max(index, 0), turns.length - 1);
     return { round, turn: bounded, currentCombatantId: bounded === null ? null : turns[bounded].id };
   }
@@ -362,12 +396,16 @@ export class Combat extends ClientDocumentMixin(BaseCombat) {
   static actsLastRule: ((combatant: Combatant) => boolean) | null = null;
 
   get turns(): Combatant[] {
+    return this.#orderedTurns(this.round, this.hasManualOrder);
+  }
+
+  #orderedTurns(round: number, manual: boolean): Combatant[] {
     const combatants: Combatant[] = Array.from(this.combatants?.values() ?? []);
-    const ordered = combatants.sort(this.hasManualOrder ? compareManualOrder : compareTurnOrder);
     const actsLast = (this.constructor as typeof Combat).actsLastRule;
-    if (!actsLast) return ordered;
-    const last = ordered.filter((combatant) => actsLast(combatant));
-    return last.length === 0 ? ordered : [...ordered.filter((combatant) => !last.includes(combatant)), ...last];
+    let ordered = combatants.sort(manual ? compareManualOrder : compareTurnOrder);
+    if (actsLast) ordered = moveToEnd(ordered, actsLast);
+    if (this.started && !manual) ordered = moveToEnd(ordered, (combatant) => joinedRound(combatant) === round);
+    return ordered;
   }
 
   get isActive(): boolean {

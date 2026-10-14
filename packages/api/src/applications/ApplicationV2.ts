@@ -47,6 +47,8 @@ export interface RenderOptions {
   [extra: string]: any;
 }
 
+const MIN_WINDOW_WIDTH = 240;
+const MIN_WINDOW_HEIGHT = 120;
 const RENDER_STATES = Object.freeze({ ERROR: -3, CLOSING: -2, CLOSED: -1, NONE: 0, RENDERING: 1, RENDERED: 2 });
 
 export class ApplicationV2 extends EventTarget {
@@ -59,7 +61,7 @@ export class ApplicationV2 extends EventTarget {
     id: "app-{id}",
     classes: [],
     tag: "div",
-    window: { frame: true, positioned: true, title: "", icon: false, controls: [], minimizable: true, resizable: false, contentTag: "section", contentClasses: [] },
+    window: { frame: true, positioned: true, title: "", icon: false, controls: [], minimizable: true, resizable: true, contentTag: "section", contentClasses: [] },
     actions: {},
     position: {},
   };
@@ -224,6 +226,7 @@ export class ApplicationV2 extends EventTarget {
     this.#element.addEventListener("click", (event) => this.#onClickAction(event as PointerEvent));
     if (this.#element instanceof HTMLFormElement) this.#element.addEventListener("submit", (event) => void this.#onSubmitForm(event));
     if (this.hasFrame) this.#makeDraggable();
+    if (this.hasFrame && this.options.window.positioned && this.options.window.resizable) this.#makeResizable();
     this._insertElement(this.#element);
     applicationInstances.set(this.id, this);
   }
@@ -316,6 +319,34 @@ export class ApplicationV2 extends EventTarget {
       const startTop = this.position.top ?? 0;
       const onMove = (moveEvent: PointerEvent) => {
         this.setPosition({ left: startLeft + moveEvent.clientX - downEvent.clientX, top: Math.max(0, startTop + moveEvent.clientY - downEvent.clientY) });
+      };
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    });
+  }
+
+  #makeResizable(): void {
+    const frame = this.#element;
+    if (!frame) return;
+    const handle = document.createElement("div");
+    handle.className = "window-resize-handle";
+    handle.setAttribute("aria-hidden", "true");
+    handle.title = "Arraste para redimensionar";
+    frame.append(handle);
+    handle.addEventListener("pointerdown", (downEvent) => {
+      downEvent.preventDefault();
+      downEvent.stopPropagation();
+      this.bringToFront();
+      const start = frame.getBoundingClientRect();
+      frame.style.maxHeight = "none";
+      const onMove = (moveEvent: PointerEvent) => {
+        const width = Math.min(window.innerWidth - start.left, Math.max(MIN_WINDOW_WIDTH, start.width + moveEvent.clientX - downEvent.clientX));
+        const height = Math.min(window.innerHeight - start.top, Math.max(MIN_WINDOW_HEIGHT, start.height + moveEvent.clientY - downEvent.clientY));
+        this.setPosition({ width, height });
       };
       const onUp = () => {
         window.removeEventListener("pointermove", onMove);

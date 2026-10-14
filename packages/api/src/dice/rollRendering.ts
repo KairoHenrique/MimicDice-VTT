@@ -18,7 +18,13 @@ export interface RollRenderData {
 
 function renderTooltipPart(part: TooltipPart): string {
   const flavor = part.flavor ? `<span class="part-flavor">${escapeHTML(part.flavor)}</span>` : "";
-  const rolls = part.rolls.map((roll) => `<li class="roll ${escapeHTML(roll.classes)}">${escapeHTML(roll.result)}</li>`).join("");
+  const rolls = part.rolls
+    .map((roll, index) => {
+      const value = Number.parseFloat(roll.result);
+      const valueAttribute = Number.isFinite(value) ? ` data-value="${value}"` : "";
+      return `<li class="roll ${escapeHTML(roll.classes)}" data-index="${index}"${valueAttribute}>${escapeHTML(roll.result)}</li>`;
+    })
+    .join("");
   return (
     `<section class="tooltip-part"><div class="dice">` +
     `<header class="part-header flexrow"><span class="part-formula">${escapeHTML(part.formula)}</span>${flavor}` +

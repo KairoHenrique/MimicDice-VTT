@@ -116,6 +116,17 @@ export class LightingLayer extends PlaceablesLayer {
 export class NotesLayer extends PlaceablesLayer {
   static override documentName = "Note";
   static override layerOptions = { name: "notes", zIndex: 800 };
+
+  /** Note icons open their text with a click from any layer, so the layer never stops listening. */
+  protected override async _draw(): Promise<void> {
+    await super._draw();
+    this.objects.interactiveChildren = true;
+  }
+
+  protected override _deactivate(): void {
+    super._deactivate();
+    this.objects.interactiveChildren = true;
+  }
 }
 
 /** Grid lines over the scene rectangle; redrawn only when the scene changes. */

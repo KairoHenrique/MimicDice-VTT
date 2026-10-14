@@ -1,4 +1,5 @@
 import type { PlainObject } from "@tabbletop/common";
+import { LOOT_FLAG } from "@tabbletop/protocol";
 import { CONST } from "../../constants";
 import { fromUuidSync } from "../../documents/abstract/ClientDatabaseBackend";
 import { currentGame, currentUi } from "../../runtime";
@@ -28,7 +29,23 @@ export function actorTokenData(actor: any, x: number, y: number, canvas: any): P
   };
 }
 
-/** Turns supported drops into embedded documents: Actor -> Token, JournalEntry -> Note. */
+/** The GM leaves an item on the map as a one-square tile; a player next to it can pick it up into a character's inventory. */
+async function dropLoot(canvas: any, item: any, x: number, y: number): Promise<void> {
+  if (!currentGame()?.user?.isGM) {
+    currentUi()?.notifications?.warn("Só o mestre coloca itens no mapa.");
+    return;
+  }
+  const source = item._source ?? {};
+  const loot = { name: item.name, type: item.type, img: source.img ?? null, system: source.system ?? {}, flags: { core: { sourceId: item.uuid } } };
+  const size = canvas.grid.size;
+  const corner = canvas.grid.getSnappedPoint({ x: x - size / 2, y: y - size / 2 }, { mode: "corner" });
+  await canvas.scene.createEmbeddedDocuments("Tile", [
+    { x: corner.x, y: corner.y, width: size, height: size, texture: { src: source.img || "icons/svg/item-bag.svg" }, flags: { core: { [LOOT_FLAG]: loot } } },
+  ]);
+  currentUi()?.notifications?.info(`"${item.name}" está no mapa. Um jogador perto dele pode pegar com o botão direito.`);
+}
+
+/** Turns supported drops into embedded documents: Actor -> Token, Item -> loot tile, JournalEntry -> Note. */
 export async function handleCanvasDrop(canvas: any, data: PlainObject): Promise<void> {
   const document = typeof data.uuid === "string" ? fromUuidSync(data.uuid) : null;
   const x = Number(data.x);
@@ -42,6 +59,10 @@ export async function handleCanvasDrop(canvas: any, data: PlainObject): Promise<
     }
     await canvas.scene.createEmbeddedDocuments("Token", [actorTokenData(document, x, y, canvas)]);
     canvas.tokens?.activate();
+    return;
+  }
+  if (document.documentName === "Item") {
+    await dropLoot(canvas, document, x, y);
     return;
   }
   if (document.documentName === "JournalEntry") {
