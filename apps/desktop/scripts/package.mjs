@@ -59,6 +59,7 @@ async function packageApplication(desktopManifest) {
       electronVersion,
       asar: false,
       npmRebuild: false,
+      publish: null,
       directories: { output: releaseRoot },
       files: ["dist/**/*", "node_modules/**/*", "package.json"],
       extraResources: [{ from: clientDist, to: "client" }],
