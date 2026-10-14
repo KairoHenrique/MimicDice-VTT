@@ -1,7 +1,7 @@
 {
   "name": "@tabbletop/desktop",
   "productName": "MimicDice VTT",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "private": true,
   "description": "MimicDice VTT - mesa virtual para jogar com os amigos",
   "main": "dist/main.cjs",
@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@tabbletop/i18n": "*",
-    "@tabbletop/protocol": "*"
+    "@tabbletop/protocol": "*",
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

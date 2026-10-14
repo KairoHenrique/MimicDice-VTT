@@ -8,6 +8,7 @@ import { listInviteAddresses } from "./inviteAddresses";
 import { IPC_CHANNELS, type LauncherState, type ServerState } from "./ipcChannels";
 import { RoomsClient } from "./RoomsClient";
 import { ServerProcess } from "./ServerProcess";
+import { UpdateService } from "./UpdateService";
 import { WindowManager } from "./WindowManager";
 
 const MAX_CLIPBOARD_LENGTH = 500;
@@ -63,6 +64,7 @@ class DesktopApplication {
     launcherToken: this.#launcherToken,
   });
   readonly #windows = new WindowManager({ launcherHtml: this.#paths.launcherHtml, preload: this.#paths.preload, icon: this.#paths.windowIcon, tableUrl: this.#server.localUrl });
+  readonly #updates = new UpdateService();
   #serverState: ServerState = "starting";
   #serverError: string | null = null;
   #firewall: FirewallStatus = "missing";
@@ -74,8 +76,17 @@ class DesktopApplication {
     this.#windows.openLauncher();
     this.#server.onUnexpectedExit(() => this.#markServerFailed("O servidor foi encerrado inesperadamente. Veja o log em " + this.#paths.serverLog));
     app.on("before-quit", (event) => this.#handleBeforeQuit(event));
+    this.#updates.onChange(() => this.#windows.notifyLauncherChanged());
+    this.#updates.start();
     this.#firewall = await getFirewallStatus(this.#port);
     await this.#startServer();
+  }
+
+  async #installUpdate(): Promise<void> {
+    if (this.#updates.status.phase !== "ready" || this.#quitting) return;
+    this.#quitting = true;
+    await this.#server.stop();
+    if (!this.#updates.install()) app.quit();
   }
 
   focusLauncher(): void {
@@ -107,6 +118,7 @@ class DesktopApplication {
       invites: listInviteAddresses(this.#port),
       firewall: this.#firewall,
       version: app.getVersion(),
+      update: this.#updates.status,
     };
   }
 
@@ -131,6 +143,8 @@ class DesktopApplication {
     handle(IPC_CHANNELS.openDataFolder, async () => {
       await shell.openPath(this.#paths.dataPath);
     });
+    handle(IPC_CHANNELS.checkUpdate, () => this.#updates.check());
+    handle(IPC_CHANNELS.installUpdate, () => this.#installUpdate());
     this.#registerRoomHandlers(handle);
   }
 

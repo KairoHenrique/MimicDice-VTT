@@ -11,6 +11,8 @@ const bridge: DesktopBridge = {
   createRoom: (title: string) => ipcRenderer.invoke(IPC_CHANNELS.createRoom, title),
   openRoom: (worldId: string) => ipcRenderer.invoke(IPC_CHANNELS.openRoom, worldId),
   deleteRoom: (worldId: string) => ipcRenderer.invoke(IPC_CHANNELS.deleteRoom, worldId),
+  checkUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.checkUpdate),
+  installUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.installUpdate),
   onStateChanged: (listener: () => void) => {
     ipcRenderer.on(IPC_CHANNELS.stateChanged, () => listener());
   },

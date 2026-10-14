@@ -11,8 +11,18 @@ export const IPC_CHANNELS = Object.freeze({
   createRoom: "launcher:create-room",
   openRoom: "launcher:open-room",
   deleteRoom: "launcher:delete-room",
+  checkUpdate: "launcher:check-update",
+  installUpdate: "launcher:install-update",
   stateChanged: "launcher:changed",
 });
+
+export type UpdatePhase = "disabled" | "idle" | "checking" | "latest" | "downloading" | "ready" | "error";
+
+export interface UpdateStatus {
+  phase: UpdatePhase;
+  version?: string;
+  percent?: number;
+}
 
 export interface RoomSummary {
   id: string;
@@ -33,6 +43,7 @@ export interface LauncherState {
   invites: InviteAddress[];
   firewall: FirewallStatus;
   version: string;
+  update: UpdateStatus;
 }
 
 export interface DesktopBridge {
@@ -45,5 +56,7 @@ export interface DesktopBridge {
   createRoom(title: string): Promise<RoomsResult<{ id: string }>>;
   openRoom(worldId: string): Promise<RoomsResult<{ id: string }>>;
   deleteRoom(worldId: string): Promise<RoomsResult<{ id: string }>>;
+  checkUpdate(): Promise<void>;
+  installUpdate(): Promise<void>;
   onStateChanged(listener: () => void): void;
 }

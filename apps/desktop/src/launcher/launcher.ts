@@ -1,5 +1,5 @@
 import { detectLanguage, t, translatePage } from "@tabbletop/i18n";
-import type { DesktopBridge, LauncherState, RoomSummary } from "../ipcChannels";
+import type { DesktopBridge, LauncherState, RoomSummary, UpdateStatus } from "../ipcChannels";
 import type { InviteAddress } from "../inviteAddresses";
 
 declare global {
@@ -209,11 +209,37 @@ function bindRoomActions(): void {
   });
 }
 
+const UPDATE_FOOTER_TEXT: Partial<Record<UpdateStatus["phase"], string>> = {
+  checking: "Procurando atualização...",
+  latest: "Você está na versão mais recente.",
+  error: "Não foi possível procurar atualização.",
+};
+
+function updateCardText(update: UpdateStatus): string | null {
+  const version = update.version ?? "nova";
+  if (update.phase === "downloading") return t(`Baixando a versão ${version}: ${update.percent ?? 0}%`);
+  if (update.phase === "ready") return t(`A versão ${version} está pronta. Clique para reiniciar e atualizar. A mesa fecha por alguns segundos e abre de novo sozinha.`);
+  return null;
+}
+
+function renderUpdate(update: UpdateStatus): void {
+  const cardText = updateCardText(update);
+  byId("update-card").hidden = cardText === null;
+  byId("update-text").textContent = cardText ?? "";
+  const progress = byId<HTMLProgressElement>("update-progress");
+  progress.hidden = update.phase !== "downloading";
+  progress.value = update.percent ?? 0;
+  byId("install-update").hidden = update.phase !== "ready";
+  byId("update-footer").textContent = UPDATE_FOOTER_TEXT[update.phase] ?? "";
+  byId("check-update").hidden = !["idle", "latest", "error"].includes(update.phase);
+}
+
 async function refresh(): Promise<void> {
   const state = await bridge.getLauncherState();
   renderStatus(state);
   renderInvites(state);
   renderFirewall(state.firewall);
+  renderUpdate(state.update);
   byId("version").textContent = `v${state.version}`;
   const createButton = byId<HTMLFormElement>("room-create").querySelector<HTMLButtonElement>("button");
   if (createButton) createButton.disabled = state.serverState !== "running";
@@ -233,7 +259,18 @@ function bindActions(): void {
       firewallButton.disabled = false;
     }
   });
+  bindUpdateActions();
   bridge.onStateChanged(() => void refresh());
+}
+
+function bindUpdateActions(): void {
+  byId("check-update").addEventListener("click", () => void bridge.checkUpdate());
+  const installButton = byId<HTMLButtonElement>("install-update");
+  installButton.addEventListener("click", () => {
+    installButton.disabled = true;
+    installButton.textContent = t("Atualizando...");
+    void bridge.installUpdate();
+  });
 }
 
 /** The intro fades itself out; a click or Escape skips it, and it is removed so it never blocks the launcher. */

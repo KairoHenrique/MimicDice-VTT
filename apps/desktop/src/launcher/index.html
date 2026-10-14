@@ -32,6 +32,12 @@
         <button id="open-table" class="primary" type="button" disabled>Abrir a mesa (Mestre)</button>
       </section>
 
+      <section id="update-card" class="card update-card" aria-live="polite" hidden>
+        <p id="update-text"></p>
+        <progress id="update-progress" max="100" value="0" aria-label="Download da atualização" hidden></progress>
+        <button id="install-update" class="primary" type="button" hidden>Reiniciar e atualizar</button>
+      </section>
+
       <section class="card rooms-card">
         <h2>Salas (RPGs)</h2>
         <p class="hint">Cada sala é uma campanha separada, com cenas, fichas e jogadores próprios. Quem estiver na mesa é recarregado ao trocar.</p>
@@ -58,7 +64,11 @@
 
       <footer class="footer">
         <button id="open-data" class="link" type="button">Abrir pasta de dados</button>
-        <span id="version"></span>
+        <span class="footer-update">
+          <span id="update-footer" aria-live="polite"></span>
+          <button id="check-update" class="link" type="button" hidden>Procurar atualização</button>
+          <span id="version"></span>
+        </span>
       </footer>
     </main>
     <script src="launcher.js"></script>

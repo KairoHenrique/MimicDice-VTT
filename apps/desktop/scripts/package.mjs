@@ -59,7 +59,8 @@ async function packageApplication(desktopManifest) {
       electronVersion,
       asar: false,
       npmRebuild: false,
-      publish: null,
+      // Writes app-update.yml into the app and latest.yml next to the installer; uploading stays a manual step.
+      publish: [{ provider: "github", owner: "KairoHenrique", repo: "MimicDice-VTT", releaseType: "release" }],
       directories: { output: releaseRoot },
       files: ["dist/**/*", "node_modules/**/*", "package.json"],
       extraResources: [{ from: clientDist, to: "client" }],

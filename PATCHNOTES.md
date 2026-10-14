@@ -1,5 +1,9 @@
 # Notas de versão
 
+## 1.3.1
+
+- **Atualização automática:** o app procura uma versão nova ao abrir (e a cada 4 horas) e baixa sozinho em segundo plano. Quando terminar, aparece o aviso **Reiniciar e atualizar** na tela inicial. Se preferir não reiniciar na hora, a atualização é instalada quando você fechar o app. O rodapé tem o botão **Procurar atualização**. O download vem das releases oficiais no GitHub e o app confere o código de verificação (SHA-512) do instalador antes de instalar. Quem está na 1.3.0 ou anterior precisa instalar esta versão manualmente uma vez; daqui pra frente é automático.
+
 ## 1.3.0
 
 - **Habilidades:** a aba **Rolagens** da ficha virou **Habilidades**. Cada habilidade tem nome, descrição (a caixa de texto cresce e pode ser aumentada arrastando o canto) e quantas rolagens quiser, cada uma com o nome que o jogador ou o mestre escolher, por exemplo **Acerto** e **Efeito**. No chat a rolagem aparece como "Habilidade: Rolagem". As rolagens antigas viram habilidades automaticamente. Quem só vê a ficha lê as habilidades sem rolar.
