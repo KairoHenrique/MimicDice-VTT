@@ -307,6 +307,17 @@
 
 .roll-form-row select {
   flex: 1;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+.roll-form-row.message-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.roll-form-row.message-row .roll-submit {
+  flex: none;
 }
 
 /* Sheet roll buttons */

@@ -1,5 +1,43 @@
 # Notas de versão
 
+## 0.2.1
+
+### Puxar jogadores pelo botão direito
+
+- O botão "Puxar todos" saiu da barra do topo. Agora o mestre clica com o **botão direito num ponto vazio do mapa** e escolhe **Todos os jogadores** ou um jogador específico.
+- O **token do personagem vai para o ponto clicado**: se ele já está na cena, só se move; se está em outra cena, é trazido para esta; se ainda não existe, é criado. Vários tokens ficam lado a lado, sem empilhar.
+- A tela dos jogadores puxados vai junto para a cena e para o ponto escolhido.
+
+### Limite de visão dos jogadores
+
+- Novo botão **Visão** na barra do mestre: digite até quantos metros os jogadores enxergam a partir dos seus tokens (vazio ou 0 = sem limite).
+- Vale para todas as cenas e todos os jogadores. Paredes continuam bloqueando a visão, e o mestre sempre vê tudo.
+
+### Mesa
+
+- **Pausar cena:** o mestre cobre o mapa dos jogadores enquanto prepara algo. Dados, chat e fichas continuam funcionando.
+- A barra de cenas do topo foi removida. A barra recolhida mostra o nome da sala, e os grupos de botões ficaram alinhados.
+
+### Salas no launcher
+
+- **Excluir sala** direto no menu (os arquivos da pasta `rpgs` são mantidos).
+- A sala que já está aberta ganhou o botão **Entrar**, sem precisar digitar o endereço.
+
+### Tradução
+
+- Textos em inglês de sistemas e módulos (como Custom System Builder e Monk's Little Details) agora aparecem em português, sem precisar de internet.
+
+### Visual e usabilidade
+
+- Avisos repetidos se juntam num só (com contador ×N), no máximo 3 na tela.
+- Chat reorganizado: mensagem em cima, destinatário e modo de rolagem embaixo.
+- Botões do combate com nome, coroa para identificar o mestre na lista de jogadores e horário das mensagens no formato brasileiro.
+
+### Segurança
+
+- Exclusão de sala só pelo launcher local (token + limite de frequência) e nunca da sala aberta.
+- O pedido de puxar jogadores é validado com Zod (lista limitada de jogadores existentes) e só o mestre pode enviá-lo.
+
 ## 0.2.0
 
 ### Pings no mapa

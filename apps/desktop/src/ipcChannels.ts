@@ -10,6 +10,7 @@ export const IPC_CHANNELS = Object.freeze({
   listRooms: "launcher:list-rooms",
   createRoom: "launcher:create-room",
   openRoom: "launcher:open-room",
+  deleteRoom: "launcher:delete-room",
   stateChanged: "launcher:changed",
 });
 
@@ -43,5 +44,6 @@ export interface DesktopBridge {
   listRooms(): Promise<RoomsResult<RoomSummary[]>>;
   createRoom(title: string): Promise<RoomsResult<{ id: string }>>;
   openRoom(worldId: string): Promise<RoomsResult<{ id: string }>>;
+  deleteRoom(worldId: string): Promise<RoomsResult<{ id: string }>>;
   onStateChanged(listener: () => void): void;
 }

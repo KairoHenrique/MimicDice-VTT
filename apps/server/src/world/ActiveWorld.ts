@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import type { ConfiguredPermissions } from "@tabbletop/common";
-import { MAP_LOCKED_SETTING_KEY, type DocumentSource } from "@tabbletop/protocol";
+import { MAP_LOCKED_SETTING_KEY, SCENE_PAUSED_SETTING_KEY, type DocumentSource } from "@tabbletop/protocol";
 import { DocumentPermissionPolicy } from "../documents/DocumentPermissionPolicy";
 import { DocumentService } from "../documents/DocumentService";
 import { DocumentSourceValidator } from "../documents/DocumentSourceValidator";
@@ -56,7 +56,9 @@ export class ActiveWorld {
     const permissions = new DocumentPermissionPolicy(
       readConfiguredPermissions,
       (actorId) => actorStore?.get(actorId),
-      () => settings.readWorldValue<boolean>(MAP_LOCKED_SETTING_KEY) === true,    );
+      () => settings.readWorldValue<boolean>(MAP_LOCKED_SETTING_KEY) === true,
+      () => settings.readWorldValue<boolean>(SCENE_PAUSED_SETTING_KEY) === true,
+    );
     const doorAccess = new DoorAccessPolicy(permissions, readConfiguredPermissions, () => actorStore?.values() ?? []);
     const documents = new DocumentService(stores, new DocumentSourceValidator(systemModel, manifest.system), permissions, doorAccess);
     return new ActiveWorld(manifest, users, settings, documents, systemModel, rpgDirectory, database);
@@ -133,6 +135,14 @@ export class ActiveWorldHolder {
   async createAndSwitch(title: string, gameMasters: readonly UserDocument[]): Promise<ActiveWorld> {
     const manifest = await this.repository.createWorld(title);
     return this.switchTo(manifest.id, gameMasters);
+  }
+
+  /** The open world holds its database lock, so only closed worlds can be deleted. */
+  async deleteWorld(worldId: string): Promise<void> {
+    await this.#exclusive(async () => {
+      if (worldId === this.#activeWorld?.manifest.id) throw new Error("World is open");
+      await this.repository.deleteWorld(worldId);
+    });
   }
 
   async #exclusive<T>(task: () => Promise<T>): Promise<T> {

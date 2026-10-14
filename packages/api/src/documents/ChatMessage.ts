@@ -44,7 +44,7 @@ function restoreRolls(rawRolls: unknown): Roll[] {
 }
 
 function formatTimestamp(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return new Date(timestamp).toLocaleTimeString(currentGame()?.i18n?.lang ?? "pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
 export class ChatMessage extends ClientDocumentMixin(BaseChatMessage) {

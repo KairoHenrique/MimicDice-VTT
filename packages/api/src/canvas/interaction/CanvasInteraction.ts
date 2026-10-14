@@ -18,7 +18,7 @@ const GHOST_ALPHA = 0.6;
 const CONFIRM_OFFSET_PX = 18;
 
 type Session =
-  | { kind: "pan"; startClient: Point; startPivot: Point }
+  | { kind: "pan"; startClient: Point; startPivot: Point; button: number }
   | { kind: "select"; origin: Point; additive: boolean }
   | { kind: "ruler"; origin: Point }
   | { kind: "create"; origin: Point; tool: CreationTool; points: number[] }
@@ -97,7 +97,7 @@ export class CanvasInteraction {
     if (!this.canvas.ready) return;
     const world = this.#toWorld(event);
     if (event.button === 1 || event.button === 2) {
-      this.#session = { kind: "pan", startClient: { x: event.clientX, y: event.clientY }, startPivot: { x: this.canvas.stage.pivot.x, y: this.canvas.stage.pivot.y } };
+      this.#session = { kind: "pan", startClient: { x: event.clientX, y: event.clientY }, startPivot: { x: this.canvas.stage.pivot.x, y: this.canvas.stage.pivot.y }, button: event.button };
       return;
     }
     if (event.button !== 0) return;
@@ -233,9 +233,19 @@ export class CanvasInteraction {
       case "select":
         this.#commitSelection(session.origin, world, session.additive);
         break;
+      case "pan":
+        this.#openBoardMenuOnRightClick(session, event, world);
+        break;
       default:
         break;
     }
+  }
+
+  /** A right click on an empty spot (no drag) lets packages and the client offer actions for that point. */
+  #openBoardMenuOnRightClick(session: Extract<Session, { kind: "pan" }>, event: PIXI.FederatedPointerEvent, world: Point): void {
+    if (session.button !== 2) return;
+    if (Math.hypot(event.clientX - session.startClient.x, event.clientY - session.startClient.y) > CLICK_TOLERANCE_PX) return;
+    Hooks.callAll("canvasContextMenu", world, { x: event.clientX, y: event.clientY });
   }
 
   #commitSelection(origin: Point, world: Point, additive: boolean): void {

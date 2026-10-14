@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pullToSceneRequestSchema, setupRequestSchema } from "./requests";
+import { MAX_PULLED_USERS, pullToSceneRequestSchema, setupRequestSchema } from "./requests";
 
 describe("pullToSceneRequestSchema", () => {
   const sceneId = "abcdefghijklmnop";
@@ -12,6 +12,16 @@ describe("pullToSceneRequestSchema", () => {
   it("rejects zoom or coordinates outside the canvas limits", () => {
     expect(pullToSceneRequestSchema.safeParse({ sceneId, view: { x: 0, y: 0, scale: 50 } }).success).toBe(false);
     expect(pullToSceneRequestSchema.safeParse({ sceneId, view: { x: Number.POSITIVE_INFINITY, y: 0, scale: 1 } }).success).toBe(false);
+  });
+
+  it("accepts a pull aimed at chosen players only", () => {
+    expect(pullToSceneRequestSchema.safeParse({ sceneId, userIds: ["qrstuvwxyzabcdef"] }).success).toBe(true);
+  });
+
+  it("rejects an empty, oversized or malformed list of players", () => {
+    expect(pullToSceneRequestSchema.safeParse({ sceneId, userIds: [] }).success).toBe(false);
+    expect(pullToSceneRequestSchema.safeParse({ sceneId, userIds: Array.from({ length: MAX_PULLED_USERS + 1 }, () => "qrstuvwxyzabcdef") }).success).toBe(false);
+    expect(pullToSceneRequestSchema.safeParse({ sceneId, userIds: ["../etc"] }).success).toBe(false);
   });
 });
 

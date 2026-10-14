@@ -24,16 +24,18 @@ export class DocumentPermissionPolicy {
     private readonly readConfiguredPermissions: () => ConfiguredPermissions,
     private readonly findActor: (actorId: string) => DocumentSource | undefined = () => undefined,
     private readonly isMapLocked: () => boolean = () => false,
+    private readonly isScenePaused: () => boolean = () => false,
   ) {}
 
   isGameMaster(actor: DocumentActor): boolean {
     return isGameMasterRole(actor.role);
   }
 
-  /** While the GM keeps the map locked, players cannot create, move or delete anything inside a scene. */
+  /** While the GM keeps the map locked or the scene paused, players cannot create, move or delete anything inside a scene. */
   assertMapUnlocked(actor: DocumentActor, ancestors: readonly DocumentNode[]): void {
-    if (ancestors[0]?.definition.name !== "Scene" || this.isGameMaster(actor) || !this.isMapLocked()) return;
-    throw HttpError.forbidden("O mestre travou o mapa");
+    if (ancestors[0]?.definition.name !== "Scene" || this.isGameMaster(actor)) return;
+    if (this.isScenePaused()) throw HttpError.forbidden("A cena está pausada pelo mestre");
+    if (this.isMapLocked()) throw HttpError.forbidden("O mestre travou o mapa");
   }
 
   /** Objects the GM pinned in place (`locked`) stay put for players, even on tokens they own. */

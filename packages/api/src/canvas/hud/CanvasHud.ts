@@ -21,11 +21,15 @@ function knownItemNames(): string[] {
   return Array.from(names).sort((left, right) => left.localeCompare(right, "pt-BR")).slice(0, MAX_ITEM_SUGGESTIONS);
 }
 
-interface MenuEntry {
+export interface MenuEntry {
   label: string;
   icon: string;
-  onSelect: () => unknown;
+  onSelect?: () => unknown;
+  /** A non-clickable section title. */
+  heading?: boolean;
 }
+
+const MENU_VIEWPORT_MARGIN_PX = 8;
 
 const MAX_TEXT_LENGTH = 2000;
 
@@ -255,28 +259,50 @@ export class CanvasHud {
   }
 
   #openMenu(entries: MenuEntry[], event: PIXI.FederatedPointerEvent): void {
+    this.openMenuAt(entries, { x: event.clientX, y: event.clientY });
+  }
+
+  /** Opens a context menu at a screen point, kept inside the window. */
+  openMenuAt(entries: MenuEntry[], client: { x: number; y: number }): void {
     this.closeMenu();
     if (entries.length === 0) return;
     const menu = document.createElement("nav");
     menu.className = "canvas-context-menu";
     menu.setAttribute("role", "menu");
-    for (const entry of entries) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.setAttribute("role", "menuitem");
-      const icon = document.createElement("i");
-      icon.className = entry.icon;
-      button.append(icon, document.createTextNode(` ${entry.label}`));
-      button.addEventListener("click", () => {
-        this.closeMenu();
-        void entry.onSelect();
-      });
-      menu.append(button);
-    }
-    menu.style.left = `${Math.round(event.clientX)}px`;
-    menu.style.top = `${Math.round(event.clientY)}px`;
+    for (const entry of entries) menu.append(entry.heading ? this.#menuHeading(entry) : this.#menuButton(entry));
+    menu.style.left = `${Math.round(client.x)}px`;
+    menu.style.top = `${Math.round(client.y)}px`;
     document.body.append(menu);
+    const bounds = menu.getBoundingClientRect();
+    const maxLeft = window.innerWidth - bounds.width - MENU_VIEWPORT_MARGIN_PX;
+    const maxTop = window.innerHeight - bounds.height - MENU_VIEWPORT_MARGIN_PX;
+    menu.style.left = `${Math.round(Math.max(MENU_VIEWPORT_MARGIN_PX, Math.min(client.x, maxLeft)))}px`;
+    menu.style.top = `${Math.round(Math.max(MENU_VIEWPORT_MARGIN_PX, Math.min(client.y, maxTop)))}px`;
     this.#menu = menu;
+    menu.querySelector<HTMLButtonElement>("button")?.focus();
     setTimeout(() => document.addEventListener("pointerdown", this.#closeMenu, true), 0);
+  }
+
+  #menuButton(entry: MenuEntry): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.setAttribute("role", "menuitem");
+    const icon = document.createElement("i");
+    icon.className = entry.icon;
+    icon.setAttribute("aria-hidden", "true");
+    button.append(icon, document.createTextNode(` ${entry.label}`));
+    button.addEventListener("click", () => {
+      this.closeMenu();
+      void entry.onSelect?.();
+    });
+    return button;
+  }
+
+  #menuHeading(entry: MenuEntry): HTMLElement {
+    const heading = document.createElement("div");
+    heading.className = "menu-heading";
+    heading.setAttribute("role", "presentation");
+    heading.textContent = entry.label;
+    return heading;
   }
 }

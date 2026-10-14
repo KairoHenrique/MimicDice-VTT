@@ -45,6 +45,8 @@ export type CreateWorldRequest = z.infer<typeof createWorldRequestSchema>;
 export const activateWorldRequestSchema = z.object({ worldId: z.string().regex(/^[a-z0-9-]{1,64}$/) });
 export type ActivateWorldRequest = z.infer<typeof activateWorldRequestSchema>;
 
+export const deleteWorldRequestSchema = activateWorldRequestSchema;
+
 /** The table only distinguishes players from Game Masters; intermediate roles are not offered. */
 const assignableRoleSchema = z.union([z.literal(USER_ROLES.PLAYER), z.literal(USER_ROLES.GAMEMASTER)]);
 
@@ -85,7 +87,14 @@ export const canvasPingBroadcastSchema = canvasPingRequestSchema.extend({ userId
 export type CanvasPingBroadcast = z.infer<typeof canvasPingBroadcastSchema>;
 
 /** With `view`, players also get the GM's exact camera position and zoom. */
-export const pullToSceneRequestSchema = z.object({ sceneId: documentIdSchema, view: sceneViewSchema.optional() });
+export const MAX_PULLED_USERS = 50;
+
+/** Without `userIds` every connected player is pulled; with it, only those users. */
+export const pullToSceneRequestSchema = z.object({
+  sceneId: documentIdSchema,
+  view: sceneViewSchema.optional(),
+  userIds: z.array(documentIdSchema).min(1).max(MAX_PULLED_USERS).optional(),
+});
 export type PullToSceneRequest = z.infer<typeof pullToSceneRequestSchema>;
 
 export const installPackageRequestSchema = z.object({

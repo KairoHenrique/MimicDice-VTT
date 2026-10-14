@@ -1,0 +1,618 @@
+{
+  "CSB": {
+    "ActiveEffects": {
+      "AddToPredefinedButton": { "Text": "Adicionar aos efeitos ativos predefinidos" },
+      "ConfigureCounter": "Abrir configuração do contador",
+      "EffectPriorityLabel": "Prioridade do efeito",
+      "RemoveFromPredefinedButton": { "Text": "Remover dos efeitos ativos predefinidos" },
+      "UpdatePredefinedButton": { "Text": "Atualizar efeito ativo predefinido" }
+    },
+    "Attributes": {
+      "AttributeBarsDialog": { "Title": "Barras de atributo do ator" },
+      "EditAttributeBarsDialog": {
+        "MissingData": "Preencha nome, valor e máximo em cada barra de atributo",
+        "Title": "Configurar barras de atributo"
+      },
+      "EditHiddenAttributesDialog": {
+        "MissingData": "Preencha nome e fórmula em cada atributo",
+        "Title": "Configurar atributos ocultos"
+      },
+      "Formula": "Fórmula",
+      "HiddenAttributesDialog": { "Title": "Atributos ocultos" },
+      "Maximum": "Máximo",
+      "Name": "Nome",
+      "Value": "Valor"
+    },
+    "ChatCommands": {
+      "ActorNotFound": "Nenhum ator selecionado serve para esta rolagem",
+      "SheetAltRollCommand": "Fazer uma rolagem alternativa a partir de uma ficha",
+      "SheetRollCommand": "Fazer uma rolagem a partir de uma ficha"
+    },
+    "ComponentProperties": {
+      "ActiveEffectContainer": {
+        "ColumnAlign": "Alinhamento",
+        "ColumnEnabled": "Ativado",
+        "ColumnFormat": "Formato",
+        "ColumnLabel": "Rótulo",
+        "ColumnReadonly": "Somente leitura",
+        "Columns": {
+          "Active": { "LabelDefault": "Ativo", "Title": "Coluna de estado do efeito ativo" },
+          "Count": { "LabelDefault": "Contagem", "Title": "Coluna de contagem do efeito ativo" },
+          "Description": {
+            "Format": { "Full": "Descrição completa", "Short": "Só a primeira frase" },
+            "LabelDefault": "Descrição",
+            "Title": "Coluna de descrição do efeito ativo"
+          },
+          "Origin": { "LabelDefault": "Origem", "Title": "Coluna de origem do efeito ativo" },
+          "Ref": { "LabelDefault": "Nome", "Title": "Coluna de referência do efeito ativo" }
+        },
+        "ColumnSort": "Posição",
+        "DeleteActiveEffectDialog": {
+          "Content": "Tem certeza de que quer excluir este efeito ativo?",
+          "Title": "Excluir efeito ativo"
+        },
+        "FilterByTags": { "FieldLabel": "Etiquetas", "Title": "Filtrar efeitos ativos por etiquetas" },
+        "HideEmpty": "Ocultar vazio",
+        "NewActiveEffect": "Novo efeito ativo",
+        "ShowActiveEffectDeleteButton": "Mostrar botão de excluir efeito ativo",
+        "ShowConfirmationDialogOnActiveEffectDelete": "Pedir confirmação ao excluir efeito ativo",
+        "ShowCreateButton": "Mostrar botão de criar",
+        "ShowOnlyOwnEffects": "Ocultar efeitos de itens vinculados",
+        "StatusCounter": "Você pode usar a coluna de contagem instalando e ativando o módulo {url}",
+        "SuggestExistingEffects": "Sugerir efeitos mesmo que já existam na entidade",
+        "TableTitle": "Título"
+      },
+      "AdditionalCssClasses": "Classes CSS adicionais",
+      "AdvancedConfiguration": {
+        "EditSettings": "Configurações de edição",
+        "PositioningSettings": "Configurações de posição",
+        "RenderingSettings": "Configurações de exibição",
+        "Title": "Configuração avançada",
+        "VisibilitySettings": "Configurações de visibilidade"
+      },
+      "Alignment": {
+        "AlignCenter": "Centro",
+        "AlignJustify": "Justificado",
+        "AlignLeft": "Esquerda",
+        "AlignRight": "Direita"
+      },
+      "AllowFormula": "Permite fórmulas",
+      "AllowFormulaCreateTimeOnly": "Só vale na criação (sem atualização automática)",
+      "CheckedByDefault": "Marcado por padrão",
+      "ComponentDialog": {
+        "Delete": { "Content": "Tem certeza de que quer excluir este componente?", "Title": "Excluir componente" },
+        "Edit": { "Title": "Editar componente" }
+      },
+      "ComponentKey": "Chave",
+      "ComponentKeyWarning": "Sua chave é uma palavra reservada do sistema. Usar essa chave pode causar resultados inesperados.",
+      "ComponentType": {
+        "ActiveEffectContainer": "Exibidor de efeitos ativos",
+        "Checkbox": "Caixa de seleção",
+        "Component": "Componente",
+        "ConditionalModifierList": "Seletor de modificadores condicionais",
+        "Dropdown": "Lista suspensa",
+        "DynamicTable": "Tabela dinâmica",
+        "ExtensibleTable": "Tabela extensível",
+        "ItemContainer": "Exibidor de itens",
+        "Label": "Rótulo",
+        "Meter": "Medidor",
+        "MirrorComponent": "Componente espelho",
+        "NumberField": "Campo numérico",
+        "Panel": "Painel",
+        "Picture": "Imagem",
+        "RadioButton": "Botão de opção",
+        "RichTextArea": "Área de texto formatado",
+        "SectionTitle": "Tipo",
+        "Tab": "Aba",
+        "TabbedPanel": "Painel com abas",
+        "Table": "Tabela",
+        "TextField": "Campo de texto"
+      },
+      "ConditionalModifierList": {
+        "DisplayInfoIcon": "Mostrar ícone de informação",
+        "FilterModifierGroup": "Filtrar grupos de modificadores",
+        "GroupColumnAlign": "Alinhamento da coluna de grupo",
+        "GroupColumnName": "Nome da coluna de grupo",
+        "GroupColumnNameDefault": "Grupo",
+        "GroupFilterFormula": "Fórmula",
+        "GroupFilterFormulaTitle": "A fórmula deve retornar os nomes dos grupos separados por vírgula (,). Se preenchida, substitui a seleção das caixas.",
+        "SelectGroup": "Selecionar grupos (deixe vazio para todos)",
+        "SelectionColumnAlign": "Alinhamento da coluna de seleção",
+        "SelectionColumnName": "Nome da coluna de seleção",
+        "SelectionColumnNameDefault": "Selecionado"
+      },
+      "DefaultValue": "Valor padrão",
+      "Dropdown": {
+        "OptionsOrigin": {
+          "Custom": "Personalizado",
+          "DefaultValueTitle": "Esta será a chave selecionada na criação. Sem ela, uma opção vazia é adicionada automaticamente à lista",
+          "DynamicTable": "Tabela dinâmica",
+          "DynamicTableKey": "Chave da tabela dinâmica",
+          "DynamicTableOptionKey": "Chave da coluna para as chaves",
+          "DynamicTableOptionLabel": "Chave da coluna para os rótulos",
+          "ExpectedValueType": "Tipo de valor esperado: lista (ou texto com valores separados por vírgula)",
+          "Formula": "Fórmula",
+          "FormulaForKeyOption": "Fórmula para as chaves",
+          "FormulaForLabelOption": "Fórmula para os rótulos",
+          "IfNotSet": "Deixe vazio se os rótulos forem iguais às chaves",
+          "Key": "Chave",
+          "Label": "Rótulo",
+          "Options": "Opções",
+          "SectionTitle": "Origem"
+        }
+      },
+      "DynamicTable": {
+        "AddMultipleRowsDialog": {
+          "AddMultipleRows": "Adicionar várias linhas",
+          "HowManyRows": "Quantas linhas?",
+          "RowCountError": "O número de linhas deve ser um inteiro positivo."
+        },
+        "CanAddRow": "Permitir que jogadores adicionem linhas?",
+        "ConfirmDialogOnDelete": "Pedir confirmação ao excluir linha",
+        "DeleteRowDialog": { "Content": "Tem certeza de que quer excluir esta linha?", "Title": "Excluir linha" },
+        "ReadonlyPredefined": "Deixar esta coluna somente leitura nas linhas predefinidas",
+        "ReadonlyPredefinedInfo": "Esta coluna fica somente leitura nas linhas predefinidas, e os valores são atualizados ao recarregar o modelo"
+      },
+      "EditableFormulaDescription": "O componente fica editável se a fórmula resultar em verdadeiro.",
+      "Errors": {
+        "AlphanumericPatternError": "\"{PROPERTY_NAME}\" deve conter apenas letras maiúsculas, minúsculas e sublinhados",
+        "DropdownOptionValidationError": "Toda opção da lista suspensa precisa de uma chave",
+        "DynamicTableAutoFilterValidationError": "Informe um valor para {KEY} antes de salvar",
+        "NotGreaterThanZeroError": "\"{PROPERTY_NAME}\" deve ser maior que 0",
+        "NotUniqueError": "\"{PROPERTY_NAME}\" deve ser único",
+        "RequiredFieldError": "\"{PROPERTY_NAME}\" é obrigatório"
+      },
+      "EscapeHTML": "Escapar HTML no modelo?",
+      "EscapeHTMLDescription": "Quando marcado, o HTML das opções do componente não é interpretado e aparece como texto. Útil quando fórmulas montam o HTML.",
+      "ExtensibleTable": {
+        "Alignment": "Alinhamento",
+        "ColumnName": "Nome da coluna",
+        "ColumnNameBold": "Nomes das colunas em negrito",
+        "ColumnSort": { "SortLeft": "Mover componente para a esquerda", "SortRight": "Mover componente para a direita" },
+        "DisplayColumnName": "Mostrar nomes das colunas",
+        "HiddenColumn": { "Key": "Chave", "Title": "Colunas ocultas", "Value": "Valor" },
+        "LabelWhenEmpty": "Texto exibido quando vazio",
+        "Sort": {
+          "AddSortingCriteria": "Adicionar critério de ordenação",
+          "Auto": "Automático",
+          "ColumnKey": "Chave da coluna",
+          "Disabled": "Desativado",
+          "Manual": "Manual",
+          "Operator": "Operador",
+          "SortOptions": "Opções de ordenação",
+          "Title": "Ordenar entradas",
+          "Value": "Valor"
+        },
+        "SortOperator": { "Ascending": "Crescente", "Descending": "Decrescente", "Equals": "==", "NotEquals": "!=" }
+      },
+      "InputComponent": {
+        "CustomSizeInvalid": "O tamanho personalizado deve ser um inteiro maior ou igual a 5",
+        "Label": "Rótulo"
+      },
+      "ItemContainer": {
+        "AddItemDialog": { "DefaultButton": "Criar item", "DefaultName": "Novo item", "DefaultTitle": "Criar novo item" },
+        "DefaultTemplateNotSet": "Erro ao criar item: o modelo padrão deste exibidor de itens não foi definido",
+        "DeleteItemDialog": { "Content": "Tem certeza de que quer excluir este item?", "Title": "Excluir item" },
+        "FilterItem": "Filtrar itens",
+        "FilterItemDesc": "Fórmula",
+        "HideEmpty": "Ocultar vazio",
+        "ItemCreationSettings": {
+          "CreateItemDialogButton": "Texto do botão de criar item",
+          "CreateItemDialogButtonTooltip": "Usado como texto do botão de confirmação da janela de criação de item",
+          "CreateItemDialogTitle": "Título da janela de criar item",
+          "CreateItemDialogTitleTooltip": "Usado como título da janela de criação de item",
+          "DefaultTemplate": "Modelo padrão",
+          "DefaultTemplateTooltip": "Este modelo é aplicado a todo item criado por este exibidor de itens",
+          "NewItemDefaultName": "Nome padrão do novo item",
+          "NewItemDefaultNameTooltip": "Usado como sugestão de nome para um novo item criado neste exibidor de itens",
+          "ShowItemCreateButton": "Mostrar botão de criar",
+          "ShowTemplateList": "Mostrar lista de modelos",
+          "ShowTemplateListTooltip": "Ao criar um item por este exibidor, a janela pergunta qual modelo aplicar entre os permitidos",
+          "Title": "Criação de item"
+        },
+        "ItemRefColAlign": "Alinhamento da coluna de referência do item",
+        "ItemRefColLabel": "Rótulo da coluna de referência do item",
+        "ItemRefColLabelDefault": "Nome",
+        "SelectTemplate": "Selecionar modelos",
+        "ShowConfirmationDialogOnItemDelete": "Pedir confirmação ao excluir item",
+        "ShowItemDeleteButton": "Mostrar botão de excluir",
+        "ShowItemStatus": "(Só o mestre) Mostrar estado do item",
+        "TableTitle": "Título"
+      },
+      "Label": {
+        "Actions": {
+          "AddAltAsMacro": "Adicionar alternativa como macro",
+          "AddAsMacro": "Adicionar como macro",
+          "CopyAltChatCommand": "Copiar comando de chat alternativo",
+          "CopyAltMacroScript": "Copiar script de macro alternativo",
+          "CopyChatCommand": "Copiar comando de chat",
+          "CopyChatCommandFailure": "Copie o comando na caixa abaixo. Depois cole no chat ou use em uma macro de chat.",
+          "CopyChatCommandSuccess": "Comando de chat copiado! Agora é só colar no chat ou usar em uma macro de chat!",
+          "CopyMacroScript": "Copiar script de macro",
+          "CopyMacroScriptFailure": "Copie o script na caixa abaixo. Depois use em uma macro de script.",
+          "CopyMacroScriptSuccess": "Script de macro copiado! Agora é só usar em uma macro de script!"
+        },
+        "AddMacroDialog": {
+          "MacroName": "Nome da macro:",
+          "MacroNameError": "Informe um nome",
+          "MacroPageError": "Informe uma página entre 1 e 5",
+          "MacroSlot": "Espaço da macro:",
+          "MacroSlotError": "Informe um espaço entre 0 e 9",
+          "MacroSlotNumber": "Espaço:",
+          "MacroSlotPage": "Página:",
+          "Title": "Adicionar macro"
+        },
+        "AltRollMessage": "Mensagem da rolagem alternativa",
+        "AltRollMessageDescription": "Acionada com Shift + clique",
+        "FontAwesomeIconDescription": "Você pode usar nomes de ícones do Font Awesome, como 'dice-d20'. Veja o site deles para conhecer os ícones",
+        "Icon": "Ícone",
+        "LabelStyle": {
+          "Boldtext": "Negrito",
+          "Button": "Botão",
+          "Default": "Padrão",
+          "SectionTitle": "Estilo",
+          "Subtitle": "Subtítulo",
+          "Title": "Título"
+        },
+        "LabelText": "Texto",
+        "Prefix": "Prefixo",
+        "RollMessage": "Mensagem da rolagem",
+        "SendRollMessageToChat": "Enviar para o chat",
+        "Suffix": "Sufixo",
+        "UseRichTextEditor": "Editor de texto formatado"
+      },
+      "Meter": {
+        "HighValue": "Alto",
+        "LowValue": "Baixo",
+        "Maximum": "Máx.",
+        "Minimum": "Mín.",
+        "OptimumValue": "Ideal",
+        "TextDisplay": {
+          "None": "Nenhum",
+          "SectionTitle": "Exibição do texto: ",
+          "Value": "Mostrar valor",
+          "ValueAndMaximum": "Mostrar valor sobre o máximo",
+          "ValueAsPercentage": "Mostrar valor em porcentagem"
+        },
+        "Value": "Valor"
+      },
+      "MinimumEditRole": "Papel mínimo",
+      "MinimumPermission": "Permissão mínima",
+      "MinimumRole": "Papel mínimo",
+      "MirrorComponent": {
+        "TargetKey": "Chave de destino",
+        "TargetKeyDescription": "Chave do componente do item a espelhar. Não inclua o prefixo \"item.\" usado nas fórmulas dos outros campos do exibidor de itens."
+      },
+      "NumberField": {
+        "AllowDecimal": "Permitir número decimal",
+        "AllowRelativeModification": "Permitir modificação relativa",
+        "AllowRelativeModificationDescription": "Digitar '+5' soma 5 ao valor atual, por exemplo",
+        "ControlsCustomIncrements": {
+          "Description": "Lista de números separados por vírgula usados como botões que alteram o valor",
+          "Label": "Incrementos personalizados"
+        },
+        "ControlStyle": { "FullControl": "Controles completos", "Hover": "Mostrar ao passar o mouse", "SectionTitle": "Estilo dos controles" },
+        "DisplayStyle": {
+          "DisplayAsSlider": "Mostrar como controle deslizante",
+          "DisplayAsTextField": "Mostrar como campo de texto",
+          "SectionTitle": "Exibição do campo numérico"
+        },
+        "MaxValue": "Máx.",
+        "MinValue": "Mín.",
+        "ShowFieldControls": "Mostrar controles do campo",
+        "ShowFieldControlsDescription": "mostra botões '+' e '-' nas laterais"
+      },
+      "Panel": {
+        "Collapsible": {
+          "No": "Não",
+          "SectionTitle": "Recolhível?",
+          "SectionTitleDefault": "Recolhido por padrão?",
+          "Title": "Configurações de recolher",
+          "Yes": "Sim"
+        },
+        "PanelAlign": { "SectionTitle": "Alinhamento horizontal" },
+        "PanelLayout": {
+          "GridOf10": "Grade de 10 colunas",
+          "GridOf11": "Grade de 11 colunas",
+          "GridOf12": "Grade de 12 colunas",
+          "GridOf2": "Grade de 2 colunas",
+          "GridOf3": "Grade de 3 colunas",
+          "GridOf4": "Grade de 4 colunas",
+          "GridOf5": "Grade de 5 colunas",
+          "GridOf6": "Grade de 6 colunas",
+          "GridOf7": "Grade de 7 colunas",
+          "GridOf8": "Grade de 8 colunas",
+          "GridOf9": "Grade de 9 colunas",
+          "Horizontal": "Horizontal",
+          "SectionTitle": "Layout",
+          "Vertical": "Vertical"
+        },
+        "PanelTitle": "Título",
+        "PanelTitleStyle": "Estilo do título",
+        "PanelVerticalAlign": { "SectionTitle": "Alinhamento vertical" }
+      },
+      "Picture": {
+        "Height": "Altura (px)",
+        "Sizing": {
+          "NoDimension": "Sem tamanho informado, a imagem aparece no tamanho original.",
+          "OneDimension": "Informando só largura ou só altura, a imagem se ajusta a essa medida e mantém a proporção.",
+          "TwoDimensions": "Informando largura e altura, a imagem é redimensionada para as duas medidas."
+        },
+        "Width": "Largura (px)"
+      },
+      "Positionning": {
+        "ColSpan": "Colunas ocupadas",
+        "RowSpan": "Linhas ocupadas",
+        "Title": "Posição do componente (só funciona em painel com layout de grade e em tabelas)"
+      },
+      "RadioButton": { "Group": "Grupo", "GroupDescription": "Usado como chave nas fórmulas", "Value": "Valor" },
+      "Size": {
+        "Auto": "Automático",
+        "Custom": "Personalizado",
+        "CustomSizeTitle": "Tamanho personalizado",
+        "Gigantic": "Gigantesco",
+        "Large": "Grande",
+        "Larger": "Maior",
+        "Medium": "Médio",
+        "SectionTitle": "Tamanho",
+        "Small": "Pequeno",
+        "Smaller": "Menor",
+        "Tiny": "Minúsculo"
+      },
+      "Tab": {
+        "Dialog": { "MissingData": "Nome e chave não podem ficar vazios", "TitleCreate": "Nova aba", "TitleEdit": "Editar aba {TAB_KEY}" },
+        "EnterNameAndKey": "Informe o nome e a chave da aba.",
+        "MinimumPermission": "Permissão mínima para ver a aba",
+        "MinimumRole": "Papel mínimo para ver a aba",
+        "NameAndKeyDescription": "O nome pode ser qualquer um; a chave deve ter letras minúsculas e números e ser única entre as abas.",
+        "TabKey": "Chave da aba",
+        "TabName": "Nome da aba",
+        "TabTooltip": "Dica da aba (aparece ao passar o mouse no nome)",
+        "VisibiltyFormulaDescription": "Fórmula sem ${}$. A aba fica visível se a fórmula resultar em verdadeiro."
+      },
+      "TabbedPanel": {
+        "AddTab": "Adicionar nova aba",
+        "DeleteTab": "Excluir aba atual",
+        "EditTab": "Editar aba atual",
+        "SortTabToLeft": "Mover aba para a esquerda",
+        "SortTabToRight": "Mover aba para a direita"
+      },
+      "Table": {
+        "ColCount": "Número de colunas",
+        "RowCount": "Número de linhas",
+        "TableLayout": "Layout",
+        "TableLayoutDescription": "Para cada coluna, informe se fica alinhada à esquerda (l), à direita (r) ou centralizada (c). Exemplo para 4 colunas: 'cllr'"
+      },
+      "TextArea": {
+        "Dialog": { "Title": "Editor de texto" },
+        "Style": {
+          "DialogEditor": "Mostrar na ficha e editar em janela",
+          "IconOnly": "Mostrar e editar em janela",
+          "InSheetEditor": "Mostrar e editar na ficha",
+          "SectionTitle": "Estilo"
+        }
+      },
+      "TextField": {
+        "AllowedCharacterList": "Caracteres permitidos",
+        "AutoComplete": "Fórmula de preenchimento automático",
+        "AutoCompleteDescription": "Valores de preenchimento automático separados por vírgula (,). Pode conter fórmulas.",
+        "MaxLength": "Tamanho máximo"
+      },
+      "Tooltip": "Dica",
+      "VerticalAlignment": { "AlignBottom": "Embaixo", "AlignCenter": "Centro", "AlignTop": "Em cima" },
+      "VisibiltyFormula": "Fórmula",
+      "VisibiltyFormulaDescription": "O componente fica visível se a fórmula resultar em verdadeiro.",
+      "WithoutDelimiters": "Sem os delimitadores de fórmula ${}$"
+    },
+    "Display": {
+      "DefaultHeight": "Altura",
+      "DefaultWidth": "Largura",
+      "EditDialog": { "DefaultValues": "Valores padrão", "Title": "Editar configurações de exibição" },
+      "PreventSheetResizing": "Impedir redimensionar a ficha",
+      "ProfilPictureSize": "Tamanho da imagem",
+      "SheetSize": "Tamanho da ficha"
+    },
+    "Export": {
+      "ExportButton": "Exportar modelos (JSON)",
+      "ExportDialog": { "Action": "Exportar", "Subtitle": "Selecione os modelos para exportar:", "Title": "Selecionar modelos" },
+      "ImportButton": "Importar modelos (JSON)",
+      "ImportDialog": { "Content": "Importação concluída. A janela será recarregada.", "Title": "Importação concluída" }
+    },
+    "Formula": {
+      "Default": "Padrão",
+      "ERROR": "ERRO",
+      "Is": "É",
+      "NewValue": "Novo valor",
+      "Operator": "Operador",
+      "PREFIXERROR": "ERRO DE PREFIXO",
+      "Property": "Propriedade",
+      "ReplaceWith": "Substituir por",
+      "Search": "Buscar",
+      "SUFFIXERROR": "ERRO DE SUFIXO",
+      "Target": "Alvo",
+      "Where": "Onde"
+    },
+    "Items": {
+      "EmbeddedItemsFolderDescription": "Esta pasta contém os itens incorporados em itens do jogo (itens que não estão em um ator)"
+    },
+    "Modifier": {
+      "ActiveModifier": "ativo",
+      "ConversionDialog": {
+        "Checkbox": "Não mostrar este aviso de novo (há uma configuração do sistema para mostrá-lo outra vez)",
+        "CheckText": "<p>A partir da versão 4.5.0, os modificadores de item e de efeito de estado foram substituídos por efeitos ativos e serão removidos na versão 6.0.0.</p><p>O sistema pode verificar se existem modificadores no seu mundo, mas isso pode deixar o carregamento mais lento. Quer verificar?</p><p><b>Atenção: faça um backup dos seus dados antes de converter.</b></p>",
+        "OpenStatusConfiguration": "Os modificadores de efeitos de estado foram convertidos em efeitos ativos. Revise a configuração de efeitos de estado para vincular os efeitos ativos corretos",
+        "Text": "<p>Foram encontrados modificadores no seu sistema.</p><p>Quer convertê-los automaticamente em efeitos ativos?</p><p><b>Atenção: faça um backup dos seus dados antes de converter.</b></p>"
+      },
+      "DefaultModifierGroupName": "Modificadores",
+      "Description": "Desc.",
+      "EditDialog": {
+        "DeprecationWarning": "A partir da versão 4.5.0, os modificadores de item e de efeito de estado foram substituídos por efeitos ativos e serão removidos na versão 6.0.0.",
+        "MissingData": "Preencha chave e fórmula em cada modificador",
+        "ModifierCount": "{COUNT} modificadores",
+        "Title": "Configurar modificadores"
+      },
+      "Formula": "Fórmula do valor",
+      "Group": "Grupo",
+      "ItemModifiers": "Modificadores do item",
+      "Key": "Chave",
+      "Operator": "Op.",
+      "PassiveModifier": "passivo",
+      "Priority": "Prior.",
+      "TemplateModifiers": "Modificadores do modelo"
+    },
+    "ProgressBar": {
+      "ReloadingTemplates": "CSB: {NAME} recarregado ({UUID}); {CURRENT} / {MAX}",
+      "ReloadingTemplatesFinished": "CSB: modelos recarregados; {MAX} documentos atualizados"
+    },
+    "ReloadTemplates": {
+      "ActorsInGameDirectory": "Itens vinculados a atores do diretório do jogo",
+      "GameDirectory": "{DOCUMENT_TYPE} no diretório do jogo",
+      "ItemScenes": "Itens vinculados a tokens destas cenas",
+      "Reload": "Recarregar",
+      "Scenes": "Tokens destas cenas",
+      "SceneSelect": { "All": "Todas as cenas", "Current": "Cena atual", "None": "Nenhum token" },
+      "SelectReloadPlaces": "Selecione {DOCUMENT_TYPE} para recarregar"
+    },
+    "Settings": {
+      "CustomActiveEffects": {
+        "Hint": "Configure os efeitos ativos predefinidos que serão sugeridos nas entidades",
+        "Name": "Configurar efeitos ativos"
+      },
+      "CustomStatusEffects": {
+        "EffectName": "Nome",
+        "Hint": "Configure os ícones de efeitos de estado rápidos dos tokens e o comportamento de cada um",
+        "Icon": "Ícone",
+        "Id": "ID",
+        "LinkedActiveEffect": "Efeito ativo vinculado",
+        "Name": "Configurar efeitos de estado",
+        "ResetDialog": {
+          "Content": "Quer mesmo restaurar a configuração de efeitos de estado para o padrão?",
+          "Title": "Restaurar configuração de efeitos de estado?"
+        },
+        "SpecialStatusEffectInvalid": "O efeito de estado especial {effect} é inválido. Nenhum efeito foi configurado ou o efeito configurado não existe.",
+        "SpecialStatusEffects": {
+          "BLIND": "CEGO",
+          "BURROW": "ESCAVANDO",
+          "Caption": "Estes efeitos são usados em vários lugares da mesa. Garanta que todos estejam ligados a um efeito de estado.",
+          "DEFEATED": "DERROTADO",
+          "FLY": "VOANDO",
+          "HOVER": "PAIRANDO",
+          "INVISIBLE": "INVISÍVEL",
+          "Title": "Efeitos de estado especiais"
+        },
+        "StatusEffectInvalid": "Todo efeito de estado precisa de ID, nome e ícone."
+      },
+      "CustomStyle": {
+        "Hint": "Você pode indicar um arquivo de estilo próprio. Para o estilo padrão, deixe em branco. Atenção: não é possível enviar arquivos CSS pela mesa; coloque o arquivo no servidor manualmente antes de selecioná-lo.",
+        "Name": "Arquivo de estilo CSS"
+      },
+      "DocumentationButton": "Ver documentação do sistema",
+      "ExpandRollVisibility": {
+        "Hint": "Se marcado, a privacidade da rolagem vale também para as mensagens enviadas pelas fichas, usando sussurros.",
+        "Name": "Aplicar a privacidade da rolagem à mensagem inteira"
+      },
+      "InitiativeFormula": { "Hint": "Digite uma fórmula sem '${}$'", "Name": "Fórmula de iniciativa" },
+      "LoggingLevel": {
+        "Hint": "Registra tudo abaixo do nível escolhido. Em sistemas grandes, o nível de depuração pode deixar a interface lenta.",
+        "Levels": {
+          "Debug": "Registrar tudo",
+          "Error": "Só erros",
+          "Info": "Informações e acima",
+          "Log": "Tudo, menos depuração",
+          "None": "Nenhum registro",
+          "Warn": "Avisos e acima"
+        },
+        "Name": "Nível de registro do sistema"
+      },
+      "ManualEntitySaving": {
+        "Hint": "Em fichas grandes, desative o salvamento automático se a ficha demorar para recarregar. Isso adiciona um botão de salvar; a ficha também é salva ao adicionar, excluir ou salvar um item vinculado e ao ser fechada.",
+        "Name": "Salvar fichas manualmente"
+      },
+      "MinimumRoleEditModifiers": {
+        "Hint": "Papel mínimo para ver e editar os modificadores de item.",
+        "Name": "Papel mínimo para editar modificadores de item"
+      },
+      "MinimumRoleTemplateReload": {
+        "Hint": "Papel mínimo para escolher um modelo e recarregar uma ficha.",
+        "Name": "Papel mínimo para recarregar uma ficha"
+      },
+      "RollIcons": {
+        "Hint": "Nome de um ícone do Font Awesome para aparecer ao lado dos rótulos clicáveis da ficha. Exemplo: dice-d20 mostra um d20. Vazio, nenhum ícone aparece.",
+        "Name": "Ícones de rolagem"
+      },
+      "SheetName": "Ficha",
+      "Show451ConversionPopUp": { "Name": "Mostrar aviso de conversão de modificadores em efeitos ativos" },
+      "ShowHiddenRolls": {
+        "Hint": "Mostra as rolagens ocultas aos mestres, para conferência.",
+        "Name": "Mostrar rolagens ocultas"
+      },
+      "UseApplicationV1": {
+        "Hint": "Ativa as fichas antigas (Application V1). Está obsoleto e será removido.",
+        "LegacySheetName": "Ficha antiga",
+        "Name": "[ANTIGO] Usar Application V1 nas fichas"
+      }
+    },
+    "Sheets": {
+      "ConfigureItemModifier": "Configurar modificadores do item",
+      "InvalidSheet": "Ficha inválida",
+      "MakeItemUnique": "Tornar item único",
+      "OpenTemplateSheet": "Abrir ficha do modelo",
+      "ReloadTemplate": "Recarregar modelo",
+      "SeeAttributeBars": "Ver barras de atributo",
+      "SeeHiddenAttributes": "Ver atributos ocultos",
+      "Template": "Modelo"
+    },
+    "TemplateActions": {
+      "AddNewElement": "Adicionar novo elemento",
+      "ConfigureAttributeBars": "Configurar barras de atributo",
+      "ConfigureHiddenAttributes": "Configurar atributos ocultos",
+      "ConfigureSheetDisplay": "Configurar exibição da ficha",
+      "ConfigureStatusEffects": "Configurar efeitos de estado",
+      "Redo": "Refazer",
+      "ReloadCharacterSheets": "Recarregar todas as fichas de personagem",
+      "ReloadItemSheet": "Recarregar todas as fichas de item",
+      "ReloadSheetsDialog": { "Title": "Recarregar todas as fichas vinculadas" },
+      "Undo": "Desfazer"
+    },
+    "UserInput": { "Value": "Valor", "Variable": "Variável" },
+    "UserMessages": {
+      "CannotMoveItemInItself": "Não é possível mover um item para dentro dele mesmo",
+      "Dropdown": { "OptionsLengthError": "{COMPONENT_KEY}: as listas de chaves e de rótulos não têm o mesmo tamanho." },
+      "EmbeddedItemsFolderNotFound": "A pasta de itens incorporados não foi encontrada. Crie uma pasta de itens chamada {EMBEDDED_ITEMS_FOLDER_NAME}",
+      "ItemMaxDepth": "Itens não podem ficar aninhados em mais de {depth} níveis.",
+      "ItemTemplateDeleted": "O modelo do item {ITEM_NAME} ({ITEM_UUID}), usado em {ENTITY_NAME} ({ENTITY_UUID}), foi excluído",
+      "Label": { "ChatCommandeCreationError": "Não foi possível criar o comando de chat." },
+      "NumberField": {
+        "ValueNotInteger": "O valor deve ser um número inteiro",
+        "ValueNotNumeric": "O valor deve ser numérico",
+        "ValueNotTooHigh": "O valor deve ser menor que {VALUE}",
+        "ValueNotTooLow": "O valor deve ser maior que {VALUE}"
+      },
+      "TabbedPanel": {
+        "DuplicateTabKeEdit": "Não foi possível editar a aba: a chave {KEY} já existe",
+        "DuplicateTabKey": "Não foi possível criar a aba: a chave {KEY} já existe"
+      },
+      "TextField": { "WrongValue": "O valor contém caracteres não permitidos" },
+      "UserInputTemplateNotFound": "O modelo de entrada do usuário {TEMPLATE_NAME} não foi encontrado.",
+      "WrongDragOnTemplate": "Só itens de submodelo podem ser arrastados para modelos"
+    }
+  },
+  "EFFECT": {
+    "FIELDS": {
+      "transfer": {
+        "hint": "Se marcado, este efeito é aplicado a qualquer ator ou item que possua o item pai deste efeito.",
+        "label": "Aplicar efeito ao portador"
+      }
+    }
+  },
+  "TYPES": {
+    "Actor": { "_template": "Modelo", "character": "Personagem" },
+    "Item": {
+      "_equippableItemTemplate": "Modelo de item equipável",
+      "activeEffectContainer": "Efeitos ativos predefinidos",
+      "equippableItem": "Item equipável",
+      "subTemplate": "Submodelo",
+      "userInputTemplate": "Modelo de entrada do usuário"
+    }
+  }
+}

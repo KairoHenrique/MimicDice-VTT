@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { PLAYER_VISION_LIMIT_SETTING_KEY } from "@tabbletop/protocol";
 import { Hooks } from "../../hooks/Hooks";
 import { currentCanvas, currentGame } from "../../runtime";
 import { computeVisibilityPolygon, type Point, type Segment } from "../geometry";
@@ -8,6 +9,7 @@ import type { Token } from "../placeables/Token";
 import type { AmbientLight, Wall } from "../placeables/simplePlaceables";
 import { FogExplorationStore } from "./FogExplorationStore";
 
+const [VISION_LIMIT_NAMESPACE, VISION_LIMIT_KEY] = PLAYER_VISION_LIMIT_SETTING_KEY.split(".") as [string, string];
 const MAX_FOG_TEXTURE_SIZE = 2048;
 const EXPLORED_REVEAL_ALPHA = 0.45;
 
@@ -42,9 +44,21 @@ export class VisibilityLayer extends CanvasLayer {
     return currentCanvas()?.scene?._source.environment?.globalLight?.enabled !== false;
   }
 
+  /** How far players may see, in scene distance units, as set by the GM; 0 means no limit. Never limits the GM. */
+  get playerVisionLimit(): number {
+    const game = currentGame();
+    if (!game?.user || game.user.isGM) return 0;
+    try {
+      const limit = Number(game.settings.get(VISION_LIMIT_NAMESPACE, VISION_LIMIT_KEY));
+      return Number.isFinite(limit) && limit > 0 ? limit : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   /** True when fog applies to the current user right now. */
   get active(): boolean {
-    if (!this.tokenVision) return false;
+    if (!this.tokenVision && this.playerVisionLimit === 0) return false;
     const sources = currentCanvas()?.tokens?.visionSources ?? [];
     return !currentGame()?.user?.isGM || sources.length > 0;
   }
@@ -118,14 +132,18 @@ export class VisibilityLayer extends CanvasLayer {
   }
 
   #computeShapes(canvas: any, sightWalls: Segment[]): VisionShapes {
-    const bounds = (canvas.dimensions as SceneDimensions).sceneRect;
+    const dimensions = canvas.dimensions as SceneDimensions;
+    const bounds = dimensions.sceneRect;
+    const visionLimit = this.playerVisionLimit;
     const shapes: VisionShapes = { sight: [], lineOfSight: [], lights: [] };
     for (const token of canvas.tokens.visionSources as Token[]) {
       const origin = token.center;
-      const unlimited = computeVisibilityPolygon(origin, Infinity, sightWalls, bounds);
-      shapes.lineOfSight.push(new PIXI.Polygon(unlimited));
-      const range = this.globalLight ? 0 : token.sightRange;
-      shapes.sight.push(range > 0 ? new PIXI.Polygon(computeVisibilityPolygon(origin, range, sightWalls, bounds)) : new PIXI.Polygon(unlimited));
+      const limitRadius = visionLimit > 0 ? visionLimit * dimensions.distancePixels + Math.max(token.w, token.h) / 2 : Infinity;
+      const lineOfSight = computeVisibilityPolygon(origin, limitRadius, sightWalls, bounds);
+      shapes.lineOfSight.push(new PIXI.Polygon(lineOfSight));
+      const tokenRange = this.globalLight ? 0 : token.sightRange;
+      const range = tokenRange > 0 ? Math.min(tokenRange, limitRadius) : limitRadius;
+      shapes.sight.push(new PIXI.Polygon(range === limitRadius ? lineOfSight : computeVisibilityPolygon(origin, range, sightWalls, bounds)));
     }
     if (!this.globalLight) shapes.lights = this.#lightPolygons(canvas).map(({ polygon }) => polygon);
     return shapes;

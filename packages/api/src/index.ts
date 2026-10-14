@@ -8,6 +8,8 @@ export { DialogV2 } from "./applications/DialogV2";
 export { ClientSettings, type SettingConfig } from "./settings/ClientSettings";
 export { Keybindings, type KeyBinding, type KeybindingOverrides } from "./game/Keybindings";
 export type { MovePathMode } from "./canvas/interaction/CanvasInteraction";
+export { actorTokenData } from "./canvas/interaction/canvasDrop";
+export type { MenuEntry } from "./canvas/hud/CanvasHud";
 export { Hooks } from "./hooks/Hooks";
 export { escapeHTML } from "./utils/miscUtils";
 export { DocumentSheetV2, ActorSheetV2, ItemSheetV2 } from "./documents/sheets";

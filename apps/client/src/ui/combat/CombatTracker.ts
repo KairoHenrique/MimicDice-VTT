@@ -8,13 +8,13 @@ import { buildCombatantRow } from "./combatantRow";
 const RENDER_DEBOUNCE_MS = 30;
 const REFRESH_HOOKS = ["createCombat", "updateCombat", "deleteCombat", "createCombatant", "updateCombatant", "deleteCombatant", "canvasReady"];
 
-function actionButton(icon: string, label: string, onClick: () => unknown, { primary = false, iconOnly = false } = {}): HTMLButtonElement {
-  const button = h("button", { type: "button", class: `${primary ? "primary" : ""}${iconOnly ? " icon" : ""}`.trim(), title: label, "aria-label": label }, h("i", { class: icon }), iconOnly ? null : ` ${label}`);
+function actionButton(icon: string, label: string, onClick: () => unknown, { primary = false, iconOnly = false, shortLabel = label } = {}): HTMLButtonElement {
+  const button = h("button", { type: "button", class: `${primary ? "primary" : ""}${iconOnly ? " icon" : ""}`.trim(), title: label, "aria-label": label }, h("i", { class: icon }), iconOnly ? null : ` ${shortLabel}`);
   button.addEventListener("click", () => void onClick());
   return button;
 }
 
-/** Sidebar tab with the turn order (`ui.combat`): everyone sees it, owners roll their initiative, the GM runs the rounds. */
+/** Sidebar tab with the turn order (`ui.combat`): everyone sees it, the GM sets each initiative and runs the rounds. */
 export class CombatTracker extends DomApplication {
   static tabName = "combat";
   static tabLabel = "Combate";
@@ -85,9 +85,9 @@ export class CombatTracker extends DomApplication {
     return h(
       "div",
       { class: "combat-tools", role: "toolbar", "aria-label": "Ferramentas do mestre" },
-      actionButton("fa-solid fa-user-plus", "Adicionar selecionados", () => addTokensToCombat(), { iconOnly: true }),
-      actionButton("fa-solid fa-rotate-left", "Limpar iniciativas", () => combat.resetAll(), { iconOnly: true }),
-      actionButton("fa-solid fa-flag-checkered", "Encerrar combate", () => confirmEndCombat(combat), { iconOnly: true }),
+      actionButton("fa-solid fa-user-plus", "Adicionar os tokens selecionados", () => addTokensToCombat(), { shortLabel: "Adicionar" }),
+      actionButton("fa-solid fa-rotate-left", "Limpar todas as iniciativas", () => combat.resetAll(), { shortLabel: "Zerar" }),
+      actionButton("fa-solid fa-flag-checkered", "Encerrar combate", () => confirmEndCombat(combat), { shortLabel: "Encerrar" }),
     );
   }
 

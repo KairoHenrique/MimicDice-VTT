@@ -101,7 +101,13 @@ function buildRoomItem(room: RoomSummary): HTMLLIElement {
     const badge = document.createElement("span");
     badge.className = "room-active";
     badge.textContent = "Aberta";
-    item.append(badge);
+    const enterButton = document.createElement("button");
+    enterButton.type = "button";
+    enterButton.className = "accent";
+    enterButton.textContent = "Entrar";
+    enterButton.setAttribute("aria-label", `Entrar na sala ${room.title}`);
+    enterButton.addEventListener("click", () => void bridge.openTable());
+    item.append(badge, enterButton);
     return item;
   }
   const openButton = document.createElement("button");
@@ -110,8 +116,21 @@ function buildRoomItem(room: RoomSummary): HTMLLIElement {
   openButton.addEventListener("click", () => {
     if (window.confirm(`Abrir a sala "${room.title}"? Quem estiver na mesa será recarregado.`)) void runRoomAction(() => bridge.openRoom(room.id));
   });
-  item.append(openButton);
+  item.append(openButton, buildDeleteButton(room));
   return item;
+}
+
+function buildDeleteButton(room: RoomSummary): HTMLButtonElement {
+  const deleteButton = document.createElement("button");
+  deleteButton.type = "button";
+  deleteButton.className = "danger";
+  deleteButton.textContent = "Excluir";
+  deleteButton.setAttribute("aria-label", `Excluir a sala ${room.title}`);
+  deleteButton.addEventListener("click", () => {
+    const warning = `Excluir a sala "${room.title}" para sempre?\n\nPersonagens, cenas, chat e jogadores dessa sala serão apagados e não dá para desfazer. A pasta de arquivos (mapas e imagens) continua em rpgs.`;
+    if (window.confirm(warning)) void runRoomAction(() => bridge.deleteRoom(room.id));
+  });
+  return deleteButton;
 }
 
 async function renderRooms(): Promise<void> {

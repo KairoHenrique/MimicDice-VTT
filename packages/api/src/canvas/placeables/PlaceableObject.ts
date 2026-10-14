@@ -1,20 +1,24 @@
 import * as PIXI from "pixi.js";
 import type { PlainObject } from "@tabbletop/common";
-import { MAP_LOCKED_SETTING_KEY } from "@tabbletop/protocol";
+import { MAP_LOCKED_SETTING_KEY, SCENE_PAUSED_SETTING_KEY } from "@tabbletop/protocol";
 import { Hooks } from "../../hooks/Hooks";
 import { currentCanvas, currentGame } from "../../runtime";
 import type { Point, Rectangle } from "../geometry";
 
 const DOUBLE_CLICK_MS = 350;
 
-function isFrozenByGameMaster(user: any): boolean {
-  if (!user || user.isGM) return false;
-  const [namespace, key] = MAP_LOCKED_SETTING_KEY.split(".");
+function isWorldFlagOn(settingKey: string): boolean {
+  const [namespace, key] = settingKey.split(".");
   try {
     return currentGame()?.settings.get(namespace, key) === true;
   } catch {
     return false;
   }
+}
+
+function isFrozenByGameMaster(user: any): boolean {
+  if (!user || user.isGM) return false;
+  return isWorldFlagOn(MAP_LOCKED_SETTING_KEY) || isWorldFlagOn(SCENE_PAUSED_SETTING_KEY);
 }
 
 /**

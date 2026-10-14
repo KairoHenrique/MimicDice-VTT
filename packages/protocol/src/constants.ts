@@ -21,6 +21,13 @@ export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 /** World setting (JSON boolean) that freezes every scene for non-GM users. */
 export const MAP_LOCKED_SETTING_KEY = "core.mapLocked";
 
+/** World setting (JSON boolean): the GM paused the scene; players cannot act on it and its view is covered. */
+export const SCENE_PAUSED_SETTING_KEY = "core.scenePaused";
+
+/** World setting (JSON number, scene distance units): how far players see around their tokens; 0 = no limit. */
+export const PLAYER_VISION_LIMIT_SETTING_KEY = "core.playerVisionLimit";
+export const MAX_PLAYER_VISION_LIMIT = 1000;
+
 export const SOCKET_EVENTS = Object.freeze({
   WORLD: "world",
   MODIFY_SETTING: "modifySetting",

@@ -1,4 +1,4 @@
-import { activateWorldRequestSchema, createWorldRequestSchema, type WorldSummaryRecord } from "@tabbletop/protocol";
+import { activateWorldRequestSchema, createWorldRequestSchema, deleteWorldRequestSchema, type WorldSummaryRecord } from "@tabbletop/protocol";
 import type { RoomsResult } from "./ipcChannels";
 
 const LAUNCHER_TOKEN_HEADER = "x-mimicdice-launcher";
@@ -26,6 +26,12 @@ export class RoomsClient {
     const parsed = activateWorldRequestSchema.safeParse({ worldId });
     if (!parsed.success) return Promise.resolve({ ok: false, error: "Sala inválida." });
     return this.#request("POST", "/worlds/activate", parsed.data);
+  }
+
+  delete(worldId: unknown): Promise<RoomsResult<{ id: string }>> {
+    const parsed = deleteWorldRequestSchema.safeParse({ worldId });
+    if (!parsed.success) return Promise.resolve({ ok: false, error: "Sala inválida." });
+    return this.#request("POST", "/worlds/delete", parsed.data);
   }
 
   async #request<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<RoomsResult<T>> {

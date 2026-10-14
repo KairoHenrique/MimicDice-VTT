@@ -16,6 +16,8 @@ import { Sidebar } from "../ui/sidebar/Sidebar";
 import { registerCoreSettings, readPreferredLanguage } from "./coreSettings";
 import { registerCoreSheets } from "./coreSheets";
 import { listenForPings, registerPingKeybinding } from "./canvasPings";
+import { registerPullPlayersMenu } from "./pullPlayers";
+import { installScenePause } from "./scenePause";
 import { controlOwnTokenOnSceneLoad, listenForPullToScene, registerTableKeybindings, syncClientPreferences } from "./tableControls";
 
 const SNAPSHOT_TIMEOUT_MS = 15_000;
@@ -66,7 +68,6 @@ async function renderInterface(): Promise<void> {
     ui.hostToolbar.render({ force: true }),
     sidebar.render({ force: true }),
     ui.controls.render({ force: true }),
-    ui.nav.render({ force: true }),
   ]);
   await sidebar.renderDirectories();
   Hooks.on("userConnected", () => void players.render());
@@ -102,8 +103,10 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   registerTableKeybindings();
   registerPingKeybinding(socket);
   listenForPullToScene(socket);
+  registerPullPlayersMenu(socket);
   listenForPings(socket);
   announceOwnTurns();
+  installScenePause();
   controlOwnTokenOnSceneLoad();
   syncClientPreferences();
   game.keybindings.activateListeners();

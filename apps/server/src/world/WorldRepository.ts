@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile, access } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, writeFile, access } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { CORE_RELEASE } from "@tabbletop/protocol";
@@ -117,6 +117,12 @@ export class WorldRepository {
     await this.ensureRpgFolder(worldId);
     await this.#writeActiveWorldId(worldId);
     return this.readManifest(worldId);
+  }
+
+  /** Removes the world's database and manifest. The Game Master's files folder in `rpgs/` is kept. */
+  async deleteWorld(worldId: string): Promise<void> {
+    if (!WORLD_ID_PATTERN.test(worldId)) throw new Error("Invalid world id");
+    await rm(this.worldDirectory(worldId), { recursive: true, force: true });
   }
 
   async setSystem(worldId: string, systemId: string | null): Promise<WorldManifest> {

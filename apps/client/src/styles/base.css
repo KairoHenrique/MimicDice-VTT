@@ -449,6 +449,27 @@ body.game {
   animation: toast-in 200ms ease-out;
 }
 
+#notifications .notification-text {
+  display: -webkit-box;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+#notifications .notification-count {
+  flex: none;
+  padding: 2px 8px;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-radius: 999px;
+}
+
 #notifications .notification::before {
   content: "";
   flex: none;

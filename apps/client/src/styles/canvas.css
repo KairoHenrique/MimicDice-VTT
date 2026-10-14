@@ -16,15 +16,6 @@
   box-shadow: none;
 }
 
-.scene-navigation {
-  width: auto;
-  min-width: 0;
-  padding: 0;
-  background: none;
-  border: 0;
-  box-shadow: none;
-}
-
 .scene-controls menu {
   list-style: none;
   margin: 0;
@@ -65,67 +56,77 @@
   background: var(--primary);
 }
 
-/* Scene navigation (top bar) */
-.scene-navigation {
+/* Scene pause: players see a curtain over the board; sidebar (40) and toolbar (50) stay above it */
+.pause-curtain {
   position: fixed;
-  top: calc(var(--host-toolbar-bottom, 52px) + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 44;
-  max-width: calc(100vw - 720px);
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(9 9 11 / 96%);
+  backdrop-filter: blur(16px);
 }
 
-.scene-navigation .scene-list {
-  list-style: none;
-  margin: 0;
-  padding: 4px;
+.pause-card {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  background: rgb(12 12 15 / 88%);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 360px;
+  padding: 24px 32px;
+  text-align: center;
+  color: var(--muted-foreground);
+  background: rgb(24 24 27 / 90%);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
 
-.scene-navigation .scene {
-  display: flex;
-  align-items: stretch;
-  border-radius: var(--radius-md);
-  background: transparent;
-}
-
-.scene-navigation .scene.view {
-  background: var(--muted-strong);
-}
-
-.scene-navigation .scene.active .scene-name {
+.pause-card i {
+  font-size: 32px;
   color: var(--brand);
 }
 
-.scene-navigation button {
-  padding: 4px 10px;
-  color: var(--color-text);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
+.pause-card strong {
+  font-size: 1.4em;
+  color: var(--foreground);
 }
 
-.scene-navigation .scene-activate {
-  padding: 4px 8px;
-  border-left: 1px solid var(--color-border);
+body.scene-paused:not(:has(.pause-banner)) .scene-controls {
+  display: none;
 }
 
-.scene-nav-empty {
-  margin: 0;
+.pause-banner {
+  position: fixed;
+  top: calc(var(--host-toolbar-bottom, 52px) + 8px);
+  left: 50%;
+  z-index: 44;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 12px;
-  color: var(--color-text-muted);
-  background: rgb(12 12 15 / 88%);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
+  transform: translateX(-50%);
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #fde68a;
+  background: rgb(120 53 15 / 85%);
+  border: 1px solid rgb(245 158 11 / 60%);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pause-curtain {
+    animation: pause-fade-in 200ms ease-out;
+  }
+}
+
+@keyframes pause-fade-in {
+  from {
+    opacity: 0;
+  }
 }
 
 /* Placeable context menu */
@@ -155,8 +156,41 @@
   cursor: pointer;
 }
 
-.canvas-context-menu button:hover {
+.canvas-context-menu button:hover,
+.canvas-context-menu button:focus-visible {
   background: var(--muted-strong);
+}
+
+.canvas-context-menu button:focus-visible {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: -2px;
+}
+
+.canvas-context-menu {
+  max-height: calc(100vh - 16px);
+  max-width: min(360px, calc(100vw - 16px));
+  overflow-y: auto;
+}
+
+.canvas-context-menu .menu-heading {
+  padding: 6px 10px 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #a1a1aa);
+}
+
+.player-vision-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-vision-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .canvas-move-confirm {

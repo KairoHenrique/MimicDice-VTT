@@ -149,6 +149,7 @@ class DesktopApplication {
       if (result.ok) this.#windows.openTable();
       return result;
     });
+    handle(IPC_CHANNELS.deleteRoom, (_event, worldId) => (this.#serverState === "running" ? this.#rooms.delete(worldId) : serverDown));
   }
 
   #restrictPermissions(): void {

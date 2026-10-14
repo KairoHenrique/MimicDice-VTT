@@ -1,11 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { Router } from "express";
-import { activateWorldRequestSchema, createWorldRequestSchema } from "@tabbletop/protocol";
+import { activateWorldRequestSchema, createWorldRequestSchema, deleteWorldRequestSchema } from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
 import type { ServerContext } from "../../ServerContext";
 import { parseRequestBody } from "../requestGuards";
-import { activateWorld, createSwitchLimiter, createWorld, listWorldSummaries } from "./worldRoutes";
+import { activateWorld, createSwitchLimiter, createWorld, deleteWorld, listWorldSummaries } from "./worldRoutes";
 
 export const LAUNCHER_TOKEN_HEADER = "x-mimicdice-launcher";
 const LOOPBACK_ADDRESSES = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
@@ -46,6 +46,12 @@ export function createLauncherRoutes(context: ServerContext): Router {
   router.post("/worlds/activate", switchLimiter, async (request, response) => {
     const { worldId } = parseRequestBody(activateWorldRequestSchema, request);
     await activateWorld(context, worldId, currentGameMasters());
+    response.json({ id: worldId });
+  });
+
+  router.post("/worlds/delete", switchLimiter, async (request, response) => {
+    const { worldId } = parseRequestBody(deleteWorldRequestSchema, request);
+    await deleteWorld(context, worldId);
     response.json({ id: worldId });
   });
 

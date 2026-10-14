@@ -3,7 +3,8 @@ import { CONST } from "../../constants";
 import { fromUuidSync } from "../../documents/abstract/ClientDatabaseBackend";
 import { currentGame, currentUi } from "../../runtime";
 
-function actorTokenData(actor: any, x: number, y: number, canvas: any): PlainObject {
+/** Token source for an actor centered on (x, y), snapped to the grid, from the actor's prototype token. */
+export function actorTokenData(actor: any, x: number, y: number, canvas: any): PlainObject {
   const prototype = (actor._source.prototypeToken ?? {}) as PlainObject;
   const prototypeTexture = (prototype.texture ?? {}) as PlainObject;
   const playerOwned = actor.hasPlayerOwner === true;

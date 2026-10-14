@@ -1,5 +1,7 @@
 import { canvasPingBroadcastSchema, SOCKET_EVENTS, type CanvasPingRequest } from "@tabbletop/protocol";
 import type { Socket } from "socket.io-client";
+import { isScenePaused } from "./scenePause";
+
 interface PingAuthor {
   name?: string;
   color?: unknown;
@@ -18,6 +20,7 @@ export function registerPingKeybinding(socket: Socket): void {
     editable: [{ key: "KeyP" }],
     onDown: (context: { repeat?: boolean; isShift?: boolean }) => {
       if (context.repeat || !canvas.ready || !canvas.scene) return false;
+      if (!game.user.isGM && isScenePaused()) return false;
       const { x, y } = canvas.mousePosition;
       const request: CanvasPingRequest = { sceneId: canvas.scene.id, x, y, pull: game.user.isGM && context.isShift === true };
       socket.emit(SOCKET_EVENTS.CANVAS_PING, request);

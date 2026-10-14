@@ -70,7 +70,11 @@ function registerCoreHandlers(context: ServerContext, io: Server, socket: Socket
     if (!world.users.isGameMaster(userId)) return acknowledge({ error: "Somente o mestre pode puxar os jogadores" });
     const sceneExists = world.documents.listCollection("scenes").some((scene) => scene._id === parsed.data.sceneId);
     if (!sceneExists) return acknowledge({ error: "Cena não encontrada" });
-    socket.broadcast.emit(SOCKET_EVENTS.PULL_TO_SCENE, { sceneId: parsed.data.sceneId, view: parsed.data.view ?? null });
+    const message = { sceneId: parsed.data.sceneId, view: parsed.data.view ?? null };
+    const userIds = parsed.data.userIds?.filter((targetId) => targetId !== userId && world.users.getUser(targetId));
+    if (userIds) {
+      if (userIds.length > 0) io.to(userIds.map((targetId) => `user:${targetId}`)).emit(SOCKET_EVENTS.PULL_TO_SCENE, message);
+    } else socket.broadcast.emit(SOCKET_EVENTS.PULL_TO_SCENE, message);
     acknowledge({ ok: true });
   });
 

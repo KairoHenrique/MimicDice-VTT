@@ -38,8 +38,9 @@ export class Players extends DomApplication {
       const indicator = h("span", { class: "player-active" });
       indicator.style.background = player.active ? player.color : "transparent";
       indicator.style.borderColor = player.color;
-      const label = player.isGM ? `${player.name} [Mestre]` : player.name;
-      return h("li", { class: `player${player.active ? " active" : " inactive"}${player.isSelf ? " self" : ""}`, "data-user-id": player.id }, indicator, h("span", { class: "player-name" }, label));
+      const gameMasterMark = player.isGM ? h("i", { class: "fa-solid fa-crown player-gm", title: "Mestre", "aria-label": "Mestre" }) : null;
+      const status = h("span", { class: "visually-hidden" }, player.active ? "(online)" : "(offline)");
+      return h("li", { class: `player${player.active ? " active" : " inactive"}${player.isSelf ? " self" : ""}`, "data-user-id": player.id }, indicator, h("span", { class: "player-name" }, player.name), gameMasterMark, status);
     });
     return [h("h3", {}, "Jogadores"), h("ol", { class: "player-list" }, ...items)];
   }

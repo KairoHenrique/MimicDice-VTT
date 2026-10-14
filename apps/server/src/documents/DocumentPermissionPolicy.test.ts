@@ -28,3 +28,16 @@ describe("map lock", () => {
     expect(() => policy(true).assertMapUnlocked(player, [])).not.toThrow();
   });
 });
+
+describe("scene pause", () => {
+  const paused = new DocumentPermissionPolicy(() => ({}), () => undefined, () => false, () => true);
+
+  it("freezes the scene for players with its own message", () => {
+    expect(() => paused.assertMapUnlocked(player, sceneAncestor)).toThrow(/pausada/);
+  });
+
+  it("lets the GM keep editing and players keep their sheets", () => {
+    expect(() => paused.assertMapUnlocked(gameMaster, sceneAncestor)).not.toThrow();
+    expect(() => paused.assertMapUnlocked(player, actorAncestor)).not.toThrow();
+  });
+});

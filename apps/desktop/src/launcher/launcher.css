@@ -168,6 +168,26 @@ button.primary:hover:not(:disabled) {
   background: #e4e4e7;
 }
 
+button.accent {
+  color: #fff;
+  background: rgb(37 99 235);
+  border-color: rgb(59 130 246);
+}
+
+button.accent:hover:not(:disabled) {
+  background: rgb(29 78 216);
+}
+
+button.danger {
+  color: #fca5a5;
+  border-color: rgb(239 68 68 / 40%);
+}
+
+button.danger:hover:not(:disabled) {
+  color: #fecaca;
+  background: rgb(239 68 68 / 15%);
+}
+
 button.link {
   min-height: 0;
   background: none;

@@ -2,6 +2,8 @@ import type { ClientSettings, KeybindingOverrides, MovePathMode } from "@tabblet
 import { MAP_LOCKED_SETTING_KEY, pullToSceneRequestSchema, SOCKET_EVENTS } from "@tabbletop/protocol";
 import type { Socket } from "socket.io-client";
 import { findOwnCharacter } from "../ui/actors/ownCharacter";
+import { registerPlayerVisionSetting } from "./playerVision";
+import { registerScenePauseSetting } from "./scenePause";
 
 const [MAP_LOCK_NAMESPACE, MAP_LOCK_KEY] = MAP_LOCKED_SETTING_KEY.split(".") as [string, string];
 const PULL_TIMEOUT_MS = 5_000;
@@ -40,6 +42,8 @@ export function registerTableSettings(settings: ClientSettings): void {
     default: false,
     onChange: () => void ui.hostToolbar?.render(),
   });
+  registerScenePauseSetting(settings);
+  registerPlayerVisionSetting(settings);
   settings.register(MAP_LOCK_NAMESPACE, MAP_LOCK_KEY, {
     name: "Mapa travado",
     scope: "world",
@@ -107,18 +111,18 @@ export function syncClientPreferences(): void {
   });
 }
 
-/** Moves every connected player to the scene the GM is looking at; with `shareView`, also to the GM's camera and zoom. */
-export async function pullPlayersToViewedScene(socket: Socket, shareView = false): Promise<void> {
+/** Moves every connected player's camera to the scene, position and zoom the GM is looking at. */
+export async function shareGameMasterView(socket: Socket): Promise<void> {
   const scene = canvas.scene;
   if (!scene || !canvas.ready) {
     ui.notifications.warn("Abra uma cena primeiro.");
     return;
   }
   const stage = canvas.stage;
-  const view = shareView ? { x: stage.pivot.x, y: stage.pivot.y, scale: stage.scale.x } : undefined;
+  const view = { x: stage.pivot.x, y: stage.pivot.y, scale: stage.scale.x };
   const response = (await socket.timeout(PULL_TIMEOUT_MS).emitWithAck(SOCKET_EVENTS.PULL_TO_SCENE, { sceneId: scene.id, view }).catch(() => ({ error: "Sem resposta do servidor" }))) as { error?: string };
   if (response.error) ui.notifications.error(response.error);
-  else ui.notifications.info(shareView ? "Todos estão vendo exatamente o que você vê." : `Jogadores puxados para "${scene.name}".`);
+  else ui.notifications.info("Todos estão vendo exatamente o que você vê.");
 }
 
 export function listenForPullToScene(socket: Socket): void {

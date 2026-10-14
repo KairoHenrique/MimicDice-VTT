@@ -1,5 +1,7 @@
 import type { ApplicationConfiguration, RenderOptions } from "@tabbletop/api";
-import { isGmEditMode, isMapLocked, isToolbarCollapsed, pullPlayersToViewedScene, toggleGmEditMode, toggleMapLock, toggleToolbarCollapsed } from "../game/tableControls";
+import { isGmEditMode, isMapLocked, isToolbarCollapsed, shareGameMasterView, toggleGmEditMode, toggleMapLock, toggleToolbarCollapsed } from "../game/tableControls";
+import { isScenePaused, toggleScenePause } from "../game/scenePause";
+import { configurePlayerVision, playerVisionLabel, playerVisionLimit } from "../game/playerVision";
 import { serverApi } from "../net/apiClient";
 import { h } from "../views/dom";
 import { ActorCreationDialog } from "./actors/ActorCreationDialog";
@@ -36,46 +38,54 @@ export class HostToolbar extends DomApplication {
   }
 
   buildContent(): Node[] {
-    const brand = h("span", { class: "host-brand", title: "MimicDice VTT" }, h("i", { class: "fa-solid fa-dice-d20" }));
-    if (isToolbarCollapsed()) return [brand, this.#collapseButton(true)];
-    const buttons: HTMLElement[] = [brand, h("span", { class: "world-title" }, game.world.title)];
-    if (game.user?.isGM) buttons.push(...this.#gameMasterButtons());
-    else buttons.push(...this.#playerButtons());
-    buttons.push(
-      this.#button("fas fa-gear", "Configurações", () => ClientConfiguration.open()),
+    const identity = h("div", { class: "toolbar-identity" }, h("span", { class: "host-brand", title: "MimicDice VTT", "aria-hidden": "true" }, h("i", { class: "fa-solid fa-dice-d20" })), h("span", { class: "world-title", title: game.world.title }, game.world.title));
+    if (isToolbarCollapsed()) return [identity, this.#collapseButton(true)];
+    const groups = game.user?.isGM ? this.#gameMasterGroups() : this.#playerGroups();
+    const account = this.#group(
+      "Conta",
+      this.#button("fas fa-gear", "Configurações", () => ClientConfiguration.open(), "icon"),
       this.#button("fas fa-right-from-bracket", "Sair", async () => {
         await serverApi.logout();
         window.location.reload();
-      }),
-      this.#collapseButton(false),
+      }, "icon"),
     );
-    return buttons;
+    return [identity, ...groups, account, this.#collapseButton(false)];
   }
 
-  #gameMasterButtons(): HTMLElement[] {
+  #group(label: string, ...children: Array<HTMLElement | null>): HTMLElement {
+    return h("div", { class: "toolbar-group", role: "group", "aria-label": label }, ...children);
+  }
+
+  #gameMasterGroups(): HTMLElement[] {
     const locked = isMapLocked();
     const lockButton = this.#button(locked ? "fas fa-lock" : "fas fa-lock-open", locked ? "Mapa travado" : "Travar mapa", () => toggleMapLock());
     lockButton.classList.toggle("active", locked);
     lockButton.title = locked ? "Os jogadores não mexem em nada no mapa. Clique para liberar." : "Impede os jogadores de mover tokens e criar coisas no mapa.";
-    const pullButton = this.#button("fas fa-people-pulling", "Puxar todos", () => pullPlayersToViewedScene(game.socket));
-    pullButton.title = "Leva todos os jogadores para a cena que você está vendo.";
-    const shareViewButton = this.#button("fas fa-eye", "Mostrar minha visão", () => pullPlayersToViewedScene(game.socket, true));
-    shareViewButton.title = "Leva todos para esta cena com a mesma posição e o mesmo zoom da sua tela.";
+    const visionLimited = playerVisionLimit() > 0;
+    const visionButton = this.#button(visionLimited ? "fas fa-eye-low-vision" : "fas fa-binoculars", playerVisionLabel(), () => configurePlayerVision(), "compact");
+    visionButton.classList.toggle("active", visionLimited);
+    visionButton.title = visionLimited ? `${playerVisionLabel()}: os jogadores só enxergam até essa distância dos seus tokens. Clique para mudar.` : "Limitar até onde os jogadores enxergam. Para puxar jogadores, clique com o botão direito num ponto vazio do mapa.";
+    const shareViewButton = this.#button("fas fa-eye", "Mostrar minha visão", () => shareGameMasterView(game.socket), "compact");
+    shareViewButton.title = "Mostrar minha visão: leva todos para esta cena com a mesma posição e zoom da sua tela.";
+    const paused = isScenePaused();
+    const pauseButton = this.#button(paused ? "fas fa-play" : "fas fa-pause", paused ? "Retomar cena" : "Pausar cena", () => toggleScenePause());
+    pauseButton.classList.toggle("active", paused);
+    pauseButton.title = paused ? "Os jogadores estão vendo a tela de pausa. Clique para mostrar a cena de novo." : "Cobre o mapa dos jogadores e trava tudo enquanto você prepara a cena. Dados, chat e fichas continuam funcionando.";
     return [
-      this.#modeButton(),
-      lockButton,
-      pullButton,
-      shareViewButton,
-      this.#button("fas fa-puzzle-piece", "Módulos", () => new ModuleManagement().render({ force: true })),
-      this.#button("fas fa-users", "Jogadores", () => new UserManagement().render({ force: true })),
-      this.#button("fas fa-folder-open", "Arquivos", () => window.open("/rpgs", "_blank", "noopener")),
+      this.#group("Mapa", this.#modeButton(), pauseButton, lockButton),
+      this.#group("Jogadores na mesa", visionButton, shareViewButton),
+      this.#group(
+        "Administração",
+        this.#button("fas fa-puzzle-piece", "Módulos", () => new ModuleManagement().render({ force: true }), "icon"),
+        this.#button("fas fa-users", "Jogadores", () => new UserManagement().render({ force: true }), "icon"),
+        this.#button("fas fa-folder-open", "Arquivos", () => window.open("/rpgs", "_blank", "noopener"), "icon"),
+      ),
     ];
   }
 
-  #playerButtons(): HTMLElement[] {
-    const buttons: HTMLElement[] = [this.#characterButton()];
-    if (isMapLocked()) buttons.push(h("span", { class: "map-locked-badge", title: "O mestre travou o mapa" }, h("i", { class: "fas fa-lock" }), " Mapa travado"));
-    return buttons;
+  #playerGroups(): HTMLElement[] {
+    const badge = isMapLocked() ? h("span", { class: "map-locked-badge", title: "O mestre travou o mapa" }, h("i", { class: "fas fa-lock" }), " Mapa travado") : null;
+    return [this.#group("Personagem", this.#characterButton(), badge)];
   }
 
   #collapseButton(collapsed: boolean): HTMLButtonElement {
@@ -101,8 +111,14 @@ export class HostToolbar extends DomApplication {
     return button;
   }
 
-  #button(icon: string, label: string, onClick: () => unknown): HTMLButtonElement {
-    const button = h("button", { type: "button", title: label }, h("i", { class: icon }), ` ${label}`);
+  /** "icon" never shows the label; "compact" hides it on narrow screens; the tooltip and aria-label always carry it. */
+  #button(icon: string, label: string, onClick: () => unknown, labelMode: "full" | "compact" | "icon" = "full"): HTMLButtonElement {
+    const button = h(
+      "button",
+      { type: "button", class: labelMode === "full" ? "" : `label-${labelMode}`, title: label, "aria-label": label },
+      h("i", { class: icon, "aria-hidden": "true" }),
+      labelMode === "icon" ? null : h("span", { class: "button-label" }, label),
+    );
     button.addEventListener("click", () => void onClick());
     return button;
   }

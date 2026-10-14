@@ -1,13 +1,13 @@
 import type { ApplicationConfiguration, RenderOptions } from "@tabbletop/api";
 import { h } from "../../views/dom";
 import { DiceTray } from "../dice/DiceTray";
-import { DicePool, MAX_POOLED_DICE } from "../dice/DicePool";
+import { DicePool } from "../dice/DicePool";
+import { buildDicePoolPanel } from "../dice/dicePoolPanel";
 import { combinePoolWithInput } from "../dice/rollCommands";
 import { DomApplication } from "../DomApplication";
 import { ChatComposer, MAX_CHAT_TEXT_LENGTH } from "./ChatComposer";
 import { SIDEBAR_CONTENT_ID } from "./DocumentDirectory";
 
-const QUICK_DICE = [4, 6, 8, 10, 12, 20, 100];
 const ROLL_MODE_LABELS: Readonly<Record<string, string>> = { publicroll: "Pública", gmroll: "Só o mestre", blindroll: "Às cegas", selfroll: "Só eu" };
 const DICE_SO_NICE_ID = "dice-so-nice";
 
@@ -131,7 +131,7 @@ export class ChatLog extends DomApplication {
     modeSelect.addEventListener("change", () => void game.settings.set("core", "rollMode", modeSelect.value));
 
     const rollButton = h("button", { type: "submit", class: "roll-submit", title: "Enviar a mensagem ou rolar os dados" }, h("i", { class: "fa-solid fa-paper-plane" }), " Enviar");
-    const poolPanel = this.#buildDicePoolPanel(rollButton);
+    const poolPanel = buildDicePoolPanel(this.#pool, rollButton);
     const form = h("form", { class: "roll-form" });
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -143,60 +143,15 @@ export class ChatLog extends DomApplication {
       this.#pool.clear();
       poolPanel.refresh();
     });
-    const footer = h("div", { class: "roll-form-row" }, modeSelect, rollButton);
+    const messageRow = h("div", { class: "roll-form-row message-row" }, formulaInput, rollButton);
+    const audienceRow = h("div", { class: "roll-form-row audience-row" }, this.#composer.recipientSelect, modeSelect);
     if (game.user.isGM) {
-      const clear = h("button", { type: "button", class: "icon", title: "Apagar todo o chat" }, h("i", { class: "fa-solid fa-trash" }));
+      const clear = h("button", { type: "button", class: "icon", title: "Apagar todo o chat", "aria-label": "Apagar todo o chat" }, h("i", { class: "fa-solid fa-trash" }));
       clear.addEventListener("click", () => void this.#confirmFlush());
-      footer.append(clear);
+      audienceRow.append(clear);
     }
-    const recipientRow = h("div", { class: "roll-form-row" }, this.#composer.recipientSelect);
-    form.append(poolPanel.element, formulaInput, recipientRow, footer);
+    form.append(poolPanel.element, messageRow, audienceRow);
     return form;
-  }
-
-  /** Die buttons queue dice (left click adds, right click removes) with a count badge; nothing rolls until "Rolar". */
-  #buildDicePoolPanel(rollButton: HTMLButtonElement): { element: HTMLElement; refresh: () => void } {
-    const badges = new Map<number, HTMLElement>();
-    const summary = h("span", { class: "dice-pool-summary" });
-    const clearButton = h("button", { type: "button", class: "dice-pool-clear", title: "Limpar dados selecionados" }, h("i", { class: "fa-solid fa-xmark" }), " Limpar");
-    const quickDice = h("div", { class: "quick-dice" });
-    let limitWarningShown = false;
-    const refresh = () => {
-      if (!this.#pool.isFull) limitWarningShown = false;
-      for (const [faces, badge] of badges) {
-        const count = this.#pool.countOf(faces);
-        badge.textContent = count > 0 ? String(count) : "";
-        badge.parentElement?.classList.toggle("selected", count > 0);
-      }
-      const total = this.#pool.total;
-      summary.textContent = total > 0 ? `${this.#pool.toFormula()}  (${total}/${MAX_POOLED_DICE})` : "Clique nos dados para escolher (máx. 20)";
-      clearButton.hidden = total === 0;
-      rollButton.classList.toggle("has-pool", total > 0);
-    };
-    for (const faces of QUICK_DICE) {
-      const badge = h("span", { class: "die-count", "aria-hidden": "true" });
-      const button = h("button", { type: "button", class: "quick-die", title: `Adicionar 1d${faces} (botão direito remove)` }, `d${faces}`, badge);
-      button.addEventListener("click", () => {
-        if (!this.#pool.add(faces) && !limitWarningShown) {
-          limitWarningShown = true;
-          ui.notifications.warn(`Limite de ${MAX_POOLED_DICE} dados por rolagem.`);
-        }
-        refresh();
-      });
-      button.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-        this.#pool.remove(faces);
-        refresh();
-      });
-      badges.set(faces, badge);
-      quickDice.append(button);
-    }
-    clearButton.addEventListener("click", () => {
-      this.#pool.clear();
-      refresh();
-    });
-    refresh();
-    return { element: h("div", { class: "dice-pool" }, quickDice, h("div", { class: "dice-pool-row" }, summary, clearButton)), refresh };
   }
 
   async #confirmFlush(): Promise<void> {
