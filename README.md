@@ -10,7 +10,7 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 
 ## Funcionalidades
 
-- **App desktop para o mestre (Windows):** instalador com atalhos (ou versão portátil), inicia o servidor local, mostra os links de convite da rede (Wi-Fi/LAN e Radmin VPN), ocultos até você clicar no olho, e libera a porta no Firewall do Windows com um clique.
+- **App desktop para o mestre (Windows):** instalador em português que deixa escolher a pasta e se quer o atalho na Área de Trabalho; inicia o servidor local, mostra os links de convite da rede (Wi-Fi/LAN e Radmin VPN), ocultos até você clicar no olho, e libera a porta no Firewall do Windows com um clique.
 - **Sessão da mesa:** o mestre inicia e fecha a sessão; fechada, os jogadores ficam congelados na última visão (ficha e dados continuam). Fecha sozinha após 1 hora parada.
 - **Controlar boneco:** o mestre vê e joga exatamente como um personagem, e escolhe quais jogadores controlam cada boneco ou NPC.
 - **Jogadores pelo navegador:** quem foi convidado só precisa abrir o link, sem instalar nada.
@@ -88,7 +88,7 @@ Acesse `http://localhost:30000`.
 ```bash
 npm run build                          # compila o cliente
 npm run start -w @tabbletop/desktop    # abre o app em modo de desenvolvimento
-npm run package -w @tabbletop/desktop  # gera o instalador e a versão portátil em apps/desktop/release
+npm run package -w @tabbletop/desktop  # gera o instalador em apps/desktop/release
 ```
 
 ### Testes e checagem de tipos

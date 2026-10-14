@@ -43,7 +43,7 @@
 
 - Nova logo e ícone do aplicativo, com uma animação de abertura no launcher.
 - Os links de convite ficam **ocultos por padrão**, com um olho para mostrar; o botão de copiar funciona mesmo oculto.
-- Instalador para Windows: escolhe a pasta de instalação, cria atalhos na área de trabalho e no Menu Iniciar e tem desinstalador. As campanhas ficam guardadas fora da pasta de instalação, então atualizar ou desinstalar não apaga nada. A versão portátil continua disponível.
+- Instalador para Windows, em português: escolhe a pasta de instalação, cria o atalho no Menu Iniciar, pergunta se você quer um ícone na Área de Trabalho, abre o app ao terminar e tem desinstalador. As campanhas ficam guardadas fora da pasta de instalação, então atualizar ou desinstalar não apaga nada. O instalador já traz tudo que o app precisa; não é preciso baixar mais nada.
 
 ### Segurança
 

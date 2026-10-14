@@ -65,18 +65,17 @@ async function packageApplication(desktopManifest) {
       extraResources: [{ from: clientDist, to: "client" }],
       win: {
         icon: path.join(desktopRoot, "build", "icon.ico"),
-        target: [
-          { target: "nsis", arch: ["x64"] },
-          { target: "portable", arch: ["x64"] },
-        ],
+        target: [{ target: "nsis", arch: ["x64"] }],
       },
-      portable: { artifactName: "MimicDice-VTT-${version}-portable.exe" },
       nsis: {
         artifactName: "MimicDice-VTT-${version}-instalador.exe",
         oneClick: false,
         perMachine: false,
         allowToChangeInstallationDirectory: true,
-        createDesktopShortcut: "always",
+        installerLanguages: ["pt_BR"],
+        include: path.join(desktopRoot, "build", "installer.nsh"),
+        runAfterFinish: true,
+        createDesktopShortcut: false,
         createStartMenuShortcut: true,
         shortcutName: desktopManifest.productName,
         installerIcon: path.join(desktopRoot, "build", "icon.ico"),
