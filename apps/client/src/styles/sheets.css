@@ -171,12 +171,20 @@
   gap: 4px;
 }
 
-.md-resource-values input {
+.md-resource-values input,
+.md-resource-max {
   flex: 1;
   min-width: 0;
   padding: 4px 6px;
   text-align: center;
   font-weight: 600;
+}
+
+.md-resource-max {
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  cursor: help;
 }
 
 .md-separator {

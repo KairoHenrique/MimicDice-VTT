@@ -2,6 +2,8 @@ import { MAX_PIPS, type SheetComponent } from "@tabbletop/protocol";
 import { h } from "../../../views/dom";
 import { rollFromSheet } from "../sheetRoll";
 import type { BoardContext } from "./boardContext";
+import { formatDerived } from "./computedValues";
+import { syncedResource } from "./resourceFormula";
 import { clampNumber, rollFormulaFor } from "./sheetLayoutRules";
 
 const DEFAULT_ACCENT = "#3b82f6";
@@ -43,9 +45,30 @@ function numberControl(context: BoardContext, component: SheetComponent, key: st
   return h("div", { class: "md-number" }, input, roll);
 }
 
+const pendingResourceSyncs = new Set<string>();
+
+/** Writes the formula's maximum to the sheet once (other formulas and token bars read the stored value). */
+function syncFormulaMaximum(context: BoardContext, component: SheetComponent, key: string, stored: ResourceValue): ResourceValue {
+  if (!component.formula) return stored;
+  const next = syncedResource(stored, context.evaluate(component.formula), component.min);
+  if (!next) return stored;
+  const path = context.store.pathOf(key);
+  const syncId = `${context.actor.uuid}:${path}`;
+  if (context.actor.canEditSheet?.() && !pendingResourceSyncs.has(syncId)) {
+    pendingResourceSyncs.add(syncId);
+    setTimeout(() => void Promise.resolve(context.actor.update({ [path]: next })).finally(() => pendingResourceSyncs.delete(syncId)), 0);
+  }
+  return next;
+}
+
+function resourceMaxField(component: SheetComponent, name: string, max: number, editable: boolean, label: string): HTMLElement {
+  if (!component.formula) return h("input", { type: "number", name, value: String(max), disabled: !editable, "aria-label": `${label} máximo` });
+  return h("output", { class: "md-resource-max", title: `Calculado: ${component.formula}`, "aria-label": `${label} máximo (calculado)` }, formatDerived(max));
+}
+
 function resourceControl(context: BoardContext, component: SheetComponent, key: string): HTMLElement {
   const { actor, store, editable } = context;
-  const { value, max } = readResource(store.read(key));
+  const { value, max } = syncFormulaMaximum(context, component, key, readResource(store.read(key)));
   const percent = max > 0 ? clampNumber((value / max) * 100, 0, 100) : 0;
   const accent = component.style?.accent ?? DEFAULT_ACCENT;
   const bar = h("div", { class: "md-bar", role: "progressbar", "aria-valuenow": value, "aria-valuemax": max }, h("div", { class: "md-bar-fill", style: `width:${percent}%;background:${accent}` }));
@@ -61,14 +84,14 @@ function resourceControl(context: BoardContext, component: SheetComponent, key: 
     minus,
     h("input", { type: "number", name: `${store.pathOf(key)}.value`, value: String(value), disabled: !editable, "aria-label": `${label} atual` }),
     h("span", { class: "md-separator" }, "/"),
-    h("input", { type: "number", name: `${store.pathOf(key)}.max`, value: String(max), disabled: !editable, "aria-label": `${label} máximo` }),
+    resourceMaxField(component, `${store.pathOf(key)}.max`, max, editable, label),
     plus,
   );
   return h("div", { class: "md-resource" }, bar, numbers);
 }
 
 function pipsControl(context: BoardContext, component: SheetComponent, key: string): HTMLElement {
-  const total = clampNumber(component.max ?? 3, 1, MAX_PIPS);
+  const total = context.limitFrom(component, component.max ?? 3, 1, MAX_PIPS);
   const filled = clampNumber(Math.round(finiteOr(context.store.read(key), 0)), 0, total);
   const accent = component.style?.accent;
   const pips = h("div", { class: "md-pips", role: "group", "aria-label": component.label || key });

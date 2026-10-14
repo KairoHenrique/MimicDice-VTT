@@ -34,6 +34,7 @@ import { installCombatTurnBanner } from "../ui/combat/combatTurnBanner";
 import { trackTurnMovement } from "../ui/combat/turnMovement";
 import { installTokenGroups } from "./tokenGroups";
 import { installConcealmentRules } from "./concealment/perception";
+import { installSecretDoubleClick } from "./concealment/secretsTools";
 import { installTraps } from "./concealment/traps";
 import { installStatusPanel } from "../ui/status/StatusPanel";
 import { registerAppearanceMenu } from "../ui/actors/appearances";
@@ -153,6 +154,7 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   trackTurnMovement();
   installTokenGroups();
   installConcealmentRules();
+  installSecretDoubleClick();
   installTraps();
   installCombatTurnBanner();
   installStatusPanel();

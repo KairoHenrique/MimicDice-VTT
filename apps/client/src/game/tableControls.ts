@@ -10,8 +10,6 @@ import { registerEffectSettings } from "../ui/effects/effectStore";
 import { isTableSessionOpen, registerTableSessionSetting } from "./tableSession";
 import { registerTokenKeyboardMovement } from "./tokenKeyboardMovement";
 import { installCanvasHistory } from "./canvasHistory";
-import { registerPerceptionSettings } from "./concealment/perception";
-
 const [MAP_LOCK_NAMESPACE, MAP_LOCK_KEY] = MAP_LOCKED_SETTING_KEY.split(".") as [string, string];
 const PULL_TIMEOUT_MS = 5_000;
 const GM_EDIT_MODE_KEY = "gmEditMode";
@@ -64,7 +62,6 @@ export function registerTableSettings(settings: ClientSettings): void {
   registerStatusPanelState(settings);
   registerTableSessionSetting(settings);
   registerPlayerVisionSetting(settings);
-  registerPerceptionSettings(settings);
   settings.register(MAP_LOCK_NAMESPACE, MAP_LOCK_KEY, {
     name: "Mapa travado",
     scope: "world",

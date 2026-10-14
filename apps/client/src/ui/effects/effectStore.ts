@@ -3,6 +3,7 @@ import {
   ACTOR_EFFECTS_FLAG,
   actorEffectsSchema,
   type AppliedEffect,
+  clampTurns,
   EFFECT_DEFINITIONS_SETTING_KEY,
   type EffectDefinition,
   effectDefinitionsSchema,
@@ -59,6 +60,24 @@ export function saveActorEffects(actor: any, effects: readonly AppliedEffect[]):
 
 export function newEffectId(): string {
   return crypto.getRandomValues(new Uint32Array(2)).reduce((text, part) => text + part.toString(36), "").slice(0, 16);
+}
+
+export interface RolledTurns {
+  turns: number;
+  /** "1d4+1 = 3" when dice were rolled, for the chat or a notification. */
+  note: string | null;
+}
+
+/** Fixed turns pass through; a dice duration is rolled once (a roll that fails counts as 1 turn). */
+export async function rollTurns(duration: number | string): Promise<RolledTurns> {
+  if (typeof duration === "number") return { turns: clampTurns(duration), note: null };
+  try {
+    const roll = await new Roll(duration).evaluate();
+    const turns = clampTurns(Number(roll.total));
+    return { turns, note: `${duration} = ${turns}` };
+  } catch {
+    return { turns: 1, note: null };
+  }
 }
 
 export interface EffectApplication {

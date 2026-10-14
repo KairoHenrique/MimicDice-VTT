@@ -5,7 +5,7 @@ import { h } from "../../views/dom";
 import { EFFECT_LIBRARY_CHANGED_HOOK, effectDefinitions, newEffectId, saveEffectDefinitions } from "./effectStore";
 import { effectIcon, effectLabel } from "./effectVisuals";
 
-const DEFAULT_DRAFT: Omit<EffectDefinition, "id"> = { name: "", description: "", icon: "fa-solid fa-wand-magic-sparkles", color: "#8e44ad", damagePerTurn: 0, damageDice: "", damageResourceId: null, actsLast: false, visionLimit: null };
+const DEFAULT_DRAFT: Omit<EffectDefinition, "id"> = { name: "", description: "", icon: "fa-solid fa-wand-magic-sparkles", color: "#8e44ad", damagePerTurn: 0, damageDice: "", damageResourceId: null, heals: false, rollBonus: "", actsLast: false, visionLimit: null };
 
 /** Text box for damage: a whole number or dice such as 1d6+2 (negative heals). */
 export function damageInput(name: string, value: string, label: string): HTMLInputElement {
@@ -13,14 +13,16 @@ export function damageInput(name: string, value: string, label: string): HTMLInp
 }
 
 /** One line describing what the effect does in combat. */
-export function describeMechanics(effect: Pick<EffectDefinition, "damagePerTurn" | "damageDice" | "damageResourceId" | "actsLast" | "visionLimit">): string {
+export function describeMechanics(effect: Pick<EffectDefinition, "damagePerTurn" | "damageDice" | "damageResourceId" | "heals" | "rollBonus" | "actsLast" | "visionLimit">): string {
   const parts: string[] = [];
   if (dealsTurnDamage(effect)) {
     const label = statusResources().find((resource) => resource.id === effect.damageResourceId)?.label ?? effect.damageResourceId;
     const amount = formatDamage(effect);
-    const heals = !effect.damageDice && effect.damagePerTurn < 0;
-    parts.push(heals ? `recupera ${-effect.damagePerTurn} de ${label} por turno` : `perde ${amount} de ${label} por turno`);
+    const negativeFixed = !effect.damageDice && effect.damagePerTurn < 0;
+    if (effect.heals) parts.push(`recupera ${amount} de ${label} por turno`);
+    else parts.push(negativeFixed ? `recupera ${-effect.damagePerTurn} de ${label} por turno` : `perde ${amount} de ${label} por turno`);
   }
+  if (effect.rollBonus) parts.push(`${effect.rollBonus.startsWith("-") ? "" : "+"}${effect.rollBonus} nas rolagens`);
   if (effect.actsLast) parts.push("age por último");
   if (effect.visionLimit !== null) parts.push(effect.visionLimit === 0 ? "não enxerga" : `enxerga até ${effect.visionLimit.toLocaleString()} m`);
   return parts.length > 0 ? parts.join(", ") : "Só aparece como lembrete";
@@ -41,6 +43,8 @@ interface EditorControls {
   color: HTMLInputElement;
   damage: HTMLInputElement;
   resource: HTMLSelectElement;
+  direction: HTMLSelectElement;
+  rollBonus: HTMLInputElement;
   actsLast: HTMLInputElement;
   limitsVision: HTMLInputElement;
   vision: HTMLInputElement;
@@ -68,8 +72,10 @@ function editorControls(draft: Omit<EffectDefinition, "id">): EditorControls {
     description: h("input", { type: "text", name: "description", value: draft.description, maxlength: 200, placeholder: "O que o efeito faz, para lembrar na mesa" }),
     icon: h("input", { type: "text", name: "icon", value: draft.icon, maxlength: 60, "aria-label": "Ícone ou emoji" }),
     color: h("input", { type: "color", name: "color", value: draft.color }),
-    damage: damageInput("damage", formatDamage(draft), "Dano por turno"),
+    damage: damageInput("damage", formatDamage(draft), "Quanto por turno"),
     resource,
+    direction: h("select", { name: "direction", "aria-label": "Perde ou recupera" }, h("option", { value: "loses", selected: !draft.heals }, "Perde"), h("option", { value: "heals", selected: draft.heals }, "Recupera")),
+    rollBonus: h("input", { type: "text", name: "rollBonus", value: draft.rollBonus, maxlength: MAX_DAMAGE_DICE_LENGTH, placeholder: "2, -1 ou 1d4", "aria-label": "Bônus nas rolagens", autocomplete: "off", spellcheck: "false" }),
     actsLast: h("input", { type: "checkbox", name: "actsLast", checked: draft.actsLast }),
     limitsVision: h("input", { type: "checkbox", name: "limitsVision", checked: draft.visionLimit !== null }),
     vision: numberInput("vision", draft.visionLimit ?? 1.5, 0, MAX_VISION_LIMIT, 0.5),
@@ -89,7 +95,15 @@ function editorContent(controls: EditorControls): HTMLElement {
     field("Descrição", controls.description),
     h("div", { class: "form-group md-effect-field" }, h("label", {}, "Ícone (escolha um ou digite um emoji)", controls.icon), iconPicker(controls.icon)),
     field("Cor", controls.color),
-    h("fieldset", { class: "md-effect-mechanics" }, h("legend", {}, "No combate"), field("Dano no começo de cada turno do personagem", h("span", { class: "md-effect-inline" }, controls.damage, controls.resource), "Número ou dados, como 2 ou 1d6+2 (rola a cada turno). Vazio ou 0 = sem dano. Número negativo cura."), h("label", { class: "md-check-row" }, controls.actsLast, h("span", {}, "Sempre age por último")), h("label", { class: "md-check-row" }, controls.limitsVision, h("span", {}, "Limita a visão a"), controls.vision, h("span", {}, "metros (0 = cego)"))),
+    h(
+      "fieldset",
+      { class: "md-effect-mechanics" },
+      h("legend", {}, "No combate"),
+      field("No começo de cada turno do personagem", h("span", { class: "md-effect-inline" }, controls.direction, controls.damage, controls.resource), "Número ou dados, como 2 ou 1d6+2 (rola a cada turno). Vazio ou 0 = nada. \"Recupera\" faz o efeito curar, como uma regeneração."),
+      field("Bônus nas rolagens da ficha", controls.rollBonus, "Somado em toda rolagem da ficha de quem tem o efeito: 2, 1d4 (bênção) ou -2 (penalidade). Vazio = nada."),
+      h("label", { class: "md-check-row" }, controls.actsLast, h("span", {}, "Sempre age por último")),
+      h("label", { class: "md-check-row" }, controls.limitsVision, h("span", {}, "Limita a visão a"), controls.vision, h("span", {}, "metros (0 = cego)")),
+    ),
   );
 }
 
@@ -103,6 +117,8 @@ function readDraft(controls: EditorControls): Omit<EffectDefinition, "id"> {
     color: controls.color.value,
     ...damage,
     damageResourceId: damage.damagePerTurn !== 0 || damage.damageDice !== "" ? controls.resource.value : null,
+    heals: controls.direction.value === "heals",
+    rollBonus: controls.rollBonus.value,
     actsLast: controls.actsLast.checked,
     visionLimit: controls.limitsVision.checked ? Math.max(0, Number(controls.vision.value) || 0) : null,
   };

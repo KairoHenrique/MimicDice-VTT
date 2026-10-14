@@ -1,14 +1,14 @@
 import type { Server, Socket } from "socket.io";
 import {
   CHEST_FLAG,
+  chestCapacity,
   chestPutRequestSchema,
   chestTakeRequestSchema,
-  MAX_CHEST_ENTRIES,
+  isChestFull,
   movableItemData,
-  newChestEntryId,
-  parsePerceptionScores,
-  PERCEPTION_SCORES_SETTING_KEY,
+  newChestEntry,
   readChest,
+  scenePerceptionScores,
   SOCKET_EVENTS,
   visibleChestEntries,
   type Chest,
@@ -40,8 +40,8 @@ function chestTile(scene: Source, tileId: string): { tile: Source; chest: Chest 
   return { tile, chest };
 }
 
-function perceptionOf(world: ActiveWorld, actorId: string): number | null {
-  return parsePerceptionScores(world.settings.readWorldValue(PERCEPTION_SCORES_SETTING_KEY))[actorId] ?? null;
+function perceptionOf(scene: Source, actorId: string): number | null {
+  return scenePerceptionScores(scene.flags?.world)[actorId] ?? null;
 }
 
 /**
@@ -66,7 +66,7 @@ export function attachChestHandler(context: ServerContext, io: Server, socket: S
     const scene = findScene(world, request.sceneId);
     const { tile, chest } = chestTile(scene, request.tileId);
     assertCanReach(world, scene, tile, request.actorId);
-    const noticed = world.users.isGameMaster(userId) ? chest.entries : visibleChestEntries(tile, perceptionOf(world, request.actorId));
+    const noticed = world.users.isGameMaster(userId) ? chest.entries : visibleChestEntries(tile, perceptionOf(scene, request.actorId));
     const entry = noticed.find((candidate) => candidate.id === request.entryId);
     if (!entry) throw HttpError.notFound("Esse item não está no baú");
     const created = await world.documents.modify({ type: "Item", action: "create", operation: { parentUuid: `Actor.${request.actorId}`, data: [{ ...entry.item }] } }, requester);
@@ -79,14 +79,14 @@ export function attachChestHandler(context: ServerContext, io: Server, socket: S
     const scene = findScene(world, request.sceneId);
     const { tile, chest } = chestTile(scene, request.tileId);
     assertCanReach(world, scene, tile, request.actorId);
-    if (chest.entries.length >= MAX_CHEST_ENTRIES) throw HttpError.badRequest("O baú está cheio");
+    if (isChestFull(chest)) throw HttpError.badRequest(`O baú está cheio (cabem ${chestCapacity(chest)} itens)`);
     const actor = world.documents.listCollection("actors").find((candidate) => candidate._id === request.actorId);
     const item = movableItemData(((actor?.items as Source[] | undefined) ?? []).find((candidate) => candidate._id === request.itemId) ?? {});
     if (!item) throw HttpError.notFound("Esse item não está mais no inventário");
     const removed = await world.documents.modify({ type: "Item", action: "delete", operation: { parentUuid: `Actor.${request.actorId}`, ids: [request.itemId] } }, requester);
     broadcastToEveryViewer(io, presence, world, removed);
     try {
-      await saveChest(world, request.sceneId, request.tileId, { ...chest, entries: [...chest.entries, { id: newChestEntryId(chest.entries), item, perceptionDc: null }] });
+      await saveChest(world, request.sceneId, request.tileId, { ...chest, entries: [...chest.entries, newChestEntry(chest.entries, item)] });
     } catch (error) {
       const restored = await world.documents.modify({ type: "Item", action: "create", operation: { parentUuid: `Actor.${request.actorId}`, data: [{ ...item }] } }, SERVER_GAME_MASTER);
       broadcastToEveryViewer(io, presence, world, restored);

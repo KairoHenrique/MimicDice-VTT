@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { CHEST_FLAG, newChestEntryId, readChest, visibleChestEntries, type ChestEntry } from "./chests";
+import { CHEST_FLAG, chestCapacity, isChestFull, MAX_CHEST_ENTRIES, newChestEntryId, readChest, visibleChestEntries, type ChestEntry } from "./chests";
 import { PERCEPTION_DC_FLAG } from "./concealment";
 
-const entry = (id: string, perceptionDc: number | null): ChestEntry => ({ id, perceptionDc, item: { name: `Item ${id}`, type: "item", img: "", system: {}, flags: {} } as ChestEntry["item"] });
+const entry = (id: string, perceptionDc: number | null, revealed = false): ChestEntry => ({ id, perceptionDc, revealed, item: { name: `Item ${id}`, type: "item", img: "", system: {}, flags: {} } as ChestEntry["item"] });
 
 function chestTile(entries: ChestEntry[], tileDc?: number) {
   return { flags: { core: { [CHEST_FLAG]: { name: "Baú", entries } }, world: tileDc === undefined ? {} : { [PERCEPTION_DC_FLAG]: tileDc } } };
@@ -12,7 +12,19 @@ describe("chests", () => {
   it("reads only valid chests", () => {
     expect(readChest(undefined)).toBeNull();
     expect(readChest({ [CHEST_FLAG]: { name: "" } })).toBeNull();
-    expect(readChest({ [CHEST_FLAG]: { name: "Baú" } })).toEqual({ name: "Baú", entries: [] });
+    expect(readChest({ [CHEST_FLAG]: { name: "Baú" } })).toEqual({ name: "Baú", entries: [], capacity: null });
+  });
+
+  it("fills up at its capacity, or at the global maximum without one", () => {
+    const chest = { name: "Baú", entries: [entry("a", null), entry("b", null)], capacity: 2 };
+    expect(isChestFull(chest)).toBe(true);
+    expect(isChestFull({ ...chest, capacity: 3 })).toBe(false);
+    expect(chestCapacity({ ...chest, capacity: null })).toBe(MAX_CHEST_ENTRIES);
+  });
+
+  it("lets everyone see an item the GM revealed", () => {
+    const tile = chestTile([entry("a", 18, true), entry("b", 18)]);
+    expect(visibleChestEntries(tile, null).map((found) => found.id)).toEqual(["a"]);
   });
 
   it("shows each character only the items their perception reaches", () => {

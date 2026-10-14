@@ -1,7 +1,8 @@
 import { escapeHTML, type MenuEntry } from "@tabbletop/api";
-import { isArmedTrap, readConcealment, TRAP_FLAG, type Trap } from "@tabbletop/protocol";
-import { applyEffectToActors, effectDefinitions } from "../../ui/effects/effectStore";
+import { canBeRevealed, isArmedTrap, readConcealment, TRAP_FLAG, type Trap } from "@tabbletop/protocol";
+import { applyEffectToActors, effectDefinitions, rollTurns } from "../../ui/effects/effectStore";
 import { concealmentDialog } from "./concealmentDialog";
+import { toggleRevealed } from "./perception";
 
 /** Trap tiles already firing, so a burst of moves never triggers the same trap twice. */
 const firing = new Set<string>();
@@ -41,7 +42,10 @@ async function applyTrapEffect(trap: Trap, victims: any[]): Promise<void> {
   const definition = trap.effectId ? effectDefinitions().find((entry) => entry.id === trap.effectId) : null;
   const actors = [...new Map(victims.map((tokenDocument) => tokenDocument.actor).filter(Boolean).map((actor: any) => [actor.id, actor])).values()];
   if (!definition || actors.length === 0) return;
-  await applyEffectToActors(actors, definition, { turns: trap.effectTurns });
+  const { turns, note } = await rollTurns(trap.effectTurns);
+  await applyEffectToActors(actors, definition, { turns });
+  const rolled = note ? ` (duração ${escapeHTML(note)})` : "";
+  await ChatMessage.create({ content: `<p><em>${escapeHTML(definition.name)}</em> por ${turns} turno(s)${rolled}.</p>`, whisper: (game.users?.contents ?? []).filter((user: any) => user.isGM).map((user: any) => user.id) });
 }
 
 /** Reveals the trap to everyone, warns in the chat and applies its effect to whoever stands on it. */
@@ -68,8 +72,16 @@ async function checkTraps(tokenDocument: any): Promise<void> {
   for (const tileDocument of sprung) await fireTrap(tileDocument, [tokenDocument]);
 }
 
+function revealEntry(document: any): MenuEntry | null {
+  const concealment = readConcealment(document._source?.flags?.world);
+  if (concealment.revealed) return { label: "Esconder de novo (volta a usar a DT)", icon: "fa-solid fa-eye-slash", onSelect: () => toggleRevealed(document) };
+  return canBeRevealed(concealment) ? { label: "Revelar para todos", icon: "fa-solid fa-eye", onSelect: () => toggleRevealed(document) } : null;
+}
+
 function tileMenuEntries(tile: any): MenuEntry[] {
   const entries: MenuEntry[] = [{ label: "Percepção e armadilha", icon: "fa-solid fa-eye-low-vision", onSelect: () => concealmentDialog(tile.document) }];
+  const reveal = revealEntry(tile.document);
+  if (reveal) entries.push(reveal);
   const trap = trapOf(tile.document);
   if (trap && !trap.triggered) entries.push({ label: "Ativar armadilha agora", icon: "fa-solid fa-burst", onSelect: () => fireTrap(tile.document) });
   if (trap?.triggered) entries.push({ label: "Rearmar armadilha (esconder de novo)", icon: "fa-solid fa-rotate-left", onSelect: () => rearm(tile.document) });
@@ -86,6 +98,9 @@ export function installTraps(): void {
     if (game.user.isGM) entries.unshift(...tileMenuEntries(tile));
   });
   Hooks.on("getNoteMenuEntries", (note: any, entries: MenuEntry[]) => {
-    if (game.user.isGM) entries.push({ label: "Percepção (DT)", icon: "fa-solid fa-eye-low-vision", onSelect: () => concealmentDialog(note.document) });
+    if (!game.user.isGM) return;
+    entries.push({ label: "Percepção (DT)", icon: "fa-solid fa-eye-low-vision", onSelect: () => concealmentDialog(note.document) });
+    const reveal = revealEntry(note.document);
+    if (reveal) entries.push(reveal);
   });
 }

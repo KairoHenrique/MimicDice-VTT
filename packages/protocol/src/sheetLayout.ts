@@ -105,6 +105,8 @@ export const sheetComponentSchema = z
     skillStyle: z.enum(SHEET_SKILL_VALUE_STYLES).optional(),
     /** Points a character may spread across the skills; the header warns when the total goes over. */
     pointsMax: z.number().int().min(0).max(MAX_SKILL_POINTS).optional(),
+    /** Calculated limit that overrides the fixed one: pip count for pips, points limit for skill lists. */
+    maxFormula: formulaSchema.optional(),
     gmOnly: z.boolean().optional(),
     style: sheetComponentStyleSchema.optional(),
   })

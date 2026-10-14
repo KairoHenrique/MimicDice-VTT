@@ -16,6 +16,20 @@ describe("DicePool", () => {
     expect(pool.toFormula()).toBe("1d6");
   });
 
+  it("keeps only the highest or lowest die when asked", () => {
+    const pool = new DicePool();
+    pool.add(20);
+    pool.add(20);
+    pool.mode = "highest";
+    expect(pool.toFormula()).toBe("2d20kh");
+    pool.add(6);
+    pool.mode = "lowest";
+    expect(pool.toFormula()).toBe("{1d20,1d20,1d6}kl");
+    pool.clear();
+    pool.add(8);
+    expect(pool.toFormula()).toBe("1d8");
+  });
+
   it("refuses dice beyond the limit", () => {
     const pool = new DicePool();
     for (let index = 0; index < MAX_POOLED_DICE; index++) expect(pool.add(4)).toBe(true);

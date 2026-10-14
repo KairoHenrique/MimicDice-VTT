@@ -1,5 +1,5 @@
 import { h } from "../../views/dom";
-import { MAX_POOLED_DICE, type DicePool } from "./DicePool";
+import { MAX_POOLED_DICE, type DicePool, type DicePoolMode } from "./DicePool";
 
 const QUICK_DICE = [4, 6, 8, 10, 12, 20, 100];
 
@@ -50,5 +50,32 @@ export function buildDicePoolPanel(pool: DicePool, rollButton: HTMLButtonElement
     refresh();
   });
   refresh();
-  return { element: h("div", { class: "dice-pool" }, quickDice, h("div", { class: "dice-pool-row" }, summary, clearButton)), refresh };
+  const modes = buildModeOptions(pool, refresh);
+  return { element: h("div", { class: "dice-pool" }, quickDice, modes, h("div", { class: "dice-pool-row" }, summary, clearButton)), refresh };
+}
+
+const MODE_OPTIONS: Array<{ mode: DicePoolMode; label: string; hint: string }> = [
+  { mode: "sum", label: "Somar valores", hint: "Soma todos os dados" },
+  { mode: "highest", label: "Pegar maior dado", hint: "Fica só o dado mais alto (vantagem)" },
+  { mode: "lowest", label: "Pegar menor dado", hint: "Fica só o dado mais baixo (desvantagem)" },
+];
+
+/** Three exclusive checkboxes; unchecking the current one goes back to adding the dice. */
+function buildModeOptions(pool: DicePool, refresh: () => void): HTMLElement {
+  const boxes = new Map<DicePoolMode, HTMLInputElement>();
+  const sync = () => {
+    for (const [mode, box] of boxes) box.checked = pool.mode === mode;
+    refresh();
+  };
+  const labels = MODE_OPTIONS.map(({ mode, label, hint }) => {
+    const box = h("input", { type: "checkbox", name: `dicePoolMode-${mode}` });
+    box.addEventListener("change", () => {
+      pool.mode = box.checked ? mode : "sum";
+      sync();
+    });
+    boxes.set(mode, box);
+    return h("label", { class: "dice-pool-mode", title: hint }, box, h("span", {}, label));
+  });
+  sync();
+  return h("div", { class: "dice-pool-modes", role: "group", "aria-label": "Como somar os dados" }, ...labels);
 }

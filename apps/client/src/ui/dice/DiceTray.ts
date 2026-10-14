@@ -1,4 +1,5 @@
 import { h } from "../../views/dom";
+import { rollAnimationParts } from "./rollAnimationParts";
 
 const MAX_ANIMATED_DICE = 16;
 const TUMBLE_MS = 1000;
@@ -44,11 +45,14 @@ export class DiceTray {
   }
 
   async show(rolls: any[], color: string | undefined): Promise<void> {
-    const dice = this.#collectDice(rolls);
-    if (dice.length === 0) return;
+    const parts = rollAnimationParts(rolls, MAX_ANIMATED_DICE);
+    if (parts.dice.length === 0) return;
+    const dice = parts.dice.map((part, index) => this.#createDie(part.term, part.result, part.discarded, index));
     const group = h("div", { class: "dice-group" });
     if (color && /^#[0-9a-f]{6}$/i.test(color)) group.style.setProperty("--die-color", color);
     for (const die of dice) group.append(die.element);
+    for (const bonus of parts.bonuses) group.append(h("span", { class: "anim-bonus" }, bonus));
+    const total = this.#totalChip(rolls, dice.length, parts.bonuses.length);
     this.#layer.append(group);
 
     if (!prefersReducedMotion()) {
@@ -60,26 +64,21 @@ export class DiceTray {
       die.element.classList.add("settled");
       die.element.classList.toggle("discarded", die.discarded);
     }
+    if (total) group.append(total);
     await wait(HOLD_MS);
     group.classList.add("fading");
     await wait(FADE_MS);
     group.remove();
   }
 
-  #collectDice(rolls: any[]): AnimatedDie[] {
-    const dice: AnimatedDie[] = [];
-    for (const roll of rolls) {
-      for (const term of roll?.dice ?? []) {
-        for (const result of term.results ?? []) {
-          if (result.hidden || dice.length >= MAX_ANIMATED_DICE) continue;
-          dice.push(this.#createDie(term, result, dice.length));
-        }
-      }
-    }
-    return dice;
+  /** "= 17" once the dice land, when the total is more than a single die's face. */
+  #totalChip(rolls: any[], diceCount: number, bonusCount: number): HTMLElement | null {
+    const total = rolls.length === 1 ? Number(rolls[0]?.total) : NaN;
+    if (!Number.isFinite(total) || (diceCount < 2 && bonusCount === 0)) return null;
+    return h("span", { class: "anim-total" }, `= ${total}`);
   }
 
-  #createDie(term: any, result: any, index: number): AnimatedDie {
+  #createDie(term: any, result: any, discarded: boolean, index: number): AnimatedDie {
     const face = h("span", { class: "die-face" });
     const element = h("div", { class: `anim-die ${shapeClass(term)}` }, face);
     const angle = Math.random() * Math.PI * 2;
@@ -88,7 +87,7 @@ export class DiceTray {
     element.style.setProperty("--spin", `${Math.round(540 + Math.random() * 540) * (Math.random() < 0.5 ? -1 : 1)}deg`);
     element.style.setProperty("--delay", `${index * 45}ms`);
     const faces = Math.max(Number(term.faces) || 6, 1);
-    return { element, face, finalLabel: String(term.getResultLabel?.(result) ?? result.result), faces, discarded: result.active === false };
+    return { element, face, finalLabel: String(term.getResultLabel?.(result) ?? result.result), faces, discarded };
   }
 
   async #tumble(dice: AnimatedDie[]): Promise<void> {

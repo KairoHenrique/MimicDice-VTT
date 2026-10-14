@@ -1,3 +1,6 @@
+import { ERASE_TOOL } from "@tabbletop/api";
+import { perceptionScoresDialog } from "../../game/concealment/concealmentDialog";
+import { createChest, createTrap, secretsListDialog } from "../../game/concealment/secretsTools";
 import { isGmEditMode, isMapLocked } from "../../game/tableControls";
 import { toggleLayersPanel } from "../layers/LayersPanel";
 import { toggleImageLibrary } from "../mapBuilder/imageLibrary";
@@ -29,40 +32,13 @@ export interface SceneControl {
   onToolChange?: (event: Event, tool: SceneControlTool) => unknown;
 }
 
-const PLACEABLE_BY_LAYER: Record<string, string> = {
-  tokens: "Token",
-  templates: "MeasuredTemplate",
-  tiles: "Tile",
-  drawings: "Drawing",
-  walls: "Wall",
-  lighting: "AmbientLight",
-  notes: "Note",
-};
-
 function tool(name: string, order: number, title: string, icon: string, extra: Partial<SceneControlTool> = {}): SceneControlTool {
   return { name, order, title, icon, visible: true, ...extra };
 }
 
-/** GM-only button that removes every object of the layer from the viewed scene after confirmation. */
-function clearTool(layerName: string, label: string): SceneControlTool {
-  return tool("clear", 99, `Apagar todos: ${label}`, "fa-solid fa-trash", {
-    button: true,
-    visible: game.user.isGM,
-    onChange: async () => {
-      const scene = canvas.scene;
-      const documentName = PLACEABLE_BY_LAYER[layerName];
-      if (!scene || !documentName) return;
-      const confirmed = await foundry.applications.api.DialogV2.confirm({
-        window: { title: "Confirmar" },
-        content: `<p>Apagar todos os objetos desta camada (${label}) na cena atual?</p>`,
-        yes: { label: "Apagar" },
-        no: { label: "Cancelar" },
-      });
-      if (!confirmed) return;
-      const ids = scene.getEmbeddedCollection(documentName).map((document: any) => document.id);
-      if (ids.length > 0) await scene.deleteEmbeddedDocuments(documentName, ids);
-    },
-  });
+/** GM-only eraser: while it is the active tool, each click deletes only the object clicked (Ctrl+Z brings it back). */
+function eraseTool(label: string): SceneControlTool {
+  return tool(ERASE_TOOL, 99, `Apagar ${label}: clique em cada um que quer apagar (Ctrl+Z desfaz)`, "fa-solid fa-eraser", { visible: game.user.isGM });
 }
 
 /** GM-only: locks the selected drawings so players cannot move, edit or erase them; unlocks them if all are locked. */
@@ -104,7 +80,7 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
         cone: tool("cone", 2, "Cone", "fa-solid fa-angle-left"),
         rect: tool("rect", 3, "Retângulo", "fa-regular fa-square"),
         ray: tool("ray", 4, "Linha", "fa-solid fa-arrows-alt-v"),
-        clear: clearTool("templates", "áreas"),
+        erase: eraseTool("áreas"),
       },
     },
     tiles: {
@@ -112,9 +88,9 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
       tools: {
         select: selectTool(),
         tile: tool("tile", 2, "Colocar tile (imagem)", "fa-solid fa-image"),
-        images: tool("images", 3, "Imagens do mapa: arraste das suas pastas para montar o mapa", "fa-solid fa-images", { button: true, visible: isGM, onChange: () => toggleImageLibrary() }),
+        images: tool("images", 3, "Imagens do mapa: arraste das suas pastas para montar o mapa", "fa-solid fa-folder-open", { button: true, visible: isGM, onChange: () => toggleImageLibrary() }),
         layers: tool("layers", 4, "Camadas (mapa, props, personagens, notas)", "fa-solid fa-layer-group", { button: true, visible: isGM, onChange: () => toggleLayersPanel() }),
-        clear: clearTool("tiles", "tiles"),
+        erase: eraseTool("tiles, baús e armadilhas"),
       },
     },
     drawings: {
@@ -127,25 +103,29 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
         text: tool("text", 5, "Texto", "fa-solid fa-font"),
         color: drawingColorTool(),
         lockAll: lockSelectedDrawingsTool(),
-        clear: clearTool("drawings", "desenhos"),
+        erase: eraseTool("desenhos"),
       },
     },
     walls: {
-      name: "walls", order: 5, title: "Paredes", icon: "fa-solid fa-dungeon", layer: "walls", activeTool: "walls", visible: editing,
+      name: "walls", order: 5, title: "Paredes e segredos", icon: "fa-solid fa-dungeon", layer: "walls", activeTool: "walls", visible: editing,
       tools: {
         select: selectTool(),
         walls: tool("walls", 2, "Parede", "fa-solid fa-bars"),
         door: tool("door", 3, "Porta", "fa-solid fa-door-open"),
-        clear: clearTool("walls", "paredes"),
+        perception: tool("perception", 4, "Percepção dos jogadores: anote quanto cada um tirou", "fa-solid fa-eye", { button: true, visible: isGM, onChange: () => perceptionScoresDialog() }),
+        chest: tool("chest", 5, "Criar baú (guarda itens; cada item pode ter DT de percepção)", "fa-solid fa-box-archive", { button: true, visible: isGM, onChange: () => createChest() }),
+        trap: tool("trap", 6, "Criar armadilha (invisível até alguém pisar)", "fa-solid fa-burst", { button: true, visible: isGM, onChange: () => createTrap() }),
+        secrets: tool("secrets", 7, "Segredos desta cena: baús, armadilhas e objetos escondidos", "fa-solid fa-user-secret", { button: true, visible: isGM, onChange: () => secretsListDialog() }),
+        erase: eraseTool("paredes e portas"),
       },
     },
     lighting: {
       name: "lighting", order: 6, title: "Luzes", icon: "fa-regular fa-lightbulb", layer: "lighting", activeTool: "light", visible: editing,
-      tools: { select: selectTool(), light: tool("light", 2, "Colocar luz", "fa-solid fa-lightbulb"), clear: clearTool("lighting", "luzes") },
+      tools: { select: selectTool(), light: tool("light", 2, "Colocar luz", "fa-solid fa-lightbulb"), erase: eraseTool("luzes") },
     },
     notes: {
       name: "notes", order: 7, title: "Notas", icon: "fa-solid fa-bookmark", layer: "notes", activeTool: "select", visible: can("NOTE_CREATE"),
-      tools: { select: selectTool(), journal: tool("journal", 2, "Nova nota", "fa-solid fa-book-medical", { visible: can("NOTE_CREATE") }), clear: clearTool("notes", "notas") },
+      tools: { select: selectTool(), journal: tool("journal", 2, "Nova nota", "fa-solid fa-book-medical", { visible: can("NOTE_CREATE") }), erase: eraseTool("notas") },
     },
   };
 }

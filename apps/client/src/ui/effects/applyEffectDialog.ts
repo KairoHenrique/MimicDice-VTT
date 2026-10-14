@@ -1,15 +1,15 @@
 import { DialogV2, type MenuEntry } from "@tabbletop/api";
-import { type EffectDefinition, formatDamage, MAX_EFFECT_TURNS, parseDamageInput, searchEffectDefinitions } from "@tabbletop/protocol";
+import { type EffectDefinition, formatDamage, parseDamageInput, parseTurnsInput, searchEffectDefinitions } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
 import { createEffect, damageInput, describeMechanics } from "./effectLibraryDialog";
-import { actorEffects, applyEffectToActors, effectDefinitions, removeActorEffect } from "./effectStore";
+import { actorEffects, applyEffectToActors, effectDefinitions, removeActorEffect, rollTurns } from "./effectStore";
 import { effectLabel, effectTitle } from "./effectVisuals";
 
 const DEFAULT_TURNS = 3;
 
 interface ApplyChoice {
   definition: EffectDefinition;
-  turns: number;
+  turns: number | string;
   damage: Pick<EffectDefinition, "damagePerTurn" | "damageDice">;
 }
 
@@ -79,7 +79,7 @@ export async function applyEffectDialog(actors: readonly any[]): Promise<void> {
   const search = h("input", { type: "search", placeholder: "Buscar efeito", "aria-label": "Buscar efeito", autocomplete: "off" });
   const empty = h("p", { class: "hint", hidden: true }, "Nenhum efeito com esse nome.");
   wireSearch(search, definitions, rows, radios, empty);
-  const turns = h("input", { type: "number", min: 1, max: MAX_EFFECT_TURNS, step: 1, value: String(DEFAULT_TURNS), "aria-label": "Duração em turnos" });
+  const turns = h("input", { type: "text", maxLength: 40, value: String(DEFAULT_TURNS), placeholder: "3 ou 1d4", class: "md-effect-turns", "aria-label": "Duração em turnos (número ou dados, como 1d4)" });
   const damage = damageInput("damage", formatDamage(definitions[0]!), "Dano por turno");
   const damageField = h("label", { class: "md-effect-inline" }, "Dano por turno", damage);
   const selected = () => definitions.find((definition) => definition.id === radios.find((radio) => radio.checked)?.value) ?? null;
@@ -113,12 +113,19 @@ export async function applyEffectDialog(actors: readonly any[]): Promise<void> {
           ui.notifications.warn("Dano inválido: use um número ou dados, como 2 ou 1d6+2.");
           return null;
         }
-        return { definition, turns: Number(turns.value) || DEFAULT_TURNS, damage: parsedDamage };
+        const duration = parseTurnsInput(turns.value);
+        if (duration === null) {
+          ui.notifications.warn("Duração inválida: use um número ou dados, como 3 ou 1d4.");
+          return null;
+        }
+        return { definition, turns: duration, damage: parsedDamage };
       },
     },
   })) as ApplyChoice | null;
   if (!choice) return;
-  const applied = await applyEffectToActors(actors, choice.definition, { turns: choice.turns, damage: choice.damage });
+  const rolled = await rollTurns(choice.turns);
+  const applied = await applyEffectToActors(actors, choice.definition, { turns: rolled.turns, damage: choice.damage });
+  const duration = rolled.note ? ` por ${rolled.turns} turno(s) (${rolled.note})` : "";
   if (applied < actors.length) ui.notifications.warn(`O efeito não pôde ser aplicado em ${actors.length - applied} personagem(ns).`);
-  else ui.notifications.info(`${choice.definition.name} aplicado em ${targetsText(actors)}.`);
+  else ui.notifications.info(`${choice.definition.name} aplicado em ${targetsText(actors)}${duration}.`);
 }

@@ -1,7 +1,4 @@
-import type { ClientSettings } from "@tabbletop/api";
-import { isConcealedFrom, PERCEPTION_SCORES_SETTING_KEY, parsePerceptionScores, perceptionScoresSchema, readConcealment, type PerceptionScores } from "@tabbletop/protocol";
-
-const [SCORES_NAMESPACE, SCORES_KEY] = PERCEPTION_SCORES_SETTING_KEY.split(".") as [string, string];
+import { isConcealedFrom, PERCEPTION_SCORES_FLAG, perceptionScoresUpdate, readConcealment, REVEALED_FLAG, scenePerceptionScores, type PerceptionScores } from "@tabbletop/protocol";
 
 function refreshConcealedObjects(): void {
   if (!canvas?.ready) return;
@@ -9,23 +6,16 @@ function refreshConcealedObjects(): void {
   canvas.perception?.update?.();
 }
 
-export function registerPerceptionSettings(settings: ClientSettings): void {
-  settings.register(SCORES_NAMESPACE, SCORES_KEY, {
-    name: "Percepção anotada pelo mestre",
-    scope: "world",
-    config: false,
-    type: Object,
-    default: {},
-    onChange: () => refreshConcealedObjects(),
-  });
-}
-
+/** Scores of the scene on screen; a scene where the GM wrote nothing down starts empty. */
 export function perceptionScores(): PerceptionScores {
-  return parsePerceptionScores(game.settings.get(SCORES_NAMESPACE, SCORES_KEY));
+  return scenePerceptionScores(canvas?.scene?._source?.flags?.world);
 }
 
-export function savePerceptionScores(scores: PerceptionScores): Promise<unknown> {
-  return game.settings.set(SCORES_NAMESPACE, SCORES_KEY, perceptionScoresSchema.parse(scores));
+export async function savePerceptionScores(scores: PerceptionScores): Promise<unknown> {
+  const scene = canvas?.scene;
+  if (!scene) return undefined;
+  const update = perceptionScoresUpdate(perceptionScores(), scores);
+  return Object.keys(update).length ? scene.update(update) : undefined;
 }
 
 /** Best perception among the characters this player controls; null when the GM wrote none down. */
@@ -37,6 +27,12 @@ function ownPerception(): number | null {
     if (score !== undefined && actor.isOwner && (best === null || score > best)) best = score;
   }
   return best;
+}
+
+/** GM: shows a hidden tile or note (or an armed trap) to everyone, or hides it again behind its DC. */
+export function toggleRevealed(document: any): Promise<unknown> {
+  const revealed = readConcealment(document?._source?.flags?.world).revealed;
+  return document.update(revealed ? { [`flags.world.-=${REVEALED_FLAG}`]: null } : { [`flags.world.${REVEALED_FLAG}`]: true });
 }
 
 /** Characters played by someone, for the GM's perception list. */
@@ -51,5 +47,9 @@ export function installConcealmentRules(): void {
   if (CONFIG.Note?.objectClass) CONFIG.Note.objectClass.concealRule = rule;
   Hooks.on("updateActor", (_actor: any, changes: Record<string, unknown>) => {
     if ("ownership" in changes) refreshConcealedObjects();
+  });
+  Hooks.on("updateScene", (scene: any, changes: any) => {
+    const scoresChanged = Object.keys(changes?.flags?.world ?? {}).some((key) => key.replace(/^-=/, "") === PERCEPTION_SCORES_FLAG);
+    if (scoresChanged && scene.id === canvas?.scene?.id) refreshConcealedObjects();
   });
 }

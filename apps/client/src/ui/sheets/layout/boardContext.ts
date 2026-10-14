@@ -1,5 +1,5 @@
 import type { SheetComponent, SheetLayout } from "@tabbletop/protocol";
-import { computeDerivedValues } from "./computedValues";
+import { computeDerivedValues, evaluateSheetExpression } from "./computedValues";
 import { formulaAliases } from "./formulaAliases";
 import { allComponents } from "./sheetLayoutRules";
 import { SheetValueStore } from "./sheetValueRoot";
@@ -28,6 +28,18 @@ export class BoardContext {
   /** Extra `@refs` for sheet rolls: flag-stored values, checkbox and option numbers, and calculated components. */
   extraRollData(): Record<string, unknown> {
     return { ...this.store.extraRollData(), ...this.#aliases, ...this.derived };
+  }
+
+  /** Dice-free formula over the sheet's values and calculations; null when it is invalid. */
+  evaluate(formula: string): number | null {
+    return evaluateSheetExpression(formula, { ...this.#baseRollData(), ...this.derived });
+  }
+
+  /** A whole-number limit from the component's max formula, clamped; the fixed fallback when there is none or it fails. */
+  limitFrom(component: SheetComponent, fallback: number, minimum: number, maximum: number): number {
+    const computed = component.maxFormula ? this.evaluate(component.maxFormula) : null;
+    const value = computed ?? fallback;
+    return Math.min(maximum, Math.max(minimum, Math.round(value)));
   }
 
   /** GM-only components are hidden from players entirely, not just disabled. */

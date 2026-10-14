@@ -1,5 +1,5 @@
 import { DialogV2 } from "@tabbletop/api";
-import { MAX_PERCEPTION, MAX_TRAP_TURNS, PERCEPTION_DC_FLAG, readConcealment, TRAP_FLAG, trapSchema, type PerceptionScores, type Trap } from "@tabbletop/protocol";
+import { MAX_PERCEPTION, parseTurnsInput, PERCEPTION_DC_FLAG, readConcealment, TRAP_FLAG, trapSchema, type PerceptionScores, type Trap } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
 import { effectDefinitions } from "../../ui/effects/effectStore";
 import { perceptionScores, playerCharacters, savePerceptionScores } from "./perception";
@@ -21,14 +21,14 @@ function trapSection(trap: Trap | null): { section: HTMLElement; controls: TrapC
   const name = h("input", { type: "text", name: "trapName", maxLength: 60, value: trap?.name ?? "Armadilha", "aria-label": "Nome da armadilha" });
   const message = h("input", { type: "text", name: "trapMessage", maxLength: 200, value: trap?.message ?? "", placeholder: "Ex.: o chão cede e espinhos surgem", "aria-label": "Mensagem no chat" });
   const effect = h("select", { name: "trapEffect", "aria-label": "Efeito aplicado" }, h("option", { value: "" }, "(nenhum efeito)"), ...effectDefinitions().map((definition) => h("option", { value: definition.id, selected: definition.id === trap?.effectId }, definition.name)));
-  const turns = numberInput("trapTurns", trap?.effectTurns ?? 3, "Duração do efeito em turnos", MAX_TRAP_TURNS);
+  const turns = h("input", { type: "text", name: "trapTurns", maxLength: 40, value: String(trap?.effectTurns ?? 3), placeholder: "3 ou 1d4", "aria-label": "Duração do efeito em turnos (número ou dados)", class: "md-conceal-number" });
   const details = h(
     "div",
     { class: "md-conceal-grid" },
     h("label", {}, "Nome", name),
     h("label", {}, "Mensagem no chat", message),
     h("label", {}, "Efeito", effect),
-    h("label", {}, "Dura (turnos)", turns),
+    h("label", {}, "Dura (turnos ou dados)", turns),
   );
   const sync = () => (details.hidden = !enabled.checked);
   enabled.addEventListener("change", sync);
@@ -55,7 +55,7 @@ function scoresSection(scores: PerceptionScores): { section: HTMLElement; inputs
     "fieldset",
     { class: "md-conceal-section" },
     h("legend", {}, "Percepção dos personagens"),
-    h("p", { class: "hint" }, "Anote o resultado do teste de percepção de cada um. Vazio: ainda não rolou."),
+    h("p", { class: "hint" }, "Anote o resultado do teste de percepção de cada um nesta cena. Vazio: ainda não rolou. Cada cena começa sem notas."),
     rows.length ? h("div", { class: "md-conceal-scores" }, ...rows) : h("p", { class: "hint" }, "Nenhum personagem de jogador ainda."),
   );
   return { section, inputs };
@@ -69,11 +69,13 @@ function readScore(input: HTMLInputElement): number | null {
 
 function readTrap(controls: TrapControls, previous: Trap | null): Trap | null {
   if (!controls.enabled.checked) return null;
+  const effectTurns = parseTurnsInput(controls.turns.value);
+  if (effectTurns === null) ui.notifications.warn("Duração inválida: use um número ou dados, como 3 ou 1d4. Ficou 3 turnos.");
   const parsed = trapSchema.safeParse({
     name: controls.name.value || "Armadilha",
     message: controls.message.value,
     effectId: controls.effect.value || null,
-    effectTurns: Math.round(Number(controls.turns.value)) || 3,
+    effectTurns: effectTurns ?? 3,
     triggered: previous?.triggered ?? false,
   });
   return parsed.success ? parsed.data : null;
@@ -86,7 +88,6 @@ export async function concealmentDialog(document: any): Promise<void> {
   const isTile = document.documentName === "Tile";
   const dc = numberInput("dc", current.perceptionDc, "DT de percepção", MAX_PERCEPTION);
   const trap = isTile ? trapSection(current.trap) : null;
-  const scores = scoresSection(perceptionScores());
   const content = h(
     "div",
     { class: "md-conceal" },
@@ -95,10 +96,9 @@ export async function concealmentDialog(document: any): Promise<void> {
       { class: "md-conceal-section" },
       h("legend", {}, "Percepção"),
       h("label", { class: "md-conceal-inline" }, "DT de percepção", dc),
-      h("p", { class: "hint" }, "Só quem tiver percepção igual ou maior vê isto no mapa. Vazio ou 0: todos veem."),
+      h("p", { class: "hint" }, "Só quem tiver percepção igual ou maior vê isto no mapa. Vazio ou 0: todos veem. A percepção de cada jogador é anotada uma vez por cena, no olho de Paredes e segredos."),
     ),
     trap?.section ?? null,
-    scores.section,
   );
   const confirmed = await DialogV2.prompt({ window: { title: isTile ? "Percepção e armadilha" : "Percepção da nota" }, position: { width: 460 } as any, content, ok: { label: "Salvar", icon: "fa-solid fa-floppy-disk", callback: () => true } });
   if (!confirmed) return;
@@ -108,7 +108,21 @@ export async function concealmentDialog(document: any): Promise<void> {
     const nextTrap = readTrap(trap.controls, current.trap);
     Object.assign(update, nextTrap ? { [`flags.world.${TRAP_FLAG}`]: nextTrap } : { [`flags.world.-=${TRAP_FLAG}`]: null });
   }
-  await Promise.all([document.update(update), savePerceptionScores(mergedScores(perceptionScores(), scores.inputs))]);
+  await document.update(update);
+}
+
+/** GM: writes down each character's perception roll, without picking an object first. */
+export async function perceptionScoresDialog(): Promise<void> {
+  if (!game.user.isGM) return;
+  const scores = scoresSection(perceptionScores());
+  const content = h(
+    "div",
+    { class: "md-conceal" },
+    scores.section,
+    h("p", { class: "hint" }, "Tiles, notas e itens de baú com DT de percepção só aparecem para quem tiver valor igual ou maior. Mude quando eles rolarem de novo."),
+  );
+  const confirmed = await DialogV2.prompt({ window: { title: `Percepção dos jogadores: ${canvas.scene?.name ?? "cena"}` }, position: { width: 420 } as any, content, ok: { label: "Salvar", icon: "fa-solid fa-floppy-disk", callback: () => true } });
+  if (confirmed) await savePerceptionScores(mergedScores(perceptionScores(), scores.inputs));
 }
 
 /** Listed characters take the typed value (a cleared field forgets it); characters not listed keep theirs. */

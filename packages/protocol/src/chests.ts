@@ -14,14 +14,30 @@ export const chestEntrySchema = z.object({
   item: lootItemSchema,
   /** Only characters whose perception reaches it notice this item inside the chest. */
   perceptionDc: perceptionDcSchema.nullable().default(null),
+  /** The GM showed it to everyone, ignoring the DC. */
+  revealed: z.boolean().default(false),
 });
 export type ChestEntry = z.infer<typeof chestEntrySchema>;
 
 export const chestSchema = z.object({
   name: z.string().trim().min(1).max(60),
   entries: z.array(chestEntrySchema).max(MAX_CHEST_ENTRIES).default([]),
+  /** How many items fit; null means up to MAX_CHEST_ENTRIES. */
+  capacity: z.number().int().min(1).max(MAX_CHEST_ENTRIES).nullable().default(null),
 });
 export type Chest = z.infer<typeof chestSchema>;
+
+export function chestCapacity(chest: Chest): number {
+  return chest.capacity ?? MAX_CHEST_ENTRIES;
+}
+
+export function isChestFull(chest: Chest): boolean {
+  return chest.entries.length >= chestCapacity(chest);
+}
+
+export function newChestEntry(existing: readonly ChestEntry[], item: ChestEntry["item"]): ChestEntry {
+  return { id: newChestEntryId(existing), item, perceptionDc: null, revealed: false };
+}
 
 export const chestTakeRequestSchema = z.object({ sceneId: documentIdSchema, tileId: documentIdSchema, actorId: documentIdSchema, entryId: entryIdSchema });
 export type ChestTakeRequest = z.infer<typeof chestTakeRequestSchema>;
@@ -35,7 +51,7 @@ export function readChest(coreFlags: unknown): Chest | null {
 }
 
 export function noticesChestEntry(entry: ChestEntry, perception: number | null): boolean {
-  return entry.perceptionDc === null || (perception !== null && perception >= entry.perceptionDc);
+  return entry.revealed || entry.perceptionDc === null || (perception !== null && perception >= entry.perceptionDc);
 }
 
 /** What a character with this perception finds in the chest (nothing when the chest itself is hidden from them). */

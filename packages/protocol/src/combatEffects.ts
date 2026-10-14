@@ -41,6 +41,39 @@ export function isDamageDice(text: string): boolean {
   return compact === "" || (DAMAGE_DICE_PATTERN.test(compact) && DICE_TERM_PATTERN.test(compact));
 }
 
+/** Plain numbers or dice joined by + and -, e.g. "2", "-1" or "1d4+1". */
+export function isRollBonus(text: string): boolean {
+  const compact = normalizeDamageText(text);
+  return compact === "" || DAMAGE_DICE_PATTERN.test(compact);
+}
+
+/** What the character's effects add to a roll, as a formula suffix such as " + (1d4) + (-2)"; "" when nothing. */
+export function effectsRollBonus(effects: ReadonlyArray<{ rollBonus?: string }>): string {
+  return effects
+    .map((effect) => effect.rollBonus ?? "")
+    .filter((bonus) => bonus !== "" && isRollBonus(bonus))
+    .map((bonus) => ` + (${bonus})`)
+    .join("");
+}
+
+/** How long an effect lasts: whole turns (1 to 99) or dice rolled when it is applied, e.g. "1d4+1". */
+export function parseTurnsInput(text: string): number | string | null {
+  const compact = normalizeDamageText(text);
+  if (/^\d{1,2}$/.test(compact)) return Math.min(Math.max(Number(compact), 1), MAX_EFFECT_TURNS);
+  return compact !== "" && !compact.startsWith("-") && isDamageDice(compact) ? compact : null;
+}
+
+/** Stored duration: a fixed number of turns or a dice formula rolled on each application. */
+export const effectTurnsSchema = z.union([
+  z.number().int().min(1).max(MAX_EFFECT_TURNS),
+  z.string().max(MAX_DAMAGE_DICE_LENGTH).transform(normalizeDamageText).refine((text) => typeof parseTurnsInput(text) === "string", "Duração inválida: use um número ou dados, como 3 ou 1d4+1"),
+]);
+
+/** Rolled turns always land between 1 and the maximum. */
+export function clampTurns(value: number): number {
+  return Math.min(Math.max(Math.round(Number.isFinite(value) ? value : 1), 1), MAX_EFFECT_TURNS);
+}
+
 /** What an effect does to the fight; every field is optional so an effect can be purely descriptive. */
 const effectMechanicsShape = {
   /** Lost at the start of each of the character's turns (negative heals). */
@@ -49,6 +82,10 @@ const effectMechanicsShape = {
   damageDice: z.string().max(MAX_DAMAGE_DICE_LENGTH).transform(normalizeDamageText).refine(isDamageDice, "Dano inválido: use números e dados, como 2 ou 1d6+2").default(""),
   /** Status panel resource that takes the damage (e.g. "vida"). */
   damageResourceId: resourceIdSchema.nullable().default(null),
+  /** The amount per turn is recovered instead of lost (regeneration). */
+  heals: z.boolean().default(false),
+  /** Added to every sheet roll of the character, e.g. "2", "1d4" (blessing) or "-2" (penalty); empty adds nothing. */
+  rollBonus: z.string().max(MAX_DAMAGE_DICE_LENGTH).transform(normalizeDamageText).refine(isRollBonus, "Bônus inválido: use números e dados, como 2, -1 ou 1d4").default(""),
   /** Always acts after everyone without this effect. */
   actsLast: z.boolean().default(false),
   /** Vision shrinks to this distance (scene units); null leaves it alone, 0 blinds. */
@@ -126,7 +163,7 @@ export function turnStartDamage(effects: readonly AppliedEffect[], rolled: (effe
   const damage = new Map<string, number>();
   for (const effect of effects) {
     if (!dealsTurnDamage(effect)) continue;
-    const amount = effect.damagePerTurn + (effect.damageDice ? rolled(effect) : 0);
+    const amount = (effect.damagePerTurn + (effect.damageDice ? rolled(effect) : 0)) * (effect.heals ? -1 : 1);
     damage.set(effect.damageResourceId!, (damage.get(effect.damageResourceId!) ?? 0) + amount);
   }
   return damage;
@@ -161,8 +198,10 @@ export const EFFECT_ICON_CHOICES: readonly string[] = Object.freeze(
 
 /** Effects every new world starts with; the GM edits or deletes them freely. */
 export const STARTER_EFFECT_DEFINITIONS: readonly EffectDefinition[] = Object.freeze([
-  { id: "envenenado", name: "Envenenado", description: "Perde vida no começo de cada turno.", icon: "fa-solid fa-skull-crossbones", color: "#3fa34d", damagePerTurn: 2, damageDice: "", damageResourceId: "vida", actsLast: false, visionLimit: null },
-  { id: "tonto", name: "Tonto", description: "Sempre age por último no combate.", icon: "fa-solid fa-face-dizzy", color: "#d4a017", damagePerTurn: 0, damageDice: "", damageResourceId: null, actsLast: true, visionLimit: null },
-  { id: "cego", name: "Cego", description: "Enxerga só bem de perto.", icon: "fa-solid fa-eye-slash", color: "#5b5b6b", damagePerTurn: 0, damageDice: "", damageResourceId: null, actsLast: false, visionLimit: 1.5 },
-  { id: "sangrando", name: "Sangrando", description: "Perde vida no começo de cada turno.", icon: "fa-solid fa-droplet", color: "#b3261e", damagePerTurn: 1, damageDice: "", damageResourceId: "vida", actsLast: false, visionLimit: null },
+  { id: "envenenado", name: "Envenenado", description: "Perde vida no começo de cada turno.", icon: "fa-solid fa-skull-crossbones", color: "#3fa34d", damagePerTurn: 2, damageDice: "", damageResourceId: "vida", heals: false, rollBonus: "", actsLast: false, visionLimit: null },
+  { id: "tonto", name: "Tonto", description: "Sempre age por último no combate.", icon: "fa-solid fa-face-dizzy", color: "#d4a017", damagePerTurn: 0, damageDice: "", damageResourceId: null, heals: false, rollBonus: "", actsLast: true, visionLimit: null },
+  { id: "cego", name: "Cego", description: "Enxerga só bem de perto.", icon: "fa-solid fa-eye-slash", color: "#5b5b6b", damagePerTurn: 0, damageDice: "", damageResourceId: null, heals: false, rollBonus: "", actsLast: false, visionLimit: 1.5 },
+  { id: "sangrando", name: "Sangrando", description: "Perde vida no começo de cada turno.", icon: "fa-solid fa-droplet", color: "#b3261e", damagePerTurn: 1, damageDice: "", damageResourceId: "vida", heals: false, rollBonus: "", actsLast: false, visionLimit: null },
+  { id: "regenerando", name: "Regenerando", description: "Recupera vida no começo de cada turno.", icon: "fa-solid fa-heart-pulse", color: "#2e9e5b", damagePerTurn: 0, damageDice: "1d4", damageResourceId: "vida", heals: true, rollBonus: "", actsLast: false, visionLimit: null },
+  { id: "abencoado", name: "Abençoado", description: "Soma 1d4 em todas as rolagens da ficha.", icon: "fa-solid fa-feather", color: "#e0b43c", damagePerTurn: 0, damageDice: "", damageResourceId: null, heals: false, rollBonus: "1d4", actsLast: false, visionLimit: null },
 ]);

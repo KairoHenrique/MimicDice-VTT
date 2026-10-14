@@ -1,4 +1,4 @@
-import { MAX_PIPS, MAX_SKILL_COLUMNS, type SheetComponent, type SheetSkill } from "@tabbletop/protocol";
+import { MAX_PIPS, MAX_SKILL_COLUMNS, MAX_SKILL_POINTS, type SheetComponent, type SheetSkill } from "@tabbletop/protocol";
 import { h } from "../../../views/dom";
 import { rollFromSheet } from "../sheetRoll";
 import type { BoardContext } from "./boardContext";
@@ -43,9 +43,9 @@ function pipsValue(row: SkillRowContext, skill: SheetSkill, value: number): HTML
   return pips;
 }
 
-function header(component: SheetComponent, total: number): HTMLElement {
-  const limit = component.pointsMax;
-  const over = limit !== undefined && limit > 0 && total > limit;
+function header(context: BoardContext, component: SheetComponent, total: number): HTMLElement {
+  const limit = context.limitFrom(component, component.pointsMax ?? 0, 0, MAX_SKILL_POINTS);
+  const over = limit > 0 && total > limit;
   const title = component.style?.hideLabel ? "" : `${component.label || "Perícias"}: `;
   return h(
     "div",
@@ -69,7 +69,7 @@ export function buildSkillsControl(context: BoardContext, component: SheetCompon
     const control = component.skillStyle === "pips" ? pipsValue(row, skill, value) : numberValue(row, skill, value);
     list.append(h("li", { class: "md-skill" }, skillName(row, skill, value), control));
   }
-  const wrapper = h("div", { class: "md-skills" }, header(component, skillPointsTotal(values)), list);
+  const wrapper = h("div", { class: "md-skills" }, header(context, component, skillPointsTotal(values)), list);
   wrapper.addEventListener("change", (event) => event.stopPropagation());
   return wrapper;
 }

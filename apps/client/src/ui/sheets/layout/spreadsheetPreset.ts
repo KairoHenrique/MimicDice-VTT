@@ -63,9 +63,9 @@ function characterPage(): SheetPage {
 
   page.title(9, "Status");
   page.add("computed", { x: 0, y: 10, w: 3, h: 2 }, { key: "pv_maximo", label: "PV máximo", formula: "floor((choose(@classe_n, 15, 11, 8) + @vigor) * @nivel)" });
-  page.add("resource", { x: 3, y: 10, w: 3, h: 2 }, { key: "pv", label: "PV", initial: 16, min: 0, style: { accent: "#c0392b" } });
+  page.add("resource", { x: 3, y: 10, w: 3, h: 2 }, { key: "pv", label: "PV", initial: 16, min: 0, formula: "@pv_maximo", style: { accent: "#c0392b" } });
   page.add("computed", { x: 6, y: 10, w: 3, h: 2 }, { key: "pe_maximo", label: "PE máximo", formula: "choose(@classe_n, 5 + @presenca * 2 * @nivel / 2, 8 + @presenca * 4 * @nivel / 2, 8 + @presenca * 6 * @nivel / 2)" });
-  page.add("resource", { x: 9, y: 10, w: 3, h: 2 }, { key: "pe", label: "PE", initial: 6, min: 0, style: { accent: "#2f80d1" } });
+  page.add("resource", { x: 9, y: 10, w: 3, h: 2 }, { key: "pe", label: "PE", initial: 6, min: 0, formula: "@pe_maximo", style: { accent: "#2f80d1" } });
   page.add("computed", { x: 0, y: 12, w: 3, h: 2 }, { key: "defesa", label: "Defesa", formula: `10 + @intelecto + ${ARMOR_DEFENSE} + if(eq(@classe_n, 2), 2, 0)` });
   page.add("computed", { x: 3, y: 12, w: 3, h: 2 }, { key: "bloqueio", label: "Bloqueio", formula: "@pericias.fortitude", hint: "0 = sem bloqueio" });
   page.add("computed", { x: 6, y: 12, w: 3, h: 2 }, { key: "esquiva", label: "Esquiva", formula: `if(gt(@pericias.reflexos, 0), @defesa + ${ARMOR_DEFENSE}, 0)`, hint: "0 = sem esquiva" });

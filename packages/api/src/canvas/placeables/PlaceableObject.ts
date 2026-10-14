@@ -3,11 +3,12 @@ import type { PlainObject } from "@tabbletop/common";
 import { MAP_LOCKED_SETTING_KEY, SCENE_PAUSED_SETTING_KEY, TABLE_SESSION_OPEN_SETTING_KEY } from "@tabbletop/protocol";
 import { seesEverything } from "../perception/viewpoint";
 import { Hooks } from "../../hooks/Hooks";
-import { currentCanvas, currentGame } from "../../runtime";
+import { currentCanvas, currentGame, currentUi } from "../../runtime";
 import type { Point, Rectangle } from "../geometry";
 import type { SnapMode } from "../grid";
 
 const DOUBLE_CLICK_MS = 350;
+export const ERASE_TOOL = "erase";
 
 function isWorldFlagOn(settingKey: string): boolean {
   const [namespace, key] = settingKey.split(".");
@@ -218,6 +219,14 @@ export abstract class PlaceableObject extends PIXI.Container {
     Hooks.callAll(`hover${this.document.documentName}`, this, hovered);
   }
 
+  /** Eraser tool: a click deletes just the object under the cursor, when the user may delete it. */
+  #eraseIfEraserActive(): boolean {
+    if (!this.layer?.active || currentUi()?.controls?.tool?.name !== ERASE_TOOL) return true;
+    const user = currentGame()?.user;
+    if (user?.isGM || this.document.canUserModify?.(user, "delete")) void this.document.delete();
+    return false;
+  }
+
   #onPointerDown(event: PIXI.FederatedPointerEvent): void {
     if (!this.layer?.active && !this.answersOnEveryLayer) return;
     if (event.button === 2) {
@@ -227,6 +236,7 @@ export abstract class PlaceableObject extends PIXI.Container {
     }
     if (event.button !== 0) return;
     event.stopPropagation();
+    if (!this.#eraseIfEraserActive()) return;
     const now = performance.now();
     const isDoubleClick = now - this.#lastClickTime < DOUBLE_CLICK_MS;
     this.#lastClickTime = now;

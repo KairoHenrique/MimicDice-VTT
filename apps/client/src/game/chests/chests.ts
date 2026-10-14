@@ -15,7 +15,7 @@ function openEntry(tile: any): MenuEntry {
 }
 
 function gameMasterTileEntries(tile: any): MenuEntry[] {
-  if (!chestOf(tile)) return [{ label: "Transformar em baú", icon: "fa-solid fa-box-archive", onSelect: () => saveChestAsGameMaster(tile, { name: "Baú", entries: [] }).then(() => openChestWindow(tile)) }];
+  if (!chestOf(tile)) return [{ label: "Transformar em baú", icon: "fa-solid fa-box-archive", onSelect: () => saveChestAsGameMaster(tile, { name: "Baú", entries: [], capacity: null }).then(() => openChestWindow(tile)) }];
   return [openEntry(tile), { label: "Deixar de ser baú (some com os itens)", icon: "fa-solid fa-box", onSelect: () => tile.document.update({ [`flags.core.-=${CHEST_FLAG}`]: null }) }];
 }
 

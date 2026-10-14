@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampTurns,
+  effectsRollBonus,
+  effectTurnsSchema,
+  parseTurnsInput,
   afterOwnTurn,
   type AppliedEffect,
   effectIconSchema,
@@ -71,7 +75,35 @@ describe("combat effects", () => {
   });
 
   it("finds effects ignoring accents and case", () => {
-    expect(searchEffectDefinitions(STARTER_EFFECT_DEFINITIONS, "COMEÇO").map((entry) => entry.id)).toEqual(["envenenado", "sangrando"]);
+    expect(searchEffectDefinitions(STARTER_EFFECT_DEFINITIONS, "COMEÇO").map((entry) => entry.id)).toEqual(["envenenado", "sangrando", "regenerando"]);
     expect(searchEffectDefinitions(STARTER_EFFECT_DEFINITIONS, "")).toHaveLength(STARTER_EFFECT_DEFINITIONS.length);
+  });
+});
+
+describe("positive effects", () => {
+  it("heals instead of hurting and adds roll bonuses", () => {
+    const regen = applied("regenerando", { damagePerTurn: 0, damageDice: "1d4", heals: true });
+    expect(turnStartDamage([regen], () => 3).get("vida")).toBe(-3);
+    expect(effectsRollBonus([{ rollBonus: "1d4" }, { rollBonus: "-2" }, { rollBonus: "" }])).toBe(" + (1d4) + (-2)");
+    expect(effectsRollBonus([{ rollBonus: "alert(1)" }])).toBe("");
+  });
+});
+
+describe("effect duration", () => {
+  it("accepts whole turns or dice, never negative dice or code", () => {
+    expect(parseTurnsInput("3")).toBe(3);
+    expect(parseTurnsInput("0")).toBe(1);
+    expect(parseTurnsInput(" 1d4 + 1 ")).toBe("1d4+1");
+    expect(parseTurnsInput("-1d4")).toBeNull();
+    expect(parseTurnsInput("alert(1)")).toBeNull();
+    expect(parseTurnsInput("")).toBeNull();
+  });
+
+  it("stores a number or a dice formula and keeps rolls in range", () => {
+    expect(effectTurnsSchema.parse(3)).toBe(3);
+    expect(effectTurnsSchema.parse("2d4")).toBe("2d4");
+    expect(effectTurnsSchema.safeParse("2+2").success).toBe(false);
+    expect(clampTurns(0)).toBe(1);
+    expect(clampTurns(500)).toBe(99);
   });
 });

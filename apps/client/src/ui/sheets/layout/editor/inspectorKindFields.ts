@@ -7,9 +7,9 @@ import { buildListColumnsEditor } from "./listColumnsEditor";
 
 export type ComponentPatch = (patch: Partial<SheetComponent>) => void;
 
-function formulaRow(component: SheetComponent, patch: ComponentPatch, kind: "roll" | "computed", hint: string): HTMLElement {
+function formulaRow(component: SheetComponent, patch: ComponentPatch, kind: "roll" | "computed", hint: string, label = "Fórmula"): HTMLElement {
   const validate = kind === "roll" ? isValidRollFormula : isValidComputedFormula;
-  return textRow("Fórmula", component.formula ?? "", "formula", (value) => {
+  return textRow(label, component.formula ?? "", "formula", (value) => {
     const formula = value.trim();
     if (formula && !validate(formula)) {
       ui.notifications.warn(kind === "roll" ? `"${formula}" não é uma rolagem válida.` : `"${formula}" não é um cálculo válido (sem dados, só números, @atalhos e funções como floor, max).`);
@@ -17,6 +17,17 @@ function formulaRow(component: SheetComponent, patch: ComponentPatch, kind: "rol
     }
     patch({ formula: formula || undefined });
   }, { maxlength: 300, placeholder: kind === "roll" ? "1d20 + @forca" : "floor((@forca - 10) / 2)", hint });
+}
+
+function maxFormulaRow(component: SheetComponent, patch: ComponentPatch, label: string, hint: string): HTMLElement {
+  return textRow(label, component.maxFormula ?? "", "maxFormula", (value) => {
+    const formula = value.trim();
+    if (formula && !isValidComputedFormula(formula)) {
+      ui.notifications.warn(`"${formula}" não é um cálculo válido (sem dados, só números, @atalhos e funções como floor, max).`);
+      return;
+    }
+    patch({ maxFormula: formula || undefined });
+  }, { maxlength: 300, placeholder: "@nivel * 5", hint });
 }
 
 const ROLL_MODE_CHOICES: ReadonlyArray<readonly [SheetRollMode, string]> = [
@@ -53,9 +64,17 @@ export function buildKindFields(component: SheetComponent, patch: ComponentPatch
         checkRow("Mostrar botão de rolar", component.rollable !== false, "rollable", (checked) => patch({ rollable: checked ? undefined : false })),
       ];
     case "resource":
-      return [initialNumberRow(component, patch, "Valor inicial (atual e máximo)"), numberRow("Mínimo", component.min, "min", (value) => patch({ min: value }))];
+      return [
+        initialNumberRow(component, patch, "Valor inicial (atual e máximo)"),
+        numberRow("Mínimo", component.min, "min", (value) => patch({ min: value })),
+        formulaRow(component, patch, "computed", "Opcional: o máximo é calculado e muda sozinho, como na planilha. Ex.: @pv_maximo ou (@vigor + 10) * @nivel. Barra cheia continua cheia quando o máximo sobe.", "Máximo (fórmula)"),
+      ];
     case "pips":
-      return [numberRow("Quantidade de bolinhas", component.max ?? 3, "max", (value) => patch({ max: Math.min(MAX_PIPS, Math.max(1, Math.round(value ?? 3))) }), { min: 1, max: MAX_PIPS }), initialNumberRow(component, patch, "Marcadas no início")];
+      return [
+        numberRow("Quantidade de bolinhas", component.max ?? 3, "max", (value) => patch({ max: Math.min(MAX_PIPS, Math.max(1, Math.round(value ?? 3))) }), { min: 1, max: MAX_PIPS }),
+        maxFormulaRow(component, patch, "Quantidade (fórmula)", `Opcional: a quantidade muda sozinha, ex.: @nivel ou 2 + @vigor (de 1 a ${MAX_PIPS}).`),
+        initialNumberRow(component, patch, "Marcadas no início"),
+      ];
     case "text":
     case "longtext":
       return [textRow("Texto inicial", typeof component.initial === "string" ? component.initial : "", "initial", (value) => patch({ initial: value || undefined }), { maxlength: 2000 })];
@@ -114,6 +133,7 @@ function skillsFields(component: SheetComponent, patch: ComponentPatch): HTMLEle
   else rows.push(numberRow("Mínimo", component.min, "min", (value) => patch({ min: value })));
   rows.push(
     numberRow("Pontos máximos (vazio = sem limite)", component.pointsMax, "pointsMax", (value) => patch({ pointsMax: value && value > 0 ? Math.min(MAX_SKILL_POINTS, Math.round(value)) : undefined }), { min: 0, max: MAX_SKILL_POINTS, step: 1, hint: "Aparece no topo como \"máx\". O total fica vermelho se passar." }),
+    maxFormulaRow(component, patch, "Pontos máximos (fórmula)", "Opcional: troca o número fixo, ex.: (@intelecto + 6) * 5. Muda sozinho quando os valores mudam."),
     initialNumberRow(component, patch, "Pontos iniciais de cada perícia"),
     formulaRow(component, patch, "roll", "Opcional: o nome da perícia vira botão de rolar. Use @valor para os pontos dela, ex.: 1d20 + @valor"),
     rollModeRow(component, patch),

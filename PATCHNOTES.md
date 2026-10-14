@@ -1,5 +1,31 @@
 # Notas de versão
 
+## 1.4.3
+
+- **Paredes e segredos:** a ferramenta Paredes mudou de nome e ganhou botões para o que antes ficava escondido no clique direito:
+  - **Percepção dos jogadores:** anote quanto cada personagem tirou no teste. As notas são de cada cena: uma cena nova começa sem notas, e voltar a uma cena traz as notas dela;
+  - **Criar baú:** cria um baú no centro da tela e abre a janela para guardar itens, cada um com sua DT;
+  - **Criar armadilha:** cria uma armadilha invisível e abre a configuração dela;
+  - **Segredos desta cena:** lista os baús, as armadilhas e os objetos escondidos, com botões para revelar, achar no mapa e editar.
+- **Revelar segredos:** o mestre pode mostrar a todos, a qualquer momento, um objeto ou nota escondida, ou uma armadilha ainda armada (ela continua armada). Use o olho na lista de segredos ou **Revelar para todos** no clique direito. **Esconder de novo** volta a usar a DT. Dentro do baú, o olho ao lado de cada item revela só aquele item.
+- **Baús:**
+  - **Imagem:** o mestre troca a imagem do baú na própria janela, como nos itens.
+  - **Capacidade:** cada baú pode ter um máximo de itens. Baú cheio não aceita mais itens, nem do mestre nem dos jogadores, e o servidor também confere.
+- **Ícones:** "Imagens do mapa" ganhou um ícone de pasta, para não confundir com o de Camadas. Baús e armadilhas criados pelos botões têm imagens próprias.
+- **Editar com dois cliques:** o mestre abre um baú ou uma armadilha clicando duas vezes nele no mapa.
+- **Borracha:** a lixeira das ferramentas virou borracha. Ative e clique em cada objeto que quer apagar (tiles, baús, armadilhas, desenhos, paredes, portas, luzes, notas ou áreas). Ctrl+Z desfaz.
+- **Dados:**
+  - A animação da rolagem mostra os bônus (o +5 de 1d20+5) e o total no fim.
+  - Na bandeja de dados do chat: **Somar valores**, **Pegar maior dado** ou **Pegar menor dado** (só um por vez).
+- **Efeitos:**
+  - A duração aceita dados (1d4 turnos); o mestre vê no chat quanto saiu.
+  - Efeitos positivos: **Recupera** em vez de **Perde** cura por turno, e **Bônus nas rolagens** soma um valor ou dado (1d4) nas rolagens da ficha. Novos efeitos prontos: **Regenerando** e **Abençoado**.
+- **Ficha padrão:** a ficha "Agente (planilha)" é agora o único modelo que vem com o app e o padrão de personagens, NPCs e inimigos. Os modelos antigos (d20, d100, 2d6, inimigo, chefe, NPC e em branco) saíram; fichas já criadas não mudam, e os modelos salvos pelo mestre continuam.
+- **Fórmulas na ficha:**
+  - **Barras (PV, PE):** o máximo pode ser uma fórmula (ex.: @pv_maximo) e muda sozinho. Barra cheia continua cheia quando o máximo sobe. Na ficha padrão, PV e PE já vêm ligados ao PV máximo e ao PE máximo.
+  - **Bolinhas:** a quantidade pode ser uma fórmula (ex.: @nivel).
+  - **Perícias:** os pontos máximos podem ser uma fórmula (ex.: (@intelecto + 6) * 5).
+
 ## 1.4.2
 
 - **Menu das salas:** cada sala do launcher tem um botão **⋯** com **Trocar nome** e **Excluir**. As duas opções pedem a senha do mestre daquela sala, e o servidor confere a senha antes de mudar qualquer coisa.

@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { isArmedTrap, isConcealedFrom, parsePerceptionScores, readConcealment } from "./concealment";
+import { isArmedTrap, isConcealedFrom, parsePerceptionScores, perceptionScoresUpdate, readConcealment, scenePerceptionScores } from "./concealment";
+
+describe("scene perception scores", () => {
+  it("reads only the scene's own scores", () => {
+    expect(scenePerceptionScores({ perceptionScores: { abc: 14 } })).toEqual({ abc: 14 });
+    expect(scenePerceptionScores(undefined)).toEqual({});
+  });
+
+  it("sets new scores and removes cleared ones", () => {
+    expect(perceptionScoresUpdate({ abc: 10, old: 5 }, { abc: 12 })).toEqual({
+      "flags.world.perceptionScores.abc": 12,
+      "flags.world.perceptionScores.-=old": null,
+    });
+  });
+});
 
 const trap = (triggered: boolean) => ({ name: "Fosso", triggered });
 
@@ -18,8 +32,14 @@ describe("isConcealedFrom", () => {
     expect(isArmedTrap(readConcealment({ trap: trap(false) }))).toBe(true);
   });
 
+  it("shows revealed objects and armed traps to everyone", () => {
+    expect(isConcealedFrom(readConcealment({ perceptionDc: 18, revealed: true }), null)).toBe(false);
+    expect(isConcealedFrom(readConcealment({ trap: trap(false), revealed: true }), null)).toBe(false);
+    expect(isArmedTrap(readConcealment({ trap: trap(false), revealed: true }))).toBe(true);
+  });
+
   it("ignores malformed flags", () => {
-    expect(readConcealment({ perceptionDc: "x", trap: { name: "" } })).toEqual({ perceptionDc: null, trap: null });
+    expect(readConcealment({ perceptionDc: "x", trap: { name: "" } })).toEqual({ perceptionDc: null, trap: null, revealed: false });
     expect(isConcealedFrom(readConcealment(null), null)).toBe(false);
   });
 });

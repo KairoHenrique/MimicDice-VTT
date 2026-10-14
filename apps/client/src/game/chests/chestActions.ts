@@ -1,4 +1,4 @@
-import { CHEST_FLAG, chestSchema, LOOT_REACH_SQUARES, MAX_CHEST_ENTRIES, movableItemData, newChestEntryId, readChest, SOCKET_EVENTS, type Chest, type ChestPutRequest, type ChestTakeRequest } from "@tabbletop/protocol";
+import { CHEST_FLAG, chestCapacity, chestSchema, isChestFull, LOOT_REACH_SQUARES, movableItemData, newChestEntry, readChest, SOCKET_EVENTS, type Chest, type ChestPutRequest, type ChestTakeRequest } from "@tabbletop/protocol";
 import type { Socket } from "socket.io-client";
 import { inventoryCopyData } from "../../ui/items/inventorySync";
 
@@ -57,13 +57,13 @@ export function saveChestAsGameMaster(tile: any, chest: Chest): Promise<unknown>
 export async function addItemAsGameMaster(tile: any, item: any): Promise<void> {
   const chest = chestOf(tile);
   if (!chest) return;
-  if (chest.entries.length >= MAX_CHEST_ENTRIES) {
-    ui.notifications.warn("O baú está cheio.");
+  if (isChestFull(chest)) {
+    ui.notifications.warn(`O baú está cheio (cabem ${chestCapacity(chest)} itens).`);
     return;
   }
   const data = movableItemData(inventoryCopyData(item));
   if (!data) return;
-  await saveChestAsGameMaster(tile, { ...chest, entries: [...chest.entries, { id: newChestEntryId(chest.entries), item: data, perceptionDc: null }] });
+  await saveChestAsGameMaster(tile, { ...chest, entries: [...chest.entries, newChestEntry(chest.entries, data)] });
   if (item.parent) await item.delete();
   ui.notifications.info(`"${item.name}" foi guardado em ${chest.name}.`);
 }

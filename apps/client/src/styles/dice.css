@@ -279,6 +279,26 @@
   padding-top: 6px;
 }
 
+.dice-pool-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 0.8em;
+  color: var(--foreground);
+}
+
+.dice-pool-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.dice-pool-mode input {
+  margin: 0;
+  accent-color: var(--brand);
+}
+
 .dice-pool-row {
   display: flex;
   align-items: center;
@@ -468,6 +488,25 @@
   transform: translateY(2px);
 }
 
+.anim-bonus,
+.anim-total {
+  align-self: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 1.6em;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 3px rgb(0 0 0 / 60%);
+  background: rgb(15 23 42 / 85%);
+  border: 2px solid var(--die-color);
+  filter: drop-shadow(0 8px 10px rgb(0 0 0 / 55%));
+  animation: die-settle 0.35s ease-out both;
+}
+
+.anim-total {
+  background: var(--die-color);
+}
+
 .shape-d4 { clip-path: polygon(50% 0, 100% 92%, 0 92%); }
 .shape-d4 .die-face { transform: translateY(14px); font-size: 0.85em; }
 .shape-d6 { border-radius: 12px; }
@@ -503,7 +542,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .anim-die,
-  .anim-die.settled {
+  .anim-die.settled,
+  .anim-bonus,
+  .anim-total {
     animation: none;
   }
 }

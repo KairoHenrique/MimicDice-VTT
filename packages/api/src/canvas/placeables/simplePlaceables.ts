@@ -42,6 +42,8 @@ export class Tile extends PlaceableObject {
   static override embeddedName = "Tile";
   static layerStateRule: ((document: any) => TileLayerState) | null = null;
   static concealRule: ConcealRule | null = null;
+  /** Opens a special editor for this tile (a chest, a trap); returns false to keep the default behaviour. */
+  static doubleClickRule: ((tile: Tile) => boolean) | null = null;
   mesh: PIXI.Sprite | null = null;
   frame = new PIXI.Graphics();
   /** Size shown while the corner handle is being dragged, before the change is saved. */
@@ -132,6 +134,11 @@ export class Tile extends PlaceableObject {
 
   override _onClickRight(event: PIXI.FederatedPointerEvent): void {
     currentCanvas()?.hud?.showTileMenu?.(this, event);
+  }
+
+  override _onClickLeft2(event?: PIXI.FederatedPointerEvent): void {
+    if ((this.constructor as typeof Tile).doubleClickRule?.(this)) return;
+    super._onClickLeft2(event);
   }
 }
 
