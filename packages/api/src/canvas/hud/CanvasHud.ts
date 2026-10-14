@@ -2,7 +2,7 @@ import type * as PIXI from "pixi.js";
 import { DOOR_KEY_FLAG, DOOR_KEY_FLAG_SCOPE, MAX_DOOR_KEY_NAME_LENGTH, type PlainObject } from "@tabbletop/common";
 import { DialogV2 } from "../../applications/DialogV2";
 import { CONST } from "../../constants";
-import { currentGame, currentUi } from "../../runtime";
+import { currentConfig, currentGame, currentUi } from "../../runtime";
 import type { Token } from "../placeables/Token";
 import type { AmbientLight, Note, Tile, Wall } from "../placeables/simplePlaceables";
 import { buildForm, readForm, type FormFieldSpec } from "./hudForms";
@@ -105,6 +105,7 @@ export class CanvasHud {
     if (user?.isGM) {
       const hidden = token.document.hidden === true;
       entries.push({ label: hidden ? "Revelar aos jogadores" : "Ocultar dos jogadores", icon: hidden ? "fa-solid fa-eye" : "fa-solid fa-eye-slash", onSelect: () => token.document.update({ hidden: !hidden }) });
+      entries.push(this.#combatEntry(token));
       entries.push(this.#pinEntry(token.document));
       entries.push({ label: "Configurar token", icon: "fa-solid fa-gear", onSelect: () => this.configureToken(token) });
     }
@@ -143,6 +144,25 @@ export class CanvasHud {
     const requiredItem = typeof values.requiredItem === "string" ? values.requiredItem.trim() : "";
     await wall.document.update({ [`flags.${DOOR_KEY_FLAG_SCOPE}.${DOOR_KEY_FLAG}`]: requiredItem });
     currentUi()?.notifications?.info(requiredItem ? `Só abre quem carregar "${requiredItem}".` : "Qualquer jogador pode abrir esta porta.");
+  }
+
+  /** GM-only: adds the token to the viewed encounter (creating one for this scene if needed) or takes it out. */
+  #combatEntry(token: Token): MenuEntry {
+    const combat = currentGame()?.combats?.viewed ?? null;
+    const combatant = combat?.combatants?.find((candidate: any) => candidate.tokenId === token.id) ?? null;
+    if (combatant) return { label: "Sair do combate", icon: "fa-solid fa-person-walking-arrow-right", onSelect: () => combatant.delete() };
+    return {
+      label: "Entrar em combate",
+      icon: "fa-solid fa-hand-fist",
+      onSelect: async () => {
+        const sceneId = token.document.parent?.id ?? null;
+        const encounter = combat ?? (await currentConfig().Combat.documentClass.create({ scene: sceneId, active: true, round: 0, turn: null, started: false }));
+        if (!encounter) return;
+        await encounter.createEmbeddedDocuments("Combatant", [
+          { tokenId: token.id, sceneId, actorId: token.document.actorId ?? null, name: String(token.document.name ?? "Token"), img: token.document.texture?.src ?? null, hidden: token.document.hidden === true },
+        ]);
+      },
+    };
   }
 
   /** GM-only: a pinned object cannot be dragged by anyone until the GM unpins it. */

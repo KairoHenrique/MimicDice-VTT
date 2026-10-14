@@ -36,6 +36,7 @@ const WORLD_DOCUMENT_COLLECTIONS: ReadonlyArray<[documentName: string, collectio
   ["JournalEntry", "journal"],
   ["ChatMessage", "messages"],
   ["Scene", "scenes"],
+  ["Combat", "combats"],
 ];
 
 const UNTYPED_DOCUMENTS = ["JournalEntry", "Folder", "User", "ChatMessage", "Scene", "Token", "Tile", "Wall", "AmbientLight", "Note", "Drawing", "MeasuredTemplate"];
@@ -85,8 +86,16 @@ export class Game {
   ready = false;
   paused = false;
   readonly canvas = new Canvas();
-  combat: unknown = null;
   _documentsReady = false;
+
+  get combats(): any {
+    return this.collections.get("Combat");
+  }
+
+  /** The encounter shown in the tracker: the active one of the viewed scene, else its first. */
+  get combat(): any {
+    return this.combats?.viewed ?? null;
+  }
 
   constructor(
     snapshot: WorldSnapshot,

@@ -9,6 +9,7 @@ import { CanvasInteraction } from "./interaction/CanvasInteraction";
 import type { CanvasLayer, InteractionLayer, PlaceablesLayer } from "./layers/CanvasLayer";
 import { DrawingsLayer, GridLayer, LightingLayer, NotesLayer, RegionLayer, TemplateLayer, TilesLayer, TokenLayer, WallsLayer } from "./layers/placeableLayers";
 import { VisibilityLayer } from "./perception/VisibilityLayer";
+import { PingEffects } from "./interface/PingEffect";
 import { colorToNumber, loadTexture } from "./textures";
 
 const DEFAULT_LAYER = "tokens";
@@ -156,6 +157,7 @@ export class Canvas {
     for (const layer of this.placeableLayers) layer.eventMode = "passive";
     this.interface.addChild(this.interaction.overlay, this.interaction.label);
     this.interface.sortableChildren = true;
+    this.#pings = new PingEffects(this.interface, app.ticker);
     this.interface.grid = this.gridLayer;
     this.interaction.attach(view, board);
     app.renderer.on("resize", () => this.pan());
@@ -218,6 +220,7 @@ export class Canvas {
     this.hud.cancelMoveConfirmation();
     this.activeLayer?.deactivate();
     this.activeLayer = null;
+    this.#pings?.clear();
     for (const layer of [...this.layers].reverse()) await layer.tearDown();
     this.background.removeChildren().forEach((child) => child.destroy());
     this.scene = null;
@@ -263,6 +266,15 @@ export class Canvas {
 
   /** A newer pan replaces one still running, so the last requested view always wins. */
   #stopPanAnimation: (() => void) | null = null;
+
+  #pings: PingEffects | null = null;
+
+  /** Highlights a point of the current scene for a few seconds; `color` is a CSS hex string. */
+  async ping(origin: Point, { color, label, size }: { color?: string; label?: string; size?: number } = {}): Promise<void> {
+    if (!this.ready || !this.#pings) return;
+    const gridSize = this.dimensions?.size ?? 100;
+    await this.#pings.play(origin, { color: colorToNumber(color, 0xff6400), label, size: size ?? gridSize * 2 });
+  }
 
   #panToInitialView(scene: any): void {
     const dimensions = this.dimensions as SceneDimensions;

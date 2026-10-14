@@ -106,6 +106,28 @@ export class Scenes extends WorldCollection {
   }
 }
 
+export class CombatEncounters extends WorldCollection {
+  static override documentName = "Combat";
+
+  override get directory(): any {
+    return currentUi()?.combat;
+  }
+
+  /** Encounters of the viewed scene, plus those not tied to any scene. */
+  get combats(): any[] {
+    const sceneId = currentCanvas()?.scene?.id ?? null;
+    return this.filter((combat: any) => !combat.scene || combat._source.scene === sceneId);
+  }
+
+  get active(): any {
+    return this.combats.find((combat: any) => combat.active) ?? null;
+  }
+
+  get viewed(): any {
+    return this.active ?? this.combats[0] ?? null;
+  }
+}
+
 export class Messages extends WorldCollection {
   static override documentName = "ChatMessage";
 

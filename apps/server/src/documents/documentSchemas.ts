@@ -138,7 +138,39 @@ export const chatMessageSchema = z.object({
   _stats: objectRecordSchema.default({}),
 });
 
+const MAX_COMBATANTS = 200;
+const INITIATIVE_LIMIT = 1_000_000;
+
+export const combatantSchema = z.object({
+  ...commonFields,
+  type: z.string().max(64).default("base"),
+  system: objectRecordSchema.default({}),
+  actorId: nullableIdSchema,
+  tokenId: nullableIdSchema,
+  sceneId: nullableIdSchema,
+  name: z.string().trim().max(256).default(""),
+  img: filePathSchema.nullable().default(null),
+  initiative: z.number().finite().min(-INITIATIVE_LIMIT).max(INITIATIVE_LIMIT).nullable().default(null),
+  hidden: z.boolean().default(false),
+  defeated: z.boolean().default(false),
+});
+
+export const combatSchema = z.object({
+  ...commonFields,
+  type: z.string().max(64).default("base"),
+  system: objectRecordSchema.default({}),
+  scene: nullableIdSchema,
+  combatants: z.array(combatantSchema).max(MAX_COMBATANTS).default([]),
+  active: z.boolean().default(false),
+  round: z.number().int().min(0).max(100_000).default(0),
+  turn: z.number().int().min(0).max(MAX_COMBATANTS).nullable().default(null),
+  currentCombatantId: nullableIdSchema,
+  started: z.boolean().default(false),
+});
+
 export const DOCUMENT_SCHEMAS: Readonly<Record<string, z.ZodType<Record<string, unknown>>>> = Object.freeze({
+  Combat: combatSchema,
+  Combatant: combatantSchema,
   Actor: actorSchema,
   Item: itemSchema,
   ActiveEffect: activeEffectSchema,

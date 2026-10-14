@@ -2,22 +2,20 @@ import type { ApplicationConfiguration, RenderOptions } from "@tabbletop/api";
 import { h } from "../../views/dom";
 import { DiceTray } from "../dice/DiceTray";
 import { DicePool, MAX_POOLED_DICE } from "../dice/DicePool";
-import { combinePoolWithInput, parseRollCommand, rollAsSpeaker } from "../dice/rollCommands";
+import { combinePoolWithInput } from "../dice/rollCommands";
 import { DomApplication } from "../DomApplication";
+import { ChatComposer, MAX_CHAT_TEXT_LENGTH } from "./ChatComposer";
 import { SIDEBAR_CONTENT_ID } from "./DocumentDirectory";
 
 const QUICK_DICE = [4, 6, 8, 10, 12, 20, 100];
 const ROLL_MODE_LABELS: Readonly<Record<string, string>> = { publicroll: "Pública", gmroll: "Só o mestre", blindroll: "Às cegas", selfroll: "Só eu" };
 const DICE_SO_NICE_ID = "dice-so-nice";
 
-/**
- * The roll log that stands in for Foundry's chat (`ui.chat`): it lists roll messages and exposes the ChatLog
- * methods packages call, but offers no free-text chat.
- */
+/** Foundry's chat (`ui.chat`): rolls, text messages and whispers, plus the ChatLog methods packages call. */
 export class ChatLog extends DomApplication {
   static tabName = "chat";
-  static tabLabel = "Rolagens";
-  static tabIcon = "fa-solid fa-dice-d20";
+  static tabLabel = "Chat";
+  static tabIcon = "fa-solid fa-comments";
 
   static override DEFAULT_OPTIONS: Partial<ApplicationConfiguration> = {
     id: "chat",
@@ -28,6 +26,7 @@ export class ChatLog extends DomApplication {
 
   readonly #tray = new DiceTray();
   readonly #pool = new DicePool();
+  #composer: ChatComposer | null = null;
   #log: HTMLOListElement | null = null;
   #unread = 0;
 
@@ -101,14 +100,9 @@ export class ChatLog extends DomApplication {
     this.#updateBadge();
   }
 
-  async processMessage(input: string): Promise<unknown> {
-    const command = parseRollCommand(input);
-    if (!command || !Roll.validate(command.formula)) {
-      ui.notifications.warn("Use uma fórmula de dados, por exemplo 1d20 + 5 ou 2d6kh.");
-      return null;
-    }
-    const actor = game.user.character ?? null;
-    return rollAsSpeaker(command.formula, { actor, flavor: command.flavor, rollMode: command.rollMode ?? game.settings.get("core", "rollMode") });
+  async processMessage(input: string): Promise<boolean> {
+    this.#composer ??= new ChatComposer();
+    return this.#composer.send(input, game.settings.get("core", "rollMode"));
   }
 
   #builtInAnimationEnabled(): boolean {
@@ -129,30 +123,34 @@ export class ChatLog extends DomApplication {
   }
 
   #buildRollForm(): HTMLElement {
-    const formulaInput = h("input", { type: "text", name: "formula", placeholder: "1d20 + 5   (ou /gmr 2d6)", autocomplete: "off", maxlength: 500, "aria-label": "Fórmula de rolagem" });
+    this.#composer = new ChatComposer();
+    const formulaInput = h("input", { type: "text", name: "formula", placeholder: "Mensagem, 1d20 + 5 ou /w Nome texto", autocomplete: "off", maxlength: MAX_CHAT_TEXT_LENGTH, "aria-label": "Mensagem ou fórmula de rolagem" });
     const modeSelect = h("select", { name: "rollMode", "aria-label": "Quem vê a rolagem" });
     const currentMode = game.settings.get("core", "rollMode");
     for (const [mode, label] of Object.entries(ROLL_MODE_LABELS)) modeSelect.append(h("option", { value: mode, selected: mode === currentMode }, label));
     modeSelect.addEventListener("change", () => void game.settings.set("core", "rollMode", modeSelect.value));
 
-    const rollButton = h("button", { type: "submit", class: "roll-submit", title: "Rolar" }, h("i", { class: "fa-solid fa-dice" }), " Rolar");
+    const rollButton = h("button", { type: "submit", class: "roll-submit", title: "Enviar a mensagem ou rolar os dados" }, h("i", { class: "fa-solid fa-paper-plane" }), " Enviar");
     const poolPanel = this.#buildDicePoolPanel(rollButton);
     const form = h("form", { class: "roll-form" });
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const formula = combinePoolWithInput(this.#pool.toFormula(), formulaInput.value);
-      if (!(await this.processMessage(formula))) return;
+      const poolFormula = this.#pool.toFormula();
+      const message = combinePoolWithInput(poolFormula, formulaInput.value);
+      const sent = await this.#composer?.send(message, game.settings.get("core", "rollMode"), { rollOnly: Boolean(poolFormula) });
+      if (!sent) return;
       formulaInput.value = "";
       this.#pool.clear();
       poolPanel.refresh();
     });
     const footer = h("div", { class: "roll-form-row" }, modeSelect, rollButton);
     if (game.user.isGM) {
-      const clear = h("button", { type: "button", class: "icon", title: "Apagar todas as rolagens" }, h("i", { class: "fa-solid fa-trash" }));
+      const clear = h("button", { type: "button", class: "icon", title: "Apagar todo o chat" }, h("i", { class: "fa-solid fa-trash" }));
       clear.addEventListener("click", () => void this.#confirmFlush());
       footer.append(clear);
     }
-    form.append(poolPanel.element, formulaInput, footer);
+    const recipientRow = h("div", { class: "roll-form-row" }, this.#composer.recipientSelect);
+    form.append(poolPanel.element, formulaInput, recipientRow, footer);
     return form;
   }
 
@@ -203,8 +201,8 @@ export class ChatLog extends DomApplication {
 
   async #confirmFlush(): Promise<void> {
     const confirmed = await foundry.applications.api.DialogV2.confirm({
-      window: { title: "Apagar rolagens" },
-      content: "<p>Apagar o histórico de rolagens de todos? Essa ação não pode ser desfeita.</p>",
+      window: { title: "Apagar chat" },
+      content: "<p>Apagar todas as mensagens e rolagens de todos? Essa ação não pode ser desfeita.</p>",
     });
     if (confirmed) await this.collection.flush();
   }

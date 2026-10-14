@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from "node:http";
 import { Server, type Socket } from "socket.io";
-import { MAX_PACKAGE_EVENT_BYTES, modifySettingRequestSchema, pullToSceneRequestSchema, SOCKET_EVENTS } from "@tabbletop/protocol";
+import { canvasPingRequestSchema, MAX_PACKAGE_EVENT_BYTES, modifySettingRequestSchema, pullToSceneRequestSchema, SOCKET_EVENTS } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
 import { readSessionToken } from "../security/cookies";
 import { maskAddress } from "../security/networkAddress";
@@ -9,6 +9,7 @@ import { buildWorldSnapshot } from "./buildWorldSnapshot";
 import { registerDocumentHandlers } from "./documentHandlers";
 import { attachPackageEventRelay } from "./packageEventRelay";
 import { PresenceTracker } from "./PresenceTracker";
+import { SocketRateLimiter } from "./SocketRateLimiter";
 
 interface SocketIdentity {
   userId: string;
@@ -71,6 +72,25 @@ function registerCoreHandlers(context: ServerContext, io: Server, socket: Socket
     if (!sceneExists) return acknowledge({ error: "Cena não encontrada" });
     socket.broadcast.emit(SOCKET_EVENTS.PULL_TO_SCENE, { sceneId: parsed.data.sceneId, view: parsed.data.view ?? null });
     acknowledge({ ok: true });
+  });
+
+  registerPingHandler(context, socket, userId);
+}
+
+const PING_BURST = 4;
+const PINGS_PER_SECOND = 1;
+
+/** Pings are relayed to everyone else on the server; only a GM ping may move other players' cameras. */
+function registerPingHandler(context: ServerContext, socket: Socket, userId: string): void {
+  const rateLimiter = new SocketRateLimiter(PING_BURST, PINGS_PER_SECOND);
+  socket.on(SOCKET_EVENTS.CANVAS_PING, (payload: unknown) => {
+    const world = context.activeWorld.current;
+    const parsed = canvasPingRequestSchema.safeParse(payload);
+    if (!world || !parsed.success || !rateLimiter.tryConsume()) return;
+    const sceneExists = world.documents.listCollection("scenes").some((scene) => scene._id === parsed.data.sceneId);
+    if (!sceneExists) return;
+    const pull = parsed.data.pull === true && world.users.isGameMaster(userId);
+    socket.broadcast.emit(SOCKET_EVENTS.CANVAS_PING, { sceneId: parsed.data.sceneId, x: parsed.data.x, y: parsed.data.y, pull, userId });
   });
 }
 

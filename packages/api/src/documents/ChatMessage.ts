@@ -226,7 +226,7 @@ export class ChatMessage extends ClientDocumentMixin(BaseChatMessage) {
       (canDelete ? `<a class="message-delete" data-action="deleteMessage" aria-label="Apagar"><i class="fa-solid fa-trash"></i></a>` : "") +
       (canClose ? `<a class="message-close" data-action="dismissMessage" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></a>` : "") +
       `</span>` +
-      (recipients ? `<span class="whisper-to">Para: ${escapeHTML(recipients)}</span>` : "");
+      (recipients ? `<span class="whisper-to"><i class="fa-solid fa-lock"></i> Privado para: ${escapeHTML(recipients)}</span>` : "");
     const sender = header.querySelector<HTMLElement>(".message-sender");
     const authorColor = this.authorUser?.color;
     if (sender && typeof authorColor === "string" && /^#[0-9a-f]{6}$/i.test(authorColor)) sender.style.borderColor = authorColor;

@@ -1,5 +1,36 @@
 # Notas de versão
 
+## 0.2.0
+
+### Pings no mapa
+
+- **Pingar:** aperte **P** com o mouse sobre o mapa para destacar aquele ponto para todos, com o nome e a cor de quem pingou.
+- **Pingar e levar todos (mestre):** com **Shift + P**, a câmera de todos os jogadores vai até o ponto, inclusive de quem estava em outra cena.
+- A tecla pode ser trocada em Configurações > Atalhos.
+
+### Rastreador de iniciativa
+
+- Nova aba **Combate** na barra lateral.
+- O mestre seleciona os tokens e clica em "Criar combate com os selecionados", ou usa "Entrar em combate" no botão direito do token.
+- **Só o mestre define a iniciativa:** ele digita o número de cada um e a lista se ordena sozinha. Os jogadores só veem a ordem.
+- Botões para iniciar o combate, avançar e voltar turnos e rodadas, limpar as iniciativas e encerrar o combate.
+- O mestre pode esconder um combatente dos jogadores ou marcá-lo como derrotado.
+- Quando chega a sua vez, aparece o aviso "É o seu turno" e a câmera vai até o seu token.
+
+### Chat e sussurros
+
+- **Mensagens de texto:** o que não for rolagem vira mensagem normal no chat. Rolagens continuam funcionando com `/r 1d20` ou só `1d20`.
+- **Escolher para quem enviar:** Todos, Só o mestre ou Privado para um jogador específico.
+- **Comando de sussurro:** `/w Nome mensagem` (também aceita `/w [Ana, Bruno] mensagem`, `/w mestre ...` e `/w jogadores ...`).
+- **O mestre vê todas as conversas privadas**, inclusive as que os jogadores trocam entre si.
+- **Rolagens secretas do mestre:** os modos "Só o mestre", "Às cegas" e "Só eu" continuam disponíveis no seletor de rolagem.
+
+### Segurança
+
+- Pings validados com Zod (cena existente e coordenadas limitadas) e com limite de frequência por jogador. Só o mestre pode levar a câmera de todos.
+- Mensagens privadas só são entregues aos destinatários, ao autor e aos mestres. O texto é escapado no navegador e o HTML é sanitizado no servidor.
+- Jogadores não conseguem alterar a iniciativa, entrar ou sair do combate, nem avançar turnos: essas regras são validadas no servidor.
+
 ## 0.1.1
 
 ### Mapa e movimento

@@ -5,6 +5,8 @@ import { HostToolbar } from "../ui/HostToolbar";
 import { Players } from "../ui/Players";
 import { SceneControls } from "../ui/canvas/SceneControls";
 import { SceneNavigation } from "../ui/canvas/SceneNavigation";
+import { CombatTracker } from "../ui/combat/CombatTracker";
+import { announceOwnTurns } from "../ui/combat/turnNotice";
 import { ChatLog } from "../ui/sidebar/ChatLog";
 import { ActorCreationDialog } from "../ui/actors/ActorCreationDialog";
 import { ActorDirectory } from "../ui/actors/ActorDirectory";
@@ -13,6 +15,7 @@ import { CompendiumDirectory, DocumentDirectory, ItemDirectory, JournalDirectory
 import { Sidebar } from "../ui/sidebar/Sidebar";
 import { registerCoreSettings, readPreferredLanguage } from "./coreSettings";
 import { registerCoreSheets } from "./coreSheets";
+import { listenForPings, registerPingKeybinding } from "./canvasPings";
 import { controlOwnTokenOnSceneLoad, listenForPullToScene, registerTableKeybindings, syncClientPreferences } from "./tableControls";
 
 const SNAPSHOT_TIMEOUT_MS = 15_000;
@@ -47,7 +50,7 @@ function registerSidebarClasses(): void {
   const sidebarNamespace = foundry.applications.sidebar;
   sidebarNamespace.Sidebar = Sidebar;
   sidebarNamespace.DocumentDirectory = DocumentDirectory;
-  Object.assign(sidebarNamespace.tabs, { ChatLog, ActorDirectory, ItemDirectory, JournalDirectory, SceneDirectory, CompendiumDirectory });
+  Object.assign(sidebarNamespace.tabs, { ChatLog, CombatTracker, ActorDirectory, ItemDirectory, JournalDirectory, SceneDirectory, CompendiumDirectory });
 }
 
 async function renderInterface(): Promise<void> {
@@ -97,7 +100,10 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   const activePackages = [snapshot.system, ...snapshot.modules.filter((module) => module.active)].filter((record) => record !== null);
   await loadPackageAssets(activePackages);
   registerTableKeybindings();
+  registerPingKeybinding(socket);
   listenForPullToScene(socket);
+  listenForPings(socket);
+  announceOwnTurns();
   controlOwnTokenOnSceneLoad();
   syncClientPreferences();
   game.keybindings.activateListeners();

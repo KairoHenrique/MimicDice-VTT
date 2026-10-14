@@ -72,6 +72,18 @@ export const sceneViewSchema = z.object({
 });
 export type SceneView = z.infer<typeof sceneViewSchema>;
 
+/** A highlighted point on a scene; `pull` (GM only) also moves everyone's camera there. */
+export const canvasPingRequestSchema = z.object({
+  sceneId: documentIdSchema,
+  x: z.number().finite().min(-COORDINATE_LIMIT).max(COORDINATE_LIMIT),
+  y: z.number().finite().min(-COORDINATE_LIMIT).max(COORDINATE_LIMIT),
+  pull: z.boolean().optional(),
+});
+export type CanvasPingRequest = z.infer<typeof canvasPingRequestSchema>;
+
+export const canvasPingBroadcastSchema = canvasPingRequestSchema.extend({ userId: documentIdSchema });
+export type CanvasPingBroadcast = z.infer<typeof canvasPingBroadcastSchema>;
+
 /** With `view`, players also get the GM's exact camera position and zoom. */
 export const pullToSceneRequestSchema = z.object({ sceneId: documentIdSchema, view: sceneViewSchema.optional() });
 export type PullToSceneRequest = z.infer<typeof pullToSceneRequestSchema>;

@@ -1,6 +1,7 @@
 import type { ApplicationConfiguration } from "@tabbletop/api";
 import { h } from "../../views/dom";
 import { DomApplication } from "../DomApplication";
+import { CombatTracker } from "../combat/CombatTracker";
 import { ChatLog } from "./ChatLog";
 import { DIRECTORY_CLASSES } from "./directoryClasses";
 import { SIDEBAR_CONTENT_ID } from "./DocumentDirectory";
@@ -25,7 +26,7 @@ function isTabAvailable(tabClass: SidebarTabClass): boolean {
   return tabClass.isAvailableToUser?.() ?? true;
 }
 
-const SIDEBAR_TABS: readonly SidebarTabClass[] = [ChatLog as unknown as SidebarTabClass, ...(DIRECTORY_CLASSES as unknown as SidebarTabClass[])];
+const SIDEBAR_TABS: readonly SidebarTabClass[] = [ChatLog as unknown as SidebarTabClass, CombatTracker as unknown as SidebarTabClass, ...(DIRECTORY_CLASSES as unknown as SidebarTabClass[])];
 
 /** Right-hand sidebar hosting the roll log and the document directories as tabs. */
 export class Sidebar extends DomApplication {

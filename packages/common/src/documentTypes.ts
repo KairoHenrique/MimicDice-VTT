@@ -28,6 +28,8 @@ export interface DocumentTypeDefinition {
   gmOnlyFields?: readonly string[];
   /** Boolean field at most one sibling may have set (the active scene). */
   exclusiveWhenField?: string;
+  /** Documents without an ownership map that every user may still see (combat encounters). */
+  everyoneObserves?: boolean;
 }
 
 const BASE_LIMITED_FIELDS = ["_id", "name", "type", "img", "ownership", "folder", "sort"] as const;
@@ -135,6 +137,20 @@ export const WORLD_DOCUMENT_TYPES: Readonly<Record<string, DocumentTypeDefinitio
     publicWhenField: "active",
     exclusiveWhenField: "active",
   },
+  /** Everyone follows the encounter; only the GM runs it. */
+  Combat: {
+    name: "Combat",
+    collection: "combats",
+    embedded: { Combatant: "combatants" },
+    hasOwnership: false,
+    hasTypeData: true,
+    accessModel: "ownership",
+    createPermission: "ASSISTANT",
+    deletePermission: "ASSISTANT",
+    limitedFields: [],
+    htmlFields: [],
+    everyoneObserves: true,
+  },
 });
 
 export const EMBEDDED_DOCUMENT_TYPES: Readonly<Record<string, DocumentTypeDefinition>> = Object.freeze({
@@ -168,6 +184,22 @@ export const EMBEDDED_DOCUMENT_TYPES: Readonly<Record<string, DocumentTypeDefini
     ownershipFromActorField: "actorId",
     gmOnlyFields: ["actorId", "actorLink", "hidden", "disposition", "locked"],
   }),
+  /** Players see the turn order; only the GM decides who fights and sets each initiative. */
+  Combatant: {
+    name: "Combatant",
+    collection: "combatants",
+    embedded: {},
+    hasOwnership: false,
+    hasTypeData: true,
+    accessModel: "ownership",
+    createPermission: "ASSISTANT",
+    deletePermission: "ASSISTANT",
+    limitedFields: [],
+    htmlFields: [],
+    gmOnlyWhenField: "hidden",
+    ownershipFromActorField: "actorId",
+    gmOnlyFields: ["actorId", "tokenId", "sceneId", "name", "img", "hidden", "defeated", "initiative"],
+  },
   Tile: scenePlaceable("Tile", "tiles", { gmOnlyWhenField: "hidden" }),
   Wall: scenePlaceable("Wall", "walls"),
   AmbientLight: scenePlaceable("AmbientLight", "lights", { gmOnlyWhenField: "hidden" }),

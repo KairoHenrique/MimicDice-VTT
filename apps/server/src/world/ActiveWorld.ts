@@ -15,7 +15,7 @@ import { UserService, type UserDocument } from "./UserService";
 import { WorldDatabase, type WorldCollectionName } from "./WorldDatabase";
 import type { WorldManifest, WorldRepository } from "./WorldRepository";
 
-const DOCUMENT_COLLECTIONS: readonly WorldCollectionName[] = ["actors", "items", "journal", "folders", "messages", "scenes"];
+const DOCUMENT_COLLECTIONS: readonly WorldCollectionName[] = ["actors", "items", "journal", "folders", "messages", "scenes", "combats"];
 
 export interface ActiveWorldDependencies {
   passwordHasher: PasswordHasher;
@@ -56,8 +56,7 @@ export class ActiveWorld {
     const permissions = new DocumentPermissionPolicy(
       readConfiguredPermissions,
       (actorId) => actorStore?.get(actorId),
-      () => settings.readWorldValue<boolean>(MAP_LOCKED_SETTING_KEY) === true,
-    );
+      () => settings.readWorldValue<boolean>(MAP_LOCKED_SETTING_KEY) === true,    );
     const doorAccess = new DoorAccessPolicy(permissions, readConfiguredPermissions, () => actorStore?.values() ?? []);
     const documents = new DocumentService(stores, new DocumentSourceValidator(systemModel, manifest.system), permissions, doorAccess);
     return new ActiveWorld(manifest, users, settings, documents, systemModel, rpgDirectory, database);

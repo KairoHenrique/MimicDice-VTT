@@ -1,0 +1,181 @@
+/* Combat tracker (sidebar tab) */
+.combat-sidebar .combat-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px 8px;
+}
+
+.combat-round {
+  font-size: 1.05em;
+}
+
+.combat-current {
+  overflow: hidden;
+  color: var(--brand);
+  font-size: 0.85em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combat-tools,
+.combat-controls {
+  display: flex;
+  gap: 4px;
+  padding: 0 8px 8px;
+}
+
+.combat-tools button,
+.combat-controls button.icon {
+  flex: 1;
+  min-height: 32px;
+  padding: 0;
+}
+
+.combat-controls {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.combat-controls .primary {
+  flex: 2;
+}
+
+.combat-controls .hint,
+.combat-empty {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 0.85em;
+}
+
+.combat-turns {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.combatant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.combatant:hover {
+  background: var(--muted-strong);
+}
+
+.combatant.active {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+.combatant.owned .combatant-name {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.combatant.defeated {
+  opacity: 0.5;
+}
+
+.combatant.defeated .combatant-name {
+  text-decoration: line-through;
+}
+
+.combatant.hidden-combatant .combatant-portrait {
+  opacity: 0.45;
+}
+
+.combatant-portrait {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--muted);
+}
+
+.combatant-portrait.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--muted-foreground);
+}
+
+.combatant-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combatant-controls {
+  display: flex;
+  gap: 2px;
+  opacity: 0.55;
+  transition: opacity var(--transition);
+}
+
+.combatant:hover .combatant-controls,
+.combatant:focus-within .combatant-controls {
+  opacity: 1;
+}
+
+.combatant-control {
+  width: 26px;
+  min-height: 26px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.8em;
+}
+
+.combatant-control[aria-pressed="true"] {
+  color: var(--brand);
+}
+
+.combatant-initiative {
+  flex: none;
+  min-width: 32px;
+  text-align: center;
+  font-size: 1.05em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.combatant-initiative.pending {
+  color: var(--muted-foreground);
+}
+
+.combatant-initiative-input {
+  flex: none;
+  width: 52px;
+  min-height: 32px;
+  padding: 4px 6px;
+  text-align: center;
+  font-size: 1em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  -moz-appearance: textfield;
+}
+
+.combatant-initiative-input::-webkit-outer-spin-button,
+.combatant-initiative-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}

@@ -37,7 +37,10 @@ function authoredOwnershipLevel(source: PlainObject, viewer: Viewer): number {
 
 function ownershipLevelFor(definition: DocumentTypeDefinition, source: PlainObject, viewer: Viewer, parentOwnershipLevel: number): number {
   if (definition.accessModel === "authored") return authoredOwnershipLevel(source, viewer);
-  if (!definition.hasOwnership) return viewer.isGameMaster ? DOCUMENT_OWNERSHIP_LEVELS.OWNER : parentOwnershipLevel;
+  if (!definition.hasOwnership) {
+    if (viewer.isGameMaster) return DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+    return definition.everyoneObserves ? Math.max(parentOwnershipLevel, DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) : parentOwnershipLevel;
+  }
   const level = resolveOwnershipLevel(source.ownership as OwnershipMap | undefined, viewer.userId, viewer.isGameMaster, parentOwnershipLevel);
   if (definition.publicWhenField && source[definition.publicWhenField] === true) return Math.max(level, DOCUMENT_OWNERSHIP_LEVELS.OBSERVER);
   return level;

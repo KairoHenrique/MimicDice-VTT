@@ -1,8 +1,8 @@
 # MimicDice VTT
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.1-blue) ![Status](https://img.shields.io/badge/status-alpha-orange) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-0.2.0-blue) ![Status](https://img.shields.io/badge/status-alpha-orange) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-> **Versão atual: 0.1.1 (alpha).** O projeto está em desenvolvimento ativo, e funcionalidades podem mudar entre versões. Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
+> **Versão atual: 0.2.0 (alpha).** O projeto está em desenvolvimento ativo, e funcionalidades podem mudar entre versões. Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
 
 Mesa virtual (VTT) para jogar RPG com os amigos. Você hospeda a mesa no seu próprio computador, envia o link de convite e os jogadores entram pelo navegador, sem precisar de assinatura nem de servidor na nuvem.
 
@@ -18,6 +18,9 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 - **Movimento com caminho:** segure Ctrl ao arrastar um token para ver a distância e confirmar antes de andar.
 - **Portas com chave:** portas animadas, que podem ser trancadas ou exigir um item carregado pelo personagem.
 - **Ferramentas do mestre:** modo jogo e modo edição, objetos travados no lugar, "Puxar todos" e "Mostrar minha visão" (mesma cena, posição e zoom para todos).
+- **Pings no mapa:** aperte P para destacar um ponto para todos; o mestre, com Shift + P, leva a câmera de todos até lá.
+- **Rastreador de iniciativa:** aba Combate com a ordem dos turnos, iniciativa definida pelo mestre e aviso de "É o seu turno".
+- **Chat com sussurros:** mensagens públicas ou privadas para um jogador, com o mestre vendo todas as conversas, além de rolagens secretas.
 - **Configurações e atalhos:** preferências por usuário e teclas trocáveis, salvas na conta.
 - **Salas no launcher:** crie e abra suas mesas direto pelo app desktop.
 - **Usuários e permissões:** conta do mestre (com "lembrar minha senha"), papéis por jogador e presença em tempo real via Socket.IO.

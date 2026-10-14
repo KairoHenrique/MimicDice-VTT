@@ -2,6 +2,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./styles/base.css";
 import "./styles/applications.css";
 import "./styles/dice.css";
+import "./styles/combat.css";
 import "./styles/canvas.css";
 import "./styles/editors.css";
 import "./styles/sheets.css";

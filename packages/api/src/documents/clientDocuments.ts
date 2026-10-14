@@ -146,7 +146,8 @@ export class Actor extends ClientDocumentMixin(BaseActor) {
   }
 
   get inCombat(): boolean {
-    return false;
+    const combat = currentGame()?.combat;
+    return Boolean(combat?.combatants?.some?.((combatant: any) => combatant.actorId === this.id));
   }
 
   get appliedEffects(): ActiveEffect[] {
@@ -227,11 +228,24 @@ export class Combatant extends ClientDocumentMixin(BaseCombatant) {
   }
 
   get token(): any {
-    return null;
+    if (!this.tokenId) return null;
+    return currentGame()?.scenes?.get(this.sceneId)?.tokens?.get(this.tokenId) ?? null;
   }
 
   override get isOwner(): boolean {
     return Boolean(currentGame()?.user?.isGM || this.actor?.isOwner);
+  }
+
+  get isNPC(): boolean {
+    return !this.actor?.hasPlayerOwner;
+  }
+
+  get isDefeated(): boolean {
+    return Boolean(this.defeated);
+  }
+
+  get visible(): boolean {
+    return this.isOwner || !this.hidden;
   }
 
   _getInitiativeFormula(): string {
@@ -243,26 +257,56 @@ export class Combatant extends ClientDocumentMixin(BaseCombatant) {
     return new RollClass(formula || this._getInitiativeFormula(), this.actor?.getRollData?.() ?? {});
   }
 
+  /** Hidden or GM-controlled combatants roll privately, so players do not learn about enemies early. */
   async rollInitiative(formula?: string): Promise<unknown> {
     const roll: any = this.getInitiativeRoll(formula);
     await roll.evaluate();
-    return this.update({ initiative: roll.total });
+    const updated = await this.update({ initiative: roll.total });
+    const isPrivate = this.hidden || (this.isNPC && Boolean(currentGame()?.user?.isGM));
+    await roll.toMessage?.({ speaker: { actor: this.actorId ?? null, alias: this.name }, flavor: `${this.name} rolou iniciativa` }, { rollMode: isPrivate ? "gmroll" : "publicroll" });
+    return updated;
   }
 }
 
-/** Client-side combat encounter model; the world does not persist combats yet, so there is no tracker UI. */
+/** Highest initiative first; combatants still waiting to roll go last; ties keep a stable alphabetical order. */
+function compareTurnOrder(left: Combatant, right: Combatant): number {
+  const leftInitiative = left.initiative ?? -Infinity;
+  const rightInitiative = right.initiative ?? -Infinity;
+  if (leftInitiative !== rightInitiative) return rightInitiative - leftInitiative;
+  return String(left.name ?? "").localeCompare(String(right.name ?? ""), "pt-BR") || String(left.id).localeCompare(String(right.id));
+}
+
+/** A combat encounter: turn order by initiative, rounds, and the GM's controls to run it. */
 export class Combat extends ClientDocumentMixin(BaseCombat) {
+  /** Players do not receive hidden combatants, so the turn is tracked by id rather than by position in their list. */
   get combatant(): Combatant | null {
+    const currentId = this._source.currentCombatantId;
+    if (currentId) return this.combatants?.get(currentId) ?? null;
     return this.turns[this.turn ?? -1] ?? null;
+  }
+
+  #turnUpdate(round: number, index: number): PlainObject {
+    const turns = this.turns;
+    const bounded = turns.length === 0 ? null : Math.min(Math.max(index, 0), turns.length - 1);
+    return { round, turn: bounded, currentCombatantId: bounded === null ? null : turns[bounded].id };
+  }
+
+  #currentIndex(): number {
+    const current = this.combatant;
+    return current ? this.turns.indexOf(current) : (this.turn ?? -1);
   }
 
   get turns(): Combatant[] {
     const combatants: Combatant[] = Array.from(this.combatants?.values() ?? []);
-    return combatants.sort((left, right) => (right.initiative ?? -Infinity) - (left.initiative ?? -Infinity));
+    return combatants.sort(compareTurnOrder);
   }
 
   get isActive(): boolean {
     return Boolean(this.active);
+  }
+
+  get previous(): { round: number; turn: number | null } {
+    return { round: this.round, turn: this.turn };
   }
 
   async rollInitiative(ids: string | string[], { formula }: { formula?: string } = {}): Promise<this> {
@@ -271,6 +315,53 @@ export class Combat extends ClientDocumentMixin(BaseCombat) {
       if (combatant?.isOwner) await combatant.rollInitiative(formula);
     }
     return this;
+  }
+
+  async rollAll(options: { formula?: string } = {}): Promise<this> {
+    const pending = this.turns.filter((combatant) => combatant.isOwner && combatant.initiative === null);
+    return this.rollInitiative(pending.map((combatant) => combatant.id), options);
+  }
+
+  async rollNPC(options: { formula?: string } = {}): Promise<this> {
+    const pending = this.turns.filter((combatant) => combatant.isOwner && combatant.isNPC && combatant.initiative === null);
+    return this.rollInitiative(pending.map((combatant) => combatant.id), options);
+  }
+
+  async resetAll(): Promise<unknown> {
+    const updates = this.turns.map((combatant) => ({ _id: combatant.id, initiative: null }));
+    await this.updateEmbeddedDocuments("Combatant", updates);
+    return this.started ? this.update(this.#turnUpdate(this.round, 0)) : this.update({ turn: null, currentCombatantId: null });
+  }
+
+  async startCombat(): Promise<unknown> {
+    return this.update({ started: true, active: true, ...this.#turnUpdate(1, 0) });
+  }
+
+  async nextTurn(): Promise<unknown> {
+    const count = this.turns.length;
+    if (count === 0) return this;
+    const next = this.#currentIndex() + 1;
+    if (next >= count) return this.nextRound();
+    return this.update(this.#turnUpdate(this.round, next));
+  }
+
+  async previousTurn(): Promise<unknown> {
+    const current = this.#currentIndex();
+    if (current > 0) return this.update(this.#turnUpdate(this.round, current - 1));
+    if (this.round <= 1) return this;
+    return this.update(this.#turnUpdate(this.round - 1, this.turns.length - 1));
+  }
+
+  async nextRound(): Promise<unknown> {
+    return this.update(this.#turnUpdate(this.round + 1, 0));
+  }
+
+  async previousRound(): Promise<unknown> {
+    return this.update(this.#turnUpdate(Math.max(this.round - 1, 1), 0));
+  }
+
+  async endCombat(): Promise<unknown> {
+    return this.delete();
   }
 }
 

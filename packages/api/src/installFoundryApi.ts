@@ -39,7 +39,7 @@ import { EmbeddedCollection } from "./documents/abstract/EmbeddedCollection";
 import * as baseDocuments from "./documents/baseDocuments";
 import { ChatMessage } from "./documents/ChatMessage";
 import { ActiveEffect, Actor, Combat, Combatant, Folder, Item, JournalEntry, JournalEntryPage } from "./documents/clientDocuments";
-import { Actors, DocumentCollection, Folders, Items, Journal, Messages, Scenes, WorldCollection } from "./documents/collections";
+import { Actors, CombatEncounters, DocumentCollection, Folders, Items, Journal, Messages, Scenes, WorldCollection } from "./documents/collections";
 import * as sceneBaseDocuments from "./documents/sceneBaseDocuments";
 import {
   AmbientLightDocument,
@@ -104,7 +104,7 @@ const DOCUMENT_GLOBALS = {
   DrawingDocument,
   MeasuredTemplateDocument,
 };
-const WORLD_COLLECTIONS = { Actors, Items, Journal, Folders, Users, Messages, Scenes };
+const WORLD_COLLECTIONS = { Actors, Items, Journal, Folders, Users, Messages, Scenes, CombatEncounters };
 const PLACEABLE_LAYERS: Record<string, unknown> = {
   Token: CANVAS_LAYER_CLASSES.TokenLayer,
   Tile: CANVAS_LAYER_CLASSES.TilesLayer,
@@ -139,7 +139,7 @@ function configurePlaceables(config: Record<string, any>): void {
 }
 
 function configureDocumentClasses(config: Record<string, any>): void {
-  const collectionsByDocument: Record<string, unknown> = { Actor: Actors, Item: Items, JournalEntry: Journal, Folder: Folders, User: Users, ChatMessage: Messages, Scene: Scenes };
+  const collectionsByDocument: Record<string, unknown> = { Actor: Actors, Item: Items, JournalEntry: Journal, Folder: Folders, User: Users, ChatMessage: Messages, Scene: Scenes, Combat: CombatEncounters };
   for (const [documentName, documentClass] of Object.entries(CLIENT_DOCUMENTS)) {
     config[documentName] = {
       sheetClasses: {},

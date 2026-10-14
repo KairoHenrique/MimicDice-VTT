@@ -30,6 +30,7 @@ export const SOCKET_EVENTS = Object.freeze({
   MODIFY_DOCUMENT: "modifyDocument",
   WORLD_RELOADED: "worldReloaded",
   PULL_TO_SCENE: "pullToScene",
+  CANVAS_PING: "canvasPing",
 });
 
 export const MAX_DOCUMENT_BYTES = 1024 * 1024;

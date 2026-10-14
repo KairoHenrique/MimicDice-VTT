@@ -284,6 +284,7 @@ export class BaseCombat extends Document {
       active: new BooleanField(),
       round: new NumberField({ required: true, integer: true, min: 0, initial: 0, nullable: false }),
       turn: new NumberField({ integer: true, min: 0, initial: null }),
+      currentCombatantId: new StringField({ nullable: true, initial: null, blank: false }),
       started: new BooleanField(),
       ...metadataFields(),
     };

@@ -7,13 +7,15 @@ import type { InstalledPackage } from "../packages/PackageRegistry";
 
 const MAX_TEMPLATE_BYTES = 2 * 1024 * 1024;
 
-const SUBTYPED_DOCUMENTS = ["Actor", "Item", "ActiveEffect", "JournalEntryPage"] as const;
+const SUBTYPED_DOCUMENTS = ["Actor", "Item", "ActiveEffect", "JournalEntryPage", "Combat", "Combatant"] as const;
 
 const CORE_SUBTYPES: Record<string, string[]> = {
   Actor: [],
   Item: [],
   ActiveEffect: ["base"],
   JournalEntryPage: ["text", "image", "pdf", "video"],
+  Combat: ["base"],
+  Combatant: ["base"],
 };
 
 const FALLBACK_SUBTYPE = "base";
