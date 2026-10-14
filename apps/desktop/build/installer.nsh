@@ -1,24 +1,62 @@
 ﻿!include MUI2.nsh
 !include nsDialogs.nsh
 
+!define MUI_BGCOLOR "09090B"
+!define MUI_TEXTCOLOR "FAFAFA"
+!define LANG_ID_PORTUGUESE_BR 1046
+
 !ifndef BUILD_UNINSTALLER
   Var desktopShortcutCheckbox
   Var createDesktopShortcut
+
+  !macro customWelcomePage
+    !insertmacro MUI_PAGE_WELCOME
+  !macroend
 
   !macro customPageAfterChangeDir
     Page custom desktopShortcutPageShow desktopShortcutPageLeave
   !macroend
 
+  !macro customFinishPage
+    Function StartApp
+      ${If} ${isUpdated}
+        StrCpy $1 "--updated"
+      ${Else}
+        StrCpy $1 ""
+      ${EndIf}
+      ${StdUtils.ExecShellAsUser} $0 "$launchLink" "open" "$1"
+    FunctionEnd
+
+    !define MUI_FINISHPAGE_RUN
+    !define MUI_FINISHPAGE_RUN_FUNCTION "StartApp"
+    !define MUI_PAGE_CUSTOMFUNCTION_SHOW finishPageShow
+    !insertmacro MUI_PAGE_FINISH
+
+    # Themed checkboxes ignore SetCtlColors, so the run option would be dark text on the dark page.
+    Function finishPageShow
+      System::Call 'UxTheme::SetWindowTheme(p $mui.FinishPage.Run, w " ", w " ")'
+      SetCtlColors $mui.FinishPage.Run "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
+    FunctionEnd
+  !macroend
+
   Function desktopShortcutPageShow
-    !insertmacro MUI_HEADER_TEXT "Atalhos" "Escolha como você quer abrir o ${PRODUCT_NAME}."
+    ${If} $LANGUAGE == ${LANG_ID_PORTUGUESE_BR}
+      !insertmacro MUI_HEADER_TEXT "Atalhos" "Escolha como você quer abrir o ${PRODUCT_NAME}."
+      StrCpy $1 "O ${PRODUCT_NAME} sempre aparece no Menu Iniciar. Marque abaixo se também quiser um ícone na Área de Trabalho."
+      StrCpy $2 "Criar atalho na Área de Trabalho"
+    ${Else}
+      !insertmacro MUI_HEADER_TEXT "Shortcuts" "Choose how you want to open ${PRODUCT_NAME}."
+      StrCpy $1 "${PRODUCT_NAME} is always added to the Start Menu. Check the box below if you also want an icon on the Desktop."
+      StrCpy $2 "Create a Desktop shortcut"
+    ${EndIf}
     nsDialogs::Create 1018
     Pop $0
     ${If} $0 == error
       Abort
     ${EndIf}
-    ${NSD_CreateLabel} 0 0 100% 24u "O ${PRODUCT_NAME} sempre aparece no Menu Iniciar. Marque abaixo se também quiser um ícone na Área de Trabalho."
+    ${NSD_CreateLabel} 0 0 100% 24u $1
     Pop $0
-    ${NSD_CreateCheckbox} 0 32u 100% 12u "Criar atalho na Área de Trabalho"
+    ${NSD_CreateCheckbox} 0 32u 100% 12u $2
     Pop $desktopShortcutCheckbox
     ${If} $createDesktopShortcut != ${BST_UNCHECKED}
       ${NSD_Check} $desktopShortcutCheckbox
@@ -40,8 +78,8 @@
 !endif
 
 !macro customUnInstall
-  ${ifNot} ${isUpdated}
+  ${IfNot} ${isUpdated}
     WinShell::UninstShortcut "$DESKTOP\${SHORTCUT_NAME}.lnk"
     Delete "$DESKTOP\${SHORTCUT_NAME}.lnk"
-  ${endIf}
+  ${EndIf}
 !macroend
