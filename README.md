@@ -100,6 +100,35 @@ Se a fórmula estiver errada, a rolagem não acontece e o app avisa: confira os 
 - Sessão fechada, mapa travado e pausa são aplicados no servidor, não só na tela.
 - O app desktop isola o renderer e restringe as permissões do Electron e os canais IPC.
 
+## Como funciona
+
+```mermaid
+flowchart TD
+    subgraph Mestre["PC do mestre"]
+        L["Launcher (Electron)<br/>salas, senha do mestre, links de convite"] --> S
+        U["electron-updater<br/>atualização automática"] -.-> L
+        subgraph S["Servidor local (Express + Socket.IO)"]
+            V{"Validação Zod<br/>+ rate limiting<br/>+ permissões"}
+            V -->|ok| R["Regras no servidor<br/>sessão, pausa, baús, DT, portas"]
+            V -->|negado| X["Erro sem detalhes internos"]
+            R --> DB[("LevelDB<br/>mundos, atores, cenas, itens")]
+            R --> F["Arquivos<br/>mapas, tokens, pastas dos jogadores"]
+        end
+    end
+
+    subgraph Navegador["Mestre e jogadores no navegador"]
+        C["Cliente (Vite)"] --> API["Runtime da mesa<br/>compatível com a API do Foundry"]
+        API --> CV["Canvas PixiJS<br/>camadas, visão, névoa, tokens"]
+        API --> FI["Fichas montáveis<br/>fórmulas @atalho e cálculos"]
+        API --> DA["Dados e chat<br/>bandeja, sussurros, rolagens secretas"]
+        API --> SI["Sistemas e módulos<br/>instalados pelo manifesto"]
+    end
+
+    C <-->|"Socket.IO (tempo real)"| V
+    C -->|"HTTP: login, uploads"| V
+    R -->|"atualizações para todos"| C
+```
+
 ## Estrutura do projeto
 
 Monorepo com npm workspaces:
@@ -187,6 +216,35 @@ O servidor roda no seu computador, então os jogadores precisam alcançá-lo pel
 - **Redirecionamento de porta** no roteador para a porta `30000`.
 
 Se o Windows bloquear a conexão, use o botão **Liberar porta no firewall** no launcher.
+
+## Desenvolvimento
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="https://github.com/KairoHenrique">
+        <img src="https://github.com/KairoHenrique.png" width="100" height="100" style="border-radius: 50%;" alt="Kairo Henrique">
+      </a>
+      <br>
+      <b>Kairo Henrique<br>Ferreira Martins</b>
+      <br>
+      Desenvolvedor
+      <br>
+      <a href="https://github.com/KairoHenrique">github.com/KairoHenrique</a>
+    </td>
+    <td align="center" width="50%">
+      <a href="https://github.com/L30NRd">
+        <img src="https://github.com/L30NRd.png" width="100" height="100" style="border-radius: 50%;" alt="Leonardo Coimbra">
+      </a>
+      <br>
+      <b>Leonardo Coimbra</b>
+      <br>
+      Ajuda no desenvolvimento
+      <br>
+      <a href="https://github.com/L30NRd">github.com/L30NRd</a>
+    </td>
+  </tr>
+</table>
 
 ## Licença
 
