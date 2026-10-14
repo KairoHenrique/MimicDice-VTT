@@ -143,7 +143,7 @@ export class DocumentService {
   #update(target: OperationTarget, updates: PlainObject[], actor: DocumentActor, author: { userId: string; isGameMaster: boolean }): AffectedDocument[] {
     const prepared = updates.map((rawChanges) => {
       const existing = this.#requireExisting(target, rawChanges._id);
-      if (this.doorAccess.isDoorOperation(target.definition, existing, rawChanges)) this.doorAccess.assertMayOperateDoor(actor, existing);
+      if (this.doorAccess.isDoorOperation(target.definition, existing, rawChanges)) this.doorAccess.assertMayOperateDoor(actor, existing, target.ancestors[0]?.source ?? null);
       else this.permissions.assertOwnerOrMayMove(actor, target.definition, existing, rawChanges, target.ancestors);
       this.permissions.assertNotPinned(actor, existing, rawChanges);
       this.permissions.assertAuthoredNotLocked(actor, target.definition, existing);

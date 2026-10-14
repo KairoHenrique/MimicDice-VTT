@@ -99,6 +99,7 @@ export class Roll {
     return String(formula).replace(DATA_REFERENCE, (match, path: string) => {
       const value = getProperty(data, path);
       if (typeof value === "number" && Number.isFinite(value)) return String(value);
+      if (typeof value === "boolean") return value ? "1" : "0";
       if (typeof value === "string" && value.trim() !== "") return value.length > 500 ? match : value;
       if (warn) currentGame()?.ui?.notifications?.warn?.(`O valor ${match} não existe nos dados da rolagem`);
       return missing !== undefined ? String(missing) : match;

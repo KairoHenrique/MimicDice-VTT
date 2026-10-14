@@ -1,5 +1,18 @@
 # Notas de versão
 
+## 1.3.0
+
+- **Habilidades:** a aba **Rolagens** da ficha virou **Habilidades**. Cada habilidade tem nome, descrição (a caixa de texto cresce e pode ser aumentada arrastando o canto) e quantas rolagens quiser, cada uma com o nome que o jogador ou o mestre escolher, por exemplo **Acerto** e **Efeito**. No chat a rolagem aparece como "Habilidade: Rolagem". As rolagens antigas viram habilidades automaticamente. Quem só vê a ficha lê as habilidades sem rolar.
+- **Modelo "Agente (planilha)":** a ficha da planilha da mesa, com todas as fórmulas, agora é o modelo padrão de personagem (o Aventureiro d20 continua em **Modelos**). Classes Brutamonte, Sagaz e Erudito; agilidade, força, intelecto, presença e vigor; pontos de atributo e de perícia livres; máximo por perícia pelo nível; PV e PE máximos por classe e nível; defesa, bloqueio, esquiva e inventário máximo; armaduras (DEF, RDM, RDF); dano e DT de milagres, arcanismo e magias ocultas; arma equipada com teste de acerto e dano; bônus, inventário, itens especiais e notas.
+- **Fórmulas com condições:** os cálculos e rolagens da ficha aceitam `if`, `choose` e comparações (`eq`, `gt`, `gte`, `lt`, `lte`, `neq`, `and`, `or`, `not`), como o SE da planilha. Caixas valem 1 ou 0, `@chave_n` dá a posição da opção escolhida e `@pericias_total` soma as perícias.
+
+- **Compartilhar fichas:** o botão **Compartilhar** no topo da ficha (só o mestre) escolhe quais jogadores, ou todos, podem **ver** ou **ver e editar** aquela ficha. Serve para um inventário da base que todos usam, para mostrar a ficha de outro personagem ou de um NPC. Compartilhar não dá controle do token nem a visão do personagem, e o jogador não pode apagar a ficha nem mudar o compartilhamento.
+- **Fichas vinculadas:** na ficha do personagem do jogador aparece a linha **Fichas vinculadas**, com um botão para cada ficha que o mestre compartilhou com ele (lápis: pode editar; olho: só leitura). O mestre vê a mesma linha na ficha do jogador. A lista se atualiza sozinha quando o compartilhamento muda.
+- **Aviso de mensagem privada:** quando alguém manda uma mensagem privada, toca um som curto e aparece um aviso no canto com quem mandou, o começo da mensagem e o botão **Abrir chat**. Rolagens privadas não disparam o aviso.
+- **Cortar paredes:** clique duplo numa parede (mestre, na camada de paredes) corta ela em duas naquele ponto, encaixando no canto do grid mais perto. As duas partes mantêm as configurações da original. Ajuda a abrir espaço para uma porta.
+- **Portas fora da visão:** com a visão por token ligada, o jogador só vê as portas que algum personagem dele enxerga.
+- **Abrir porta só na visão:** o jogador só abre ou fecha uma porta que algum personagem dele esteja vendo. O servidor também confere isso.
+
 ## 1.2.2
 
 - **Apagar notas:** clique direito numa nota abre um menu com **Abrir nota**, **Editar nota** e **Apagar nota**. O mestre apaga qualquer nota; o jogador, as que forem dele.

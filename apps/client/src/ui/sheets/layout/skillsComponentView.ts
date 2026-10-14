@@ -1,6 +1,6 @@
 import { MAX_PIPS, MAX_SKILL_COLUMNS, type SheetComponent, type SheetSkill } from "@tabbletop/protocol";
 import { h } from "../../../views/dom";
-import { rollFromSheet } from "../rollFormulasSection";
+import { rollFromSheet } from "../sheetRoll";
 import type { BoardContext } from "./boardContext";
 import { clampNumber } from "./sheetLayoutRules";
 import { readSkillValues, skillPointsTotal } from "./skillList";
@@ -15,7 +15,7 @@ interface SkillRowContext {
 function skillName(row: SkillRowContext, skill: SheetSkill, value: number): HTMLElement {
   if (!row.formula) return h("span", { class: "md-skill-name", title: skill.label }, skill.label);
   const formula = row.formula;
-  const button = h("button", { type: "button", class: "md-skill-name md-skill-roll", title: `Rolar ${skill.label}: ${formula}`, disabled: !row.context.actor.isOwner }, h("i", { class: "fa-solid fa-dice-d20", "aria-hidden": "true" }), ` ${skill.label}`);
+  const button = h("button", { type: "button", class: "md-skill-name md-skill-roll", title: `Rolar ${skill.label}: ${formula}`, disabled: !row.context.actor.canEditSheet() }, h("i", { class: "fa-solid fa-dice-d20", "aria-hidden": "true" }), ` ${skill.label}`);
   button.addEventListener("click", () => rollFromSheet(row.context.actor, formula, skill.label, { ...row.context.extraRollData(), valor: value }, row.component.rollMode));
   return button;
 }

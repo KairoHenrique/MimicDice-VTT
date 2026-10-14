@@ -54,7 +54,9 @@ export class DocumentSheetV2 extends ApplicationV2 {
   }
 
   get isEditable(): boolean {
-    return this.document.testUserPermission(currentGame()?.user, this.options.editPermission);
+    const user = currentGame()?.user;
+    if (this.document.testUserPermission(user, this.options.editPermission)) return true;
+    return this.options.editPermission === DOCUMENT_OWNERSHIP_LEVELS.OWNER && Boolean(this.document.canEditSheet?.(user));
   }
 
   override render(options: RenderOptions | boolean = {}, legacyOptions: RenderOptions = {}): Promise<this> {
@@ -149,7 +151,7 @@ export class DocumentSheet extends FormApplication {
   }
 
   override get isEditable(): boolean {
-    return this.options.editable && this.document.isOwner;
+    return this.options.editable && Boolean(this.document.canEditSheet?.() ?? this.document.isOwner);
   }
 
   override async getData(options: object = {}): Promise<object> {

@@ -1,6 +1,7 @@
 import type { ActorRole, LegacySheetField as SheetField, LegacySheetFieldType as SheetFieldType, LegacySheetSection as SheetSection, SheetTemplate } from "@tabbletop/protocol";
 import { migrateLegacyLayout } from "./legacyLayoutMigration";
 import { keyFromLabel } from "./sheetLayoutRules";
+import { SPREADSHEET_PRESET_ID, spreadsheetPreset } from "./spreadsheetPreset";
 
 type FieldExtras = Partial<Omit<SheetField, "id" | "key" | "label" | "type">>;
 
@@ -156,10 +157,10 @@ function blank(): SheetTemplate {
   return template("preset-blank", "Em branco", "npc", "Comece do zero e monte do seu jeito.", []);
 }
 
-export const SHEET_PRESETS: readonly SheetTemplate[] = Object.freeze([adventurerD20(), quickEnemy(), bossEnemy(), standardNpc(), investigationD100(), narrative2d6(), blank()]);
+export const SHEET_PRESETS: readonly SheetTemplate[] = Object.freeze([spreadsheetPreset(), adventurerD20(), quickEnemy(), bossEnemy(), standardNpc(), investigationD100(), narrative2d6(), blank()]);
 
 /** Built-in fallback when the GM has not chosen a default model for the role. */
-export const BUILT_IN_DEFAULT_TEMPLATE_IDS: Readonly<Record<ActorRole, string>> = Object.freeze({ player: "preset-d20", npc: "preset-npc", enemy: "preset-enemy" });
+export const BUILT_IN_DEFAULT_TEMPLATE_IDS: Readonly<Record<ActorRole, string>> = Object.freeze({ player: SPREADSHEET_PRESET_ID, npc: "preset-npc", enemy: "preset-enemy" });
 
 export function isPresetId(templateId: string): boolean {
   return templateId.startsWith("preset-");

@@ -11,6 +11,27 @@ export const SHEET_VARIANTS_FLAG = "sheetVariants";
 export const APPEARANCES_FLAG = "appearances";
 export const ACTIVE_APPEARANCE_FLAG = "activeAppearance";
 
+/** Who else may open the sheet: `all` or a user id, mapped to view or edit. Only the GM sets it. */
+export const SHEET_SHARE_FLAG = "sheetShare";
+export const SHEET_SHARE_EVERYONE = "all";
+export const SHEET_SHARE_ACCESS = ["view", "edit"] as const;
+export type SheetShareAccess = (typeof SHEET_SHARE_ACCESS)[number];
+const MAX_SHEET_SHARES = 100;
+
+export const sheetShareSchema = z
+  .record(z.union([z.literal(SHEET_SHARE_EVERYONE), z.string().regex(/^[A-Za-z0-9]{16}$/)]), z.enum(SHEET_SHARE_ACCESS))
+  .refine((shares) => Object.keys(shares).length <= MAX_SHEET_SHARES, "Compartilhamentos demais");
+export type SheetShare = z.infer<typeof sheetShareSchema>;
+
+/** What a player got through the GM's sharing; the more generous of their own entry and the one for everyone. */
+export function sheetShareAccess(source: unknown, userId: string): SheetShareAccess | null {
+  const parsed = sheetShareSchema.safeParse(worldFlags(source)[SHEET_SHARE_FLAG] ?? {});
+  if (!parsed.success) return null;
+  const grants = [parsed.data[userId], parsed.data[SHEET_SHARE_EVERYONE]];
+  if (grants.includes("edit")) return "edit";
+  return grants.includes("view") ? "view" : null;
+}
+
 export const MAX_SHEET_VARIANTS = 5;
 export const MAX_APPEARANCES = 5;
 
@@ -55,6 +76,7 @@ function layoutCore(layout: unknown): unknown {
 
 function refusedGameMasterChange(next: Record<string, unknown>): string | null {
   if (!sheetVariantsSchema.safeParse(next[SHEET_VARIANTS_FLAG] ?? []).success) return "Modelos de ficha inválidos";
+  if (!sheetShareSchema.safeParse(next[SHEET_SHARE_FLAG] ?? {}).success) return "Compartilhamento de ficha inválido";
   return actorEffectsSchema.safeParse(next[ACTOR_EFFECTS_FLAG] ?? []).success ? null : "Efeitos inválidos";
 }
 
@@ -77,6 +99,7 @@ export function refusedActorChange({ isGameMaster, playerEditingAllowed, before,
   if (isGameMaster) return refusedGameMasterChange(next);
   if (!isSameJson(previous[SHEET_VARIANTS_FLAG], next[SHEET_VARIANTS_FLAG])) return "Só o mestre escolhe os modelos de ficha";
   if (!isSameJson(previous[ACTOR_EFFECTS_FLAG], next[ACTOR_EFFECTS_FLAG])) return "Só o mestre aplica ou remove efeitos";
+  if (!isSameJson(previous[SHEET_SHARE_FLAG], next[SHEET_SHARE_FLAG])) return "Só o mestre compartilha fichas";
   const layoutBefore = previous[SHEET_LAYOUT_FLAG];
   const layoutAfter = next[SHEET_LAYOUT_FLAG];
   if (playerEditingAllowed || layoutBefore === undefined || isSameJson(layoutBefore, layoutAfter)) return null;

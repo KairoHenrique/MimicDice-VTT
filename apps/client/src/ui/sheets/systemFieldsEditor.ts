@@ -1,5 +1,5 @@
 import { h } from "../../views/dom";
-import { rollFromSheet } from "./rollFormulasSection";
+import { rollFromSheet } from "./sheetRoll";
 
 const CUSTOM_FIELD_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,40}(\.[A-Za-z][A-Za-z0-9_]{0,40}){0,3}$/;
 const MAX_FIELDS_SHOWN = 400;
@@ -65,7 +65,7 @@ export function buildSystemFieldsEditor(document: any, editable: boolean): HTMLE
   const usesDataModel = typeof document.system?.toObject === "function";
   const systemSource = (document._source.system ?? {}) as Record<string, unknown>;
   const list = h("div", { class: "system-fields" });
-  const canRoll = document.isOwner && document.documentName === "Actor";
+  const canRoll = document.canEditSheet() && document.documentName === "Actor";
   for (const [path, value] of flattenLeaves(systemSource)) {
     const row = h("div", { class: "form-group system-field" }, h("label", {}, path), inputFor(path, value, editable));
     if (canRoll && typeof value === "number") {

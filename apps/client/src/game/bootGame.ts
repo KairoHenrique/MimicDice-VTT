@@ -8,6 +8,8 @@ import { SceneNavigation } from "../ui/canvas/SceneNavigation";
 import { CombatTracker } from "../ui/combat/CombatTracker";
 import { announceOwnTurns } from "../ui/combat/turnNotice";
 import { ChatLog } from "../ui/sidebar/ChatLog";
+import { installPrivateMessageAlert } from "../ui/sidebar/privateMessageAlert";
+import { installLinkedSheetRefresh } from "../ui/actors/sheetSharing";
 import { ActorCreationDialog } from "../ui/actors/ActorCreationDialog";
 import { ActorDirectory } from "../ui/actors/ActorDirectory";
 import { needsOwnCharacter } from "../ui/actors/ownCharacter";
@@ -126,6 +128,8 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   syncLightAreasOnSceneLoad();
   listenForPings(socket);
   announceOwnTurns();
+  installPrivateMessageAlert();
+  installLinkedSheetRefresh();
   installScenePause();
   installTableSession(socket);
   registerPuppetControl();

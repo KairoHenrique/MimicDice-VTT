@@ -1,6 +1,6 @@
 import type { SheetComponent, SheetListColumn } from "@tabbletop/protocol";
 import { h } from "../../../views/dom";
-import { rollFromSheet } from "../rollFormulasSection";
+import { rollFromSheet } from "../sheetRoll";
 import type { BoardContext } from "./boardContext";
 import { emptyRow, MAX_LIST_ROWS, readListRows, type ListCell, type ListRow } from "./listRows";
 
@@ -21,7 +21,7 @@ function cellInput(column: SheetListColumn, value: ListCell | undefined, editabl
 }
 
 function rollCell(context: BoardContext, component: SheetComponent, formula: string, rowName: string, row: ListRow): HTMLElement {
-  const roll = h("button", { type: "button", class: "md-roll", title: `Rolar ${formula}`, disabled: !context.actor.isOwner }, h("i", { class: "fa-solid fa-dice-d20" }));
+  const roll = h("button", { type: "button", class: "md-roll", title: `Rolar ${formula}`, disabled: !context.actor.canEditSheet() }, h("i", { class: "fa-solid fa-dice-d20" }));
   roll.addEventListener("click", () => rollFromSheet(context.actor, formula, rowName, { ...context.extraRollData(), linha: row }, component.rollMode));
   return h("td", { class: "md-list-action" }, roll);
 }

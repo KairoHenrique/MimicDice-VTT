@@ -1,6 +1,7 @@
 /**
  * Arithmetic evaluator for roll totals. It never calls eval/Function: formulas come from other players,
- * so only numbers, + - * / % **, parentheses, commas and whitelisted Math functions are understood.
+ * so only numbers, + - * / % **, parentheses, commas and whitelisted functions are understood.
+ * Conditions are numbers too (0 is false, anything else is true), like in a spreadsheet.
  */
 
 const MAX_EXPRESSION_LENGTH = 4000;
@@ -15,7 +16,30 @@ function roundDecimals(value: number, places: number): number {
   return Math.round(value * factor) / factor;
 }
 
+const truth = (condition: boolean): number => (condition ? 1 : 0);
+
+/** `if(condição, se sim, se não)`; arguments are already evaluated, so both branches must be valid. */
+function conditional(condition: number, whenTrue: number, whenFalse = 0): number {
+  return condition !== 0 ? whenTrue : whenFalse;
+}
+
+/** `choose(n, a, b, c)` picks the n-th value (1 = a); out of range gives 0. */
+function choose(index: number, ...options: number[]): number {
+  return options[Math.trunc(index) - 1] ?? 0;
+}
+
 export const MATH_FUNCTIONS: Readonly<Record<string, (...args: number[]) => number>> = Object.freeze({
+  if: conditional,
+  choose,
+  eq: (left: number, right: number) => truth(left === right),
+  neq: (left: number, right: number) => truth(left !== right),
+  gt: (left: number, right: number) => truth(left > right),
+  gte: (left: number, right: number) => truth(left >= right),
+  lt: (left: number, right: number) => truth(left < right),
+  lte: (left: number, right: number) => truth(left <= right),
+  and: (...values: number[]) => truth(values.length > 0 && values.every((value) => value !== 0)),
+  or: (...values: number[]) => truth(values.some((value) => value !== 0)),
+  not: (value: number) => truth(value === 0),
   abs: Math.abs,
   acos: Math.acos,
   asin: Math.asin,

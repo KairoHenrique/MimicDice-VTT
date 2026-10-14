@@ -1,6 +1,6 @@
 import { MAX_PIPS, type SheetComponent } from "@tabbletop/protocol";
 import { h } from "../../../views/dom";
-import { rollFromSheet } from "../rollFormulasSection";
+import { rollFromSheet } from "../sheetRoll";
 import type { BoardContext } from "./boardContext";
 import { clampNumber, rollFormulaFor } from "./sheetLayoutRules";
 
@@ -23,7 +23,7 @@ export function readResource(raw: unknown): ResourceValue {
 }
 
 export function sheetRollButton(context: BoardContext, component: SheetComponent, formula: string, content: Node[]): HTMLButtonElement {
-  const button = h("button", { type: "button", class: "md-roll", title: `Rolar ${formula}`, disabled: !context.actor.isOwner }, ...content);
+  const button = h("button", { type: "button", class: "md-roll", title: `Rolar ${formula}`, disabled: !context.actor.canEditSheet() }, ...content);
   button.addEventListener("click", () => rollFromSheet(context.actor, formula, component.label || "Rolagem", context.extraRollData(), component.rollMode));
   return button;
 }

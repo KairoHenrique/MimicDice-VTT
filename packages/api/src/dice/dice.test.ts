@@ -2,6 +2,17 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { configureDice, Roll } from "./index";
 import { safeEvalArithmetic } from "./safeEval";
 
+describe("spreadsheet-style functions", () => {
+  it("evaluates conditions as numbers", () => {
+    expect(safeEvalArithmetic("if(1, 3, 5)")).toBe(3);
+    expect(safeEvalArithmetic("if(0, 3, 5)")).toBe(5);
+    expect(safeEvalArithmetic("if(gte(4, 3), 10, if(gt(4, 0), 5, 0))")).toBe(10);
+    expect(safeEvalArithmetic("choose(2, 15, 11, 8)")).toBe(11);
+    expect(safeEvalArithmetic("choose(9, 15, 11, 8)")).toBe(0);
+    expect(safeEvalArithmetic("and(1, eq(2, 2)) + or(0, 0) + not(0)")).toBe(2);
+  });
+});
+
 function sequence(values: number[]): () => number {
   let index = 0;
   return () => values[index++ % values.length];

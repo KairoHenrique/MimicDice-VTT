@@ -1,4 +1,5 @@
 import { DOCUMENT_OWNERSHIP_LEVELS, getProperty, resolveOwnershipLevel, type PlainObject } from "@tabbletop/common";
+import { sheetShareAccess } from "@tabbletop/protocol";
 import { DataModel, type DataModelConstructionContext } from "../../data/DataModel";
 import { EmbeddedCollectionField } from "../../data/compositeFields";
 import { currentConfig, currentGame } from "../../runtime";
@@ -167,6 +168,17 @@ export class Document extends DataModel {
     const required = typeof permission === "string" ? DOCUMENT_OWNERSHIP_LEVELS[permission as keyof typeof DOCUMENT_OWNERSHIP_LEVELS] : permission;
     const level = this.getUserLevel(user);
     return exact ? level === required : level >= required;
+  }
+
+  /**
+   * Whether the user may fill in this sheet: owners, plus players the GM shared the sheet with for editing. Sharing
+   * never touches ownership, so it grants no token control or vision.
+   */
+  canEditSheet(user: UserLike = currentGame()?.user): boolean {
+    if (this.testUserPermission(user, "OWNER")) return true;
+    if (!user) return false;
+    const sheet = this.documentName === "Actor" && !this.isEmbedded ? this : this.parent?.documentName === "Actor" ? this.parent : null;
+    return Boolean(sheet) && sheetShareAccess(sheet._source, user.id) === "edit";
   }
 
   canUserModify(user: UserLike, action: "create" | "update" | "delete"): boolean {

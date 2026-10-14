@@ -8,7 +8,7 @@ import {
   type DocumentTypeDefinition,
   type UserPermissionName,
 } from "@tabbletop/common";
-import { type DocumentSource, isMoveOnlyChange, mayMoveUnownedToken, refusedActorChange, type TokenMoveRule } from "@tabbletop/protocol";
+import { type DocumentSource, isMoveOnlyChange, mayMoveUnownedToken, refusedActorChange, sheetShareAccess, type TokenMoveRule } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
 import type { DocumentNode } from "./documentTree";
 
@@ -67,7 +67,7 @@ export class DocumentPermissionPolicy {
     definition: DocumentTypeDefinition,
     source: DocumentSource,
     ancestors: readonly DocumentNode[] = [],
-    { includeLinkedActor = true }: { includeLinkedActor?: boolean } = {},
+    { includeLinkedActor = true, includeSheetShare = true }: { includeLinkedActor?: boolean; includeSheetShare?: boolean } = {},
   ): number {
     const viewer = { userId: actor.userId, isGameMaster: this.isGameMaster(actor) };
     let inheritedLevel: number | undefined;
@@ -75,7 +75,19 @@ export class DocumentPermissionPolicy {
       inheritedLevel = effectiveOwnershipLevel(ancestor.definition, ancestor.source, viewer, inheritedLevel);
     }
     const ownLevel = effectiveOwnershipLevel(definition, source, viewer, inheritedLevel);
-    return includeLinkedActor ? Math.max(ownLevel, this.#linkedActorLevel(actor, definition, source)) : ownLevel;
+    const sharedLevel = includeSheetShare ? this.#sheetShareLevel(actor, definition, source, ancestors) : DOCUMENT_OWNERSHIP_LEVELS.NONE;
+    const level = Math.max(ownLevel, sharedLevel);
+    return includeLinkedActor ? Math.max(level, this.#linkedActorLevel(actor, definition, source)) : level;
+  }
+
+  /**
+   * A sheet the GM shared for editing lets the player change it and its items as an owner would. It never reaches
+   * the actor's tokens (`#linkedActorLevel` reads plain ownership), so it gives no token control and no vision.
+   */
+  #sheetShareLevel(actor: DocumentActor, definition: DocumentTypeDefinition, source: DocumentSource, ancestors: readonly DocumentNode[]): number {
+    const sheet = definition.name === "Actor" && ancestors.length === 0 ? source : ancestors[0]?.definition.name === "Actor" ? ancestors[0].source : null;
+    if (!sheet || this.isGameMaster(actor)) return DOCUMENT_OWNERSHIP_LEVELS.NONE;
+    return sheetShareAccess(sheet, actor.userId) === "edit" ? DOCUMENT_OWNERSHIP_LEVELS.OWNER : DOCUMENT_OWNERSHIP_LEVELS.NONE;
   }
 
   /** A token's controller is whoever owns its actor (and can still see the token's scene). */
@@ -123,7 +135,8 @@ export class DocumentPermissionPolicy {
     if (definition.deletePermission === "ASSISTANT" && !this.isGameMaster(actor)) {
       throw HttpError.forbidden(`Sem permissão para excluir ${definition.name}`);
     }
-    if (this.ownershipLevel(actor, definition, source, ancestors, { includeLinkedActor: false }) < DOCUMENT_OWNERSHIP_LEVELS.OWNER) {
+    const isSharedSheetItself = definition.name === "Actor" && ancestors.length === 0;
+    if (this.ownershipLevel(actor, definition, source, ancestors, { includeLinkedActor: false, includeSheetShare: !isSharedSheetItself }) < DOCUMENT_OWNERSHIP_LEVELS.OWNER) {
       throw HttpError.forbidden(`Sem permissão para excluir ${definition.name}`);
     }
   }

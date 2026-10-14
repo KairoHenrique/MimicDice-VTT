@@ -8,6 +8,7 @@ import { colorToNumber, loadTexture } from "../textures";
 import { seesEverything } from "../perception/viewpoint";
 import { DoorControl } from "./DoorControl";
 import { PlaceableObject } from "./PlaceableObject";
+import { wallSplitPoint } from "./wallSplit";
 
 /** Whether any character the current user owns carries an item with this name. */
 function userCarriesItem(itemName: string): boolean {
@@ -141,7 +142,9 @@ export class Wall extends PlaceableObject {
     this.door = null;
     if (!this.isDoor) return;
     this.door = new DoorControl(currentCanvas()?.app?.ticker ?? null, (event) => this.#onDoorPointerDown(event));
+    this.door.visible = seesEverything();
     this.addChild(this.door);
+    currentCanvas()?.perception?.update?.();
   }
 
   protected override _refresh(): void {
@@ -202,8 +205,36 @@ export class Wall extends PlaceableObject {
     this.position.set((nextX ?? ax) - ax, (nextY ?? ay) - ay);
   }
 
-  override _onClickLeft2(): void {
-    void this.toggleDoor();
+  /** Double click swings a door; on a plain wall the GM cuts it in two there, to fit a door in the gap. */
+  override _onClickLeft2(event?: PIXI.FederatedPointerEvent): void {
+    if (this.isDoor) {
+      void this.toggleDoor();
+      return;
+    }
+    if (event && currentGame()?.user?.isGM && this.layer?.active) void this.splitAt(event.getLocalPosition(this));
+  }
+
+  /** Cuts this wall in two at the given point; both pieces keep every setting of the original. */
+  async splitAt(click: Point): Promise<boolean> {
+    const [ax, ay, bx, by] = this.coords;
+    const corner = currentCanvas()?.grid?.getSnappedPoint?.(click, { mode: "corner" }) ?? null;
+    const cut = wallSplitPoint(this.segment, click, corner);
+    const notifications = currentUi()?.notifications;
+    if (!cut) {
+      notifications?.warn("Muito perto da ponta para cortar a parede.");
+      return false;
+    }
+    const secondPiece = { ...this.document.toObject(), c: [cut.x, cut.y, bx, by] };
+    delete secondPiece._id;
+    try {
+      await this.document.update({ c: [ax, ay, cut.x, cut.y] });
+      await this.document.parent.createEmbeddedDocuments("Wall", [secondPiece]);
+      return true;
+    } catch {
+      await this.document.update({ c: [ax, ay, bx, by] }).catch(() => undefined);
+      notifications?.warn("Não foi possível cortar a parede.");
+      return false;
+    }
   }
 
   override _onClickRight(event: PIXI.FederatedPointerEvent): void {
@@ -246,12 +277,16 @@ export class Wall extends PlaceableObject {
     if (this.canDrag()) currentCanvas()?.interaction?.beginObjectDrag(this, event);
   }
 
-  /** Opens or closes the door; the server repeats the lock and key checks, these only explain a refusal early. */
+  /** Opens or closes the door; the server repeats the sight, lock and key checks, these only explain a refusal early. */
   async toggleDoor(): Promise<void> {
     if (!this.isDoor) return;
     const notifications = currentUi()?.notifications;
     if (this.isLocked) {
       notifications?.warn(currentGame()?.user?.isGM ? "Porta trancada. Use o botão direito para destrancar." : "A porta está trancada.");
+      return;
+    }
+    if (!currentGame()?.user?.isGM && currentCanvas()?.perception?.isDoorVisible?.(this) === false) {
+      notifications?.warn("Você não vê esta porta.");
       return;
     }
     const requiredItem = this.requiredItem;

@@ -204,7 +204,7 @@ export abstract class PlaceableObject extends PIXI.Container {
     this.position.set(this.document.x + deltaX, this.document.y + deltaY);
   }
 
-  _onClickLeft2(): void {
+  _onClickLeft2(_event?: PIXI.FederatedPointerEvent): void {
     this.document.sheet?.render(true);
   }
 
@@ -230,7 +230,7 @@ export abstract class PlaceableObject extends PIXI.Container {
     const isDoubleClick = now - this.#lastClickTime < DOUBLE_CLICK_MS;
     this.#lastClickTime = now;
     if (isDoubleClick) {
-      this._onClickLeft2();
+      this._onClickLeft2(event);
       return;
     }
     if (!this.controlled && !this.control({ releaseOthers: !event.shiftKey }) && !this.canDrag()) return;

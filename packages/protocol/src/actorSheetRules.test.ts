@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSameJson, refusedActorChange } from "./actorSheetRules.js";
+import { isSameJson, refusedActorChange, sheetShareAccess } from "./actorSheetRules.js";
 
 const layoutA = { version: 2, pages: [{ id: "p1", title: "Ficha", components: [] }] };
 const layoutB = { version: 2, pages: [{ id: "p2", title: "Outra", components: [] }] };
@@ -37,6 +37,24 @@ describe("refusedActorChange", () => {
     expect(refusedActorChange({ ...player, before: actorWith({ effects: [poison] }), after: actorWith({ effects: [] }) })).toMatch(/efeitos/);
     expect(refusedActorChange({ isGameMaster: true, playerEditingAllowed: false, before: {}, after: actorWith({ effects: [poison] }) })).toBeNull();
     expect(refusedActorChange({ isGameMaster: true, playerEditingAllowed: false, before: {}, after: actorWith({ effects: [{ ...poison, icon: "<img src=x>" }] }) })).toMatch(/Efeitos inválidos/);
+  });
+
+  it("only lets the GM share a sheet, and only with well-formed entries", () => {
+    const share = { all: "view", PlayerId00000001: "edit" };
+    expect(refusedActorChange({ ...player, before: actorWith({}), after: actorWith({ sheetShare: share }) })).toMatch(/compartilha/);
+    expect(refusedActorChange({ isGameMaster: true, playerEditingAllowed: false, before: {}, after: actorWith({ sheetShare: share }) })).toBeNull();
+    expect(refusedActorChange({ isGameMaster: true, playerEditingAllowed: false, before: {}, after: actorWith({ sheetShare: { all: "owner" } }) })).toMatch(/Compartilhamento/);
+    expect(refusedActorChange({ isGameMaster: true, playerEditingAllowed: false, before: {}, after: actorWith({ sheetShare: { "<script>": "view" } }) })).toMatch(/Compartilhamento/);
+  });
+});
+
+describe("sheetShareAccess", () => {
+  it("gives each player the most generous of their own entry and the one for everyone", () => {
+    const sheet = actorWith({ sheetShare: { all: "view", PlayerId00000001: "edit" } });
+    expect(sheetShareAccess(sheet, "PlayerId00000001")).toBe("edit");
+    expect(sheetShareAccess(sheet, "PlayerId00000002")).toBe("view");
+    expect(sheetShareAccess(actorWith({}), "PlayerId00000001")).toBeNull();
+    expect(sheetShareAccess(actorWith({ sheetShare: "edit" }), "PlayerId00000001")).toBeNull();
   });
 });
 

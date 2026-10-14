@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sheetTemplateSchema } from "@tabbletop/protocol";
 import { allComponents, keyFromLabel, layoutKeys, missingSystemData, readLayout, rollFormulaFor } from "./sheetLayoutRules";
 import { SHEET_PRESETS } from "./sheetPresets";
+import { formulaAliases } from "./formulaAliases";
 
 describe("keyFromLabel", () => {
   it("strips accents and spaces into a roll-data key", () => {
@@ -52,7 +53,7 @@ describe("presets", () => {
   it("are valid templates whose formulas only reference their own components", () => {
     for (const preset of SHEET_PRESETS) {
       expect(sheetTemplateSchema.safeParse(preset).success, preset.id).toBe(true);
-      const keys = layoutKeys(preset.layout);
+      const keys = new Set([...layoutKeys(preset.layout), ...Object.keys(formulaAliases(allComponents(preset.layout), {}))]);
       for (const component of allComponents(preset.layout)) {
         const references = (rollFormulaFor(component) ?? component.formula ?? "").match(/@([a-z0-9_]+)/g) ?? [];
         for (const reference of references) expect(keys.has(reference.slice(1)), `${preset.id}: ${reference}`).toBe(true);

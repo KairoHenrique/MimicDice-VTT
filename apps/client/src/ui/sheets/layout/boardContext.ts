@@ -1,5 +1,6 @@
 import type { SheetComponent, SheetLayout } from "@tabbletop/protocol";
 import { computeDerivedValues } from "./computedValues";
+import { formulaAliases } from "./formulaAliases";
 import { allComponents } from "./sheetLayoutRules";
 import { SheetValueStore } from "./sheetValueRoot";
 
@@ -7,6 +8,7 @@ import { SheetValueStore } from "./sheetValueRoot";
 export class BoardContext {
   readonly store: SheetValueStore;
   readonly derived: Readonly<Record<string, number>>;
+  readonly #aliases: Readonly<Record<string, number>>;
 
   constructor(
     readonly actor: any,
@@ -14,16 +16,18 @@ export class BoardContext {
     readonly editable: boolean,
   ) {
     this.store = new SheetValueStore(actor);
-    this.derived = computeDerivedValues(allComponents(layout), this.#baseRollData());
+    const components = allComponents(layout);
+    this.#aliases = formulaAliases(components, this.store.values());
+    this.derived = computeDerivedValues(components, this.#baseRollData());
   }
 
   #baseRollData(): Record<string, unknown> {
-    return { ...this.store.extraRollData(), ...(this.actor.getRollData?.() ?? {}) };
+    return { ...this.store.extraRollData(), ...(this.actor.getRollData?.() ?? {}), ...this.#aliases };
   }
 
-  /** Extra `@refs` for sheet rolls: flag-stored values and calculated components. */
+  /** Extra `@refs` for sheet rolls: flag-stored values, checkbox and option numbers, and calculated components. */
   extraRollData(): Record<string, unknown> {
-    return { ...this.store.extraRollData(), ...this.derived };
+    return { ...this.store.extraRollData(), ...this.#aliases, ...this.derived };
   }
 
   /** GM-only components are hidden from players entirely, not just disabled. */

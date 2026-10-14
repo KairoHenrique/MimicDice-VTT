@@ -15,12 +15,13 @@ import { defaultTemplateFor } from "./layout/sheetTemplateStore";
 import { valueRootForActorType } from "./layout/sheetValueRoot";
 import { chooseTemplateDialog, roleSelect, saveTemplateDialog } from "./layout/templateDialogs";
 import { buildRollPrivacyToggle } from "./npcRollPrivacy";
-import { buildRollFormulasSection } from "./rollFormulasSection";
+import { buildAbilitiesSection } from "./abilitiesSection";
 import { buildSystemFieldsEditor } from "./systemFieldsEditor";
 import { actorVariants, chooseActorVariantsDialog, chooseVariantDialog } from "./sheetVariants";
 import { playersEditSheets } from "../../game/tableRules";
 import { buildAppearanceStrip } from "../actors/appearances";
 import { draggedItem, giveItemToActor } from "../items/inventorySync";
+import { buildLinkedSheets, isSheetShared, shareSheetDialog } from "../actors/sheetSharing";
 
 type SheetTab = "sheet" | "rolls" | "items";
 
@@ -29,7 +30,7 @@ const EDITOR_WIDTH = 1180;
 
 const TABS: ReadonlyArray<{ id: SheetTab; label: string; icon: string }> = [
   { id: "sheet", label: "Ficha", icon: "fa-solid fa-id-card" },
-  { id: "rolls", label: "Rolagens", icon: "fa-solid fa-dice" },
+  { id: "rolls", label: "Habilidades", icon: "fa-solid fa-wand-sparkles" },
   { id: "items", label: "Itens", icon: "fa-solid fa-suitcase" },
 ];
 
@@ -80,7 +81,7 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     const role = actorRole(this.document);
     const meta = h("div", { class: "md-meta" });
     if (game.user.isGM) {
-      meta.append(this.#roleControl(role), this.#ownerControl());
+      meta.append(this.#roleControl(role), this.#ownerControl(), this.#shareControl());
       const rollPrivacy = buildRollPrivacyToggle(this.document);
       if (rollPrivacy) meta.append(rollPrivacy);
     } else {
@@ -90,7 +91,16 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     const looks = buildAppearanceStrip(this.document);
     const extras: Node[] = editable ? [meta, this.#buildToolbar(role)] : [meta];
     if (looks) extras.push(looks);
+    const linked = buildLinkedSheets(this.document, this.#linkedSheetViewers());
+    if (linked) extras.push(linked);
     return extras;
+  }
+
+  /** The GM sees what the character's player got; a player sees it only on their own character. */
+  #linkedSheetViewers(): string[] {
+    const ownerIds = playerOwnersOf(this.document).map((user: any) => user.id);
+    if (game.user.isGM) return ownerIds;
+    return ownerIds.includes(game.user.id) ? [game.user.id] : [];
   }
 
   #roleControl(role: ActorRole): HTMLElement {
@@ -106,6 +116,17 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     for (const player of game.users.players) select.append(h("option", { value: player.id, selected: player.id === currentOwnerId }, `Jogador: ${player.name}`));
     select.addEventListener("change", () => void assignPlayerOwner(this.document, select.value || null));
     return h("label", { class: "md-meta-field" }, h("i", { class: "fa-solid fa-user" }), select);
+  }
+
+  #shareControl(): HTMLButtonElement {
+    const shared = isSheetShared(this.document);
+    const label = shared ? "Compartilhada" : "Compartilhar";
+    const button = h("button", { type: "button", class: `md-toolbar-button${shared ? " active" : ""}`, title: "Escolher quais jogadores veem ou editam esta ficha" }, h("i", { class: "fa-solid fa-share-nodes", "aria-hidden": "true" }), ` ${label}`);
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      void shareSheetDialog(this.document).catch((error: Error) => ui.notifications.warn(error.message));
+    });
+    return button;
   }
 
   /** Players edit only when the GM allows it, and never a layout holding GM-only components (the editor could reveal or drop them). */
@@ -168,7 +189,7 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     const root = this.element;
     if (!root) return;
     root.addEventListener("dragover", (event) => {
-      if (this.document.isOwner && event.dataTransfer?.types.includes("text/plain")) event.preventDefault();
+      if (this.document.canEditSheet() && event.dataTransfer?.types.includes("text/plain")) event.preventDefault();
     });
     root.addEventListener("drop", (event) => {
       const item = draggedItem(event.dataTransfer?.getData("text/plain"));
@@ -214,7 +235,7 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
   }
 
   #buildActivePanel(editable: boolean): Node[] {
-    if (this.#activeTab === "rolls") return [buildRollFormulasSection(this.document, editable)];
+    if (this.#activeTab === "rolls") return [buildAbilitiesSection(this.document, editable)];
     if (this.#activeTab === "items") return [buildEmbeddedItemsSection(this.document, editable)];
     const layout = this.layout;
     if (this.#editing && this.#canChangeLayout()) return [this.#editorFor(layout).render()];

@@ -316,6 +316,51 @@
   margin-top: 2px;
 }
 
+.md-linked-sheets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.md-linked-label {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.md-linked-sheet {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 8px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.md-share-form {
+  display: grid;
+  gap: 8px;
+}
+
+.md-share-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 144px;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.md-share-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .md-template-option:has(input:checked) {
   border-color: var(--foreground);
   background: var(--muted);

@@ -337,16 +337,53 @@
   flex: none;
 }
 
-/* Sheet roll buttons */
-.rolls-section {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+/* Sheet abilities */
+.md-ability {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface, transparent);
 }
 
-.roll-formulas {
+.md-ability-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.md-ability-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.md-ability-header,
+.md-ability-roll-row,
+.md-ability-rolls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.md-ability-rolls {
+  flex-wrap: wrap;
+}
+
+.md-ability-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.md-ability-description {
+  width: 100%;
+  min-height: 48px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.md-ability-roll-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -355,14 +392,26 @@
   gap: 4px;
 }
 
-.roll-formula {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.md-ability-roll-row input:not(.md-ability-formula) {
+  flex: 0 1 160px;
+  min-width: 80px;
 }
 
-.roll-formula code {
+.md-ability-formula {
   flex: 1;
+  min-width: 120px;
+  font-family: var(--font-mono, monospace);
+}
+
+.md-ability-roll-info {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.md-ability-add-roll,
+.md-ability-add {
+  align-self: flex-start;
 }
 
 .attribute-roll {

@@ -4,7 +4,7 @@ import { DocumentOwnershipConfig } from "../documents/DocumentOwnershipConfig";
 import { describeVisibility } from "../documents/ownershipLevels";
 import { buildEmbeddedItemsSection } from "./embeddedItemsSection";
 import { buildJournalPagesSection } from "./journalPagesSection";
-import { buildRollFormulasSection } from "./rollFormulasSection";
+import { buildAbilitiesSection } from "./abilitiesSection";
 import { buildSystemFieldsEditor } from "./systemFieldsEditor";
 
 function imagePathField(currentPath: string): HTMLElement {
@@ -87,13 +87,13 @@ export abstract class GenericDocumentSheet extends DocumentSheetV2 {
 
 export class GenericActorSheet extends GenericDocumentSheet {
   buildBody(editable: boolean): Node[] {
-    return [buildSystemFieldsEditor(this.document, editable), buildRollFormulasSection(this.document, editable), buildEmbeddedItemsSection(this.document, editable)];
+    return [buildSystemFieldsEditor(this.document, editable), buildAbilitiesSection(this.document, editable), buildEmbeddedItemsSection(this.document, editable)];
   }
 }
 
 export class GenericItemSheet extends GenericDocumentSheet {
   buildBody(editable: boolean): Node[] {
-    return [buildSystemFieldsEditor(this.document, editable), buildRollFormulasSection(this.document, editable)];
+    return [buildSystemFieldsEditor(this.document, editable), buildAbilitiesSection(this.document, editable)];
   }
 }
 

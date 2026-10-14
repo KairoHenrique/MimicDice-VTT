@@ -77,6 +77,7 @@ export class Canvas {
   readonly perception = {
     update: () => this.visibility.update(),
     isTokenVisible: (token: any) => this.visibility.isTokenVisible(token),
+    isDoorVisible: (wall: any) => this.visibility.isDoorVisible(wall),
   };
 
   #drawQueue: Promise<unknown> = Promise.resolve();

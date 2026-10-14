@@ -82,6 +82,32 @@ describe("locked drawings", () => {
   });
 });
 
+describe("sheets the GM shared", () => {
+  const actorDefinition = worldDocumentType("Actor")!;
+  const itemDefinition = embeddedDocumentType("Item")!;
+  const tokenDefinition = embeddedDocumentType("Token")!;
+  const baseInventory = { _id: "StashActor000001", ownership: { default: 2 }, flags: { world: { sheetShare: { [player.userId]: "edit", all: "view" } } } };
+  const sharedAncestor: DocumentNode[] = [{ definition: actorDefinition, source: baseInventory }];
+  const shared = new DocumentPermissionPolicy(() => ({}), (id) => (id === baseInventory._id ? (baseInventory as any) : undefined));
+  const otherPlayer = { userId: "PlayerId00000002", role: USER_ROLES.PLAYER };
+
+  it("lets a player shared for editing change the sheet and its items", () => {
+    expect(() => shared.assertOwner(player, actorDefinition, baseInventory)).not.toThrow();
+    expect(() => shared.assertOwner(player, itemDefinition, { _id: "ItemId0000000001" }, sharedAncestor)).not.toThrow();
+    expect(() => shared.assertCanDelete(player, itemDefinition, { _id: "ItemId0000000001" }, sharedAncestor)).not.toThrow();
+  });
+
+  it("keeps view-only players read-only", () => {
+    expect(() => shared.assertOwner(otherPlayer, actorDefinition, baseInventory)).toThrow(/Sem permissão/);
+    expect(() => shared.assertOwner(otherPlayer, itemDefinition, { _id: "ItemId0000000001" }, sharedAncestor)).toThrow(/Sem permissão/);
+  });
+
+  it("never lets the player delete the shared sheet or control its tokens", () => {
+    expect(() => shared.assertCanDelete(player, actorDefinition, baseInventory)).toThrow(/excluir/);
+    expect(() => shared.assertOwner(player, tokenDefinition, { _id: "TokenId000000001", actorId: baseInventory._id }, sceneAncestor)).toThrow(/Sem permissão/);
+  });
+});
+
 describe("dragging tokens the player does not control", () => {
   const tokenDefinition = embeddedDocumentType("Token")!;
   const actors: Record<string, Record<string, unknown>> = {

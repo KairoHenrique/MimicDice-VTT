@@ -14,6 +14,8 @@ const [VISION_LIMIT_NAMESPACE, VISION_LIMIT_KEY] = PLAYER_VISION_LIMIT_SETTING_K
 const MAX_FOG_TEXTURE_SIZE = 2048;
 const EXPLORED_REVEAL_ALPHA = 0.45;
 const GM_PREVIEW_DARKNESS_ALPHA = 0.7;
+const DOOR_PROBE_OFFSET_PX = 12;
+const DOOR_PROBE_FRACTIONS = [0.5, 0.2, 0.8] as const;
 
 interface VisionShapes {
   sight: PIXI.Polygon[];
@@ -127,6 +129,25 @@ export class VisibilityLayer extends CanvasLayer {
     return probes.some((probe) => this.isPointVisible(probe));
   }
 
+  /**
+   * A door sits on the very line that blocks sight, so its middle is on the edge of the vision polygon; points just to
+   * either side of it (and along it) tell whether the player sees it from the room it opens to.
+   */
+  isDoorVisible(wall: Wall): boolean {
+    if (!this.active || this.#isGmPreview) return true;
+    const { ax, ay, bx, by } = wall.segment;
+    const length = Math.hypot(bx - ax, by - ay) || 1;
+    const offset = Math.min(DOOR_PROBE_OFFSET_PX, length / 2);
+    const normalX = (-(by - ay) / length) * offset;
+    const normalY = ((bx - ax) / length) * offset;
+    for (const fraction of DOOR_PROBE_FRACTIONS) {
+      const x = ax + (bx - ax) * fraction;
+      const y = ay + (by - ay) * fraction;
+      if (this.isPointVisible({ x: x + normalX, y: y + normalY }) || this.isPointVisible({ x: x - normalX, y: y - normalY })) return true;
+    }
+    return false;
+  }
+
   #refreshIfDirty(): void {
     if (!this.#dirty || !this.#overlayTexture) return;
     this.#dirty = false;
@@ -136,6 +157,7 @@ export class VisibilityLayer extends CanvasLayer {
     this.#drawIllumination(canvas);
     this.#renderOverlay(canvas);
     for (const token of canvas.tokens?.placeables ?? []) token.visible = token.isVisible;
+    for (const wall of (canvas.walls?.placeables ?? []) as Wall[]) if (wall.door) wall.door.visible = this.isDoorVisible(wall);
     Hooks.callAll("sightRefresh", this);
   }
 

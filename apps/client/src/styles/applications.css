@@ -900,7 +900,7 @@ button.icon {
 
 .system-section,
 .items-section,
-.rolls-section {
+.abilities-section {
   margin: 0;
   padding: 12px 16px 16px;
   border: 1px solid var(--border);
@@ -913,7 +913,7 @@ button.icon {
 
 .system-section legend,
 .items-section legend,
-.rolls-section legend {
+.abilities-section legend {
   padding: 0 6px;
   font-weight: 600;
 }
