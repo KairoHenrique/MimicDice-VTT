@@ -267,6 +267,25 @@ button.danger,
   background: transparent;
 }
 
+.entry-language {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+}
+
+.entry-language select {
+  min-height: 32px;
+  padding: 4px 8px;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 6px);
+}
+
 .entry-screen {
   min-height: 100vh;
   display: grid;

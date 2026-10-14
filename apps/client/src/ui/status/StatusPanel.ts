@@ -29,6 +29,7 @@ class StatusPanel {
   #pickerOpen = false;
   #filter = "";
   #queued = false;
+  #renderAfterTyping = false;
 
   queueRender(): void {
     if (this.#queued) return;
@@ -39,7 +40,18 @@ class StatusPanel {
     }, RENDER_DEBOUNCE_MS);
   }
 
+  /** Redrawing would throw away a number being typed, so updates wait until the field loses focus. */
+  #isTyping(): boolean {
+    const active = document.activeElement;
+    return active instanceof HTMLInputElement && this.#element?.contains(active) === true && active.classList.contains("status-number");
+  }
+
   render(): void {
+    if (this.#isTyping()) {
+      this.#renderAfterTyping = true;
+      return;
+    }
+    this.#renderAfterTyping = false;
     const state = readStatusPanelState();
     const allowed = game.user.isGM || playersSeeStatusPanel();
     if (!allowed || !state.open) {
@@ -53,6 +65,9 @@ class StatusPanel {
       if (game.user.isGM && this.#pickerOpen) panel.append(buildPicker(state, this.#filter, (text) => (this.#filter = text)));
       panel.append(this.#buildList(state));
     }
+    panel.addEventListener("focusout", () => {
+      if (this.#renderAfterTyping) this.queueRender();
+    });
     if (this.#element) this.#element.replaceWith(panel);
     else document.body.append(panel);
     this.#element = panel;
@@ -62,7 +77,7 @@ class StatusPanel {
   }
 
   #buildList(state: ReturnType<typeof readStatusPanelState>): HTMLElement {
-    const resources = statusResources().filter((resource) => resource.enabled);
+    const resources = statusResources().filter((resource) => resource.enabled && (game.user.isGM || resource.playersSee));
     const actors = actorsForPanel(state);
     const list = h("ul", { class: "status-list" });
     if (resources.length === 0) list.append(h("li", { class: "status-empty hint" }, "O mestre desligou todas as barras."));

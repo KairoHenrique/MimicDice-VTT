@@ -60,8 +60,8 @@ export class VisibilityLayer extends CanvasLayer {
 
   /** True when fog applies to the current user right now. */
   get active(): boolean {
-    if (!this.tokenVision && this.playerVisionLimit === 0) return false;
-    const sources = currentCanvas()?.tokens?.visionSources ?? [];
+    const sources: Token[] = currentCanvas()?.tokens?.visionSources ?? [];
+    if (!this.tokenVision && this.playerVisionLimit === 0 && !sources.some((token) => token.visionCap !== Infinity)) return false;
     return !currentGame()?.user?.isGM || sources.length > 0;
   }
 
@@ -141,7 +141,8 @@ export class VisibilityLayer extends CanvasLayer {
     const shapes: VisionShapes = { sight: [], lineOfSight: [], lights: [] };
     for (const token of canvas.tokens.visionSources as Token[]) {
       const origin = token.center;
-      const limitRadius = visionLimit > 0 ? visionLimit * dimensions.distancePixels + Math.max(token.w, token.h) / 2 : Infinity;
+      const playerLimit = visionLimit > 0 ? visionLimit * dimensions.distancePixels + Math.max(token.w, token.h) / 2 : Infinity;
+      const limitRadius = Math.min(playerLimit, token.visionCap);
       const lineOfSight = computeVisibilityPolygon(origin, limitRadius, sightWalls, bounds);
       shapes.lineOfSight.push(new PIXI.Polygon(lineOfSight));
       const tokenRange = this.globalLight ? 0 : token.sightRange;

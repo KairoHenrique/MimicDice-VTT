@@ -41,5 +41,6 @@ export function formatDistance(distance: number, units: string, gridDistance: nu
   const amount = String(Math.round(distance * 100) / 100).replace(".", ",");
   const squares = gridDistance > 0 ? Math.round(distance / gridDistance) : null;
   const unitLabel = units ? ` ${units}` : "";
-  return squares === null ? `${amount}${unitLabel}` : `${amount}${unitLabel} (${squares} ${squares === 1 ? "quadrado" : "quadrados"})`;
+  if (squares === null) return `${amount}${unitLabel}`;
+  return squares === 1 ? `${amount}${unitLabel} (1 quadrado)` : `${amount}${unitLabel} (${squares} quadrados)`;
 }

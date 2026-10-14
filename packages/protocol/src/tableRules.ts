@@ -59,17 +59,18 @@ export const statusResourceSchema = z.object({
   aliases: z.array(z.string().trim().min(1).max(64)).max(12),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   enabled: z.boolean(),
+  playersSee: z.boolean().default(true),
 });
 
 export const statusResourcesSchema = z.array(statusResourceSchema).max(MAX_STATUS_RESOURCES);
 export type StatusResource = z.infer<typeof statusResourceSchema>;
 export const MAX_STATUS_RESOURCE_COUNT = MAX_STATUS_RESOURCES;
 
-/** Sheet bars the status panel reads, matched by field key or label (accents and case ignored). */
+/** Sheet bars (or plain numbers) the status panel reads, matched by field key or label (accents and case ignored). */
 export const DEFAULT_STATUS_RESOURCES: readonly StatusResource[] = Object.freeze([
-  { id: "vida", label: "Vida", aliases: ["vida", "hp", "pv", "pontos_de_vida"], color: "#c0392b", enabled: true },
-  { id: "pe", label: "PE", aliases: ["pe", "pontos_de_esforco", "esforco"], color: "#2f80d1", enabled: true },
-  { id: "sanidade", label: "Sanidade", aliases: ["sanidade", "san"], color: "#7d5fff", enabled: true },
+  { id: "vida", label: "Vida", aliases: ["vida", "hp", "pv", "pontos_de_vida"], color: "#c0392b", enabled: true, playersSee: true },
+  { id: "pe", label: "PE", aliases: ["pe", "pontos_de_esforco", "esforco"], color: "#2f80d1", enabled: true, playersSee: true },
+  { id: "sanidade", label: "Sanidade", aliases: ["sanidade", "san"], color: "#7d5fff", enabled: true, playersSee: true },
 ]);
 
 export const STATUS_PANEL_MODES = ["players", "combat", "scene", "custom"] as const;

@@ -10,7 +10,13 @@ import {
   tokenMoveRule,
 } from "../../game/tableRules";
 import { h } from "../../views/dom";
-import { parseAliases } from "../status/statusResourceMatching";
+import { LAYOUT_FLAG_KEY, MIMICDICE_FLAG_SCOPE } from "../actors/actorRoles";
+import { allComponents, readLayout } from "../sheets/layout/sheetLayoutRules";
+import { listSheetTemplates } from "../sheets/layout/sheetTemplateStore";
+import { collectSheetFields, normalizeResourceName, parseAliases, type SheetFieldOption } from "../status/statusResourceMatching";
+import { buildPlayerSheetSection } from "./playerSheetSection";
+import { openEffectLibrary } from "../effects/effectLibraryDialog";
+import { effectDefinitions } from "../effects/effectStore";
 
 const MOVE_RULE_OPTIONS: ReadonlyArray<{ rule: TokenMoveRule; label: string; hint: string }> = [
   { rule: "owner", label: "Só quem controla o token", hint: "Cada jogador arrasta apenas os próprios personagens (e os que você liberou)." },
@@ -70,6 +76,8 @@ function resourceRow(resource: StatusResource, index: number, resources: StatusR
   };
   const enabled = h("input", { type: "checkbox", checked: resource.enabled, "aria-label": `Mostrar ${resource.label}` });
   enabled.addEventListener("change", () => commit({ enabled: enabled.checked }));
+  const playersSee = h("input", { type: "checkbox", checked: resource.playersSee, disabled: !resource.enabled, "aria-label": `Jogadores veem ${resource.label}` });
+  playersSee.addEventListener("change", () => commit({ playersSee: playersSee.checked }));
   const label = h("input", { type: "text", value: resource.label, maxlength: 40, "aria-label": "Nome no painel" });
   label.addEventListener("change", () => {
     const text = label.value.trim();
@@ -82,26 +90,61 @@ function resourceRow(resource: StatusResource, index: number, resources: StatusR
   aliases.addEventListener("change", () => commit({ aliases: parseAliases(aliases.value).slice(0, 12) }));
   const remove = h("button", { type: "button", class: "icon", title: `Remover ${resource.label}`, "aria-label": `Remover ${resource.label}` }, h("i", { class: "fa-solid fa-trash", "aria-hidden": "true" }));
   remove.addEventListener("click", () => void save(setStatusResources(resources.filter((_, position) => position !== index)), rerender));
-  return h("div", { class: "gm-resource-row" }, enabled, label, color, aliases, remove);
+  return h("div", { class: "gm-resource-row" }, enabled, playersSee, label, color, aliases, remove);
+}
+
+const FIELD_COLORS = ["#22c55e", "#f59e0b", "#06b6d4", "#ec4899", "#a3a3a3"];
+
+function knownSheetFields(): SheetFieldOption[] {
+  const layouts = [...listSheetTemplates().map((template) => template.layout), ...(game.actors?.contents ?? []).map((actor: any) => readLayout(actor.getFlag?.(MIMICDICE_FLAG_SCOPE, LAYOUT_FLAG_KEY)))];
+  return collectSheetFields(layouts.filter((layout): layout is NonNullable<typeof layout> => Boolean(layout)).map((layout) => allComponents(layout)));
+}
+
+/** Bars and numbers found in the world's sheets that no panel entry reads yet, one click to add. */
+function sheetFieldShortcuts(resources: StatusResource[], rerender: () => void): HTMLElement | null {
+  const covered = new Set(resources.flatMap((resource) => [resource.label, ...resource.aliases].map(normalizeResourceName)));
+  const missing = knownSheetFields().filter((field) => !covered.has(field.key) && !covered.has(normalizeResourceName(field.label)));
+  if (missing.length === 0) return null;
+  const full = resources.length >= MAX_STATUS_RESOURCE_COUNT;
+  const chips = missing.slice(0, 24).map((field, index) => {
+    const chip = h("button", { type: "button", class: "gm-field-chip", disabled: full, title: field.kind === "resource" ? "Barra (atual / máximo)" : "Número" }, h("i", { class: field.kind === "resource" ? "fa-solid fa-heart-pulse" : "fa-solid fa-hashtag", "aria-hidden": "true" }), ` ${field.label}`);
+    chip.addEventListener("click", () => {
+      const entry: StatusResource = { id: newResourceId(), label: field.label.slice(0, 40), aliases: [field.key], color: FIELD_COLORS[index % FIELD_COLORS.length] as string, enabled: true, playersSee: true };
+      void save(setStatusResources([...resources, entry]), rerender);
+    });
+    return chip;
+  });
+  return h("div", { class: "gm-field-shortcuts" }, h("span", { class: "hint" }, full ? `Limite de ${MAX_STATUS_RESOURCE_COUNT} itens no painel.` : "Campos das fichas desta mesa (clique para mostrar no painel):"), h("div", { class: "gm-field-chips" }, ...chips));
 }
 
 function resourcesSection(rerender: () => void): HTMLElement {
   const resources = statusResources();
   const add = h("button", { type: "button", disabled: resources.length >= MAX_STATUS_RESOURCE_COUNT }, h("i", { class: "fa-solid fa-plus", "aria-hidden": "true" }), " Adicionar barra");
-  add.addEventListener("click", () => void save(setStatusResources([...resources, { id: newResourceId(), label: "Nova barra", aliases: [], color: "#22c55e", enabled: true }]), rerender));
+  add.addEventListener("click", () => void save(setStatusResources([...resources, { id: newResourceId(), label: "Nova barra", aliases: [], color: "#22c55e", enabled: true, playersSee: true }]), rerender));
   const reset = h("button", { type: "button" }, h("i", { class: "fa-solid fa-rotate-left", "aria-hidden": "true" }), " Voltar ao padrão");
   reset.addEventListener("click", () => void save(setStatusResources(DEFAULT_STATUS_RESOURCES.map((resource) => ({ ...resource, aliases: [...resource.aliases] }))), rerender));
-  const header = h("div", { class: "gm-resource-row gm-resource-header", "aria-hidden": "true" }, h("span", {}, "Ver"), h("span", {}, "Nome"), h("span", {}, "Cor"), h("span", {}, "Campo na ficha (barra)"), h("span", {}));
+  const header = h("div", { class: "gm-resource-row gm-resource-header", "aria-hidden": "true" }, h("span", {}, "Ver"), h("span", {}, "Jogadores"), h("span", {}, "Nome"), h("span", {}, "Cor"), h("span", {}, "Campo na ficha"), h("span", {}));
   return section(
-    "Vida, PE e sanidade",
-    "O painel procura na ficha uma barra (atual / máximo) com um destes nomes. Desmarque para esconder, por exemplo, a sanidade se sua mesa não usa.",
+    "O que aparece no painel de status",
+    "O painel procura na ficha uma barra (atual / máximo) ou um número com um destes nomes. \"Ver\" liga ou desliga para todos; \"Jogadores\" desmarcado deixa só você ver (ex.: sanidade secreta).",
     header,
     ...resources.map((resource, index) => resourceRow(resource, index, resources, rerender)),
     h("div", { class: "gm-rules-actions" }, add, reset),
+    sheetFieldShortcuts(resources, rerender) ?? h("span", {}),
   );
 }
 
-/** GM only: the table rules for movement, combat and the status panel. */
+function effectsSection(): HTMLElement {
+  const open = h("button", { type: "button" }, h("i", { class: "fa-solid fa-wand-magic-sparkles", "aria-hidden": "true" }), " Gerenciar efeitos");
+  open.addEventListener("click", () => void openEffectLibrary());
+  return section(
+    "Efeitos",
+    `Envenenado, tonto, cego... ${effectDefinitions().length} efeito(s) criado(s). Cada um tem ícone, cor e pode tirar vida por turno, mandar o personagem agir por último ou limitar a visão.`,
+    h("div", { class: "gm-rules-actions" }, open),
+  );
+}
+
+/** GM only: the table rules for movement, combat, sheets and the status panel. */
 export function buildGameMasterRulesTab(rerender: () => void): HTMLElement {
-  return h("div", { class: "config-groups gm-rules" }, resourcesSection(rerender), visibilitySection(rerender), moveRuleSection(rerender));
+  return h("div", { class: "config-groups gm-rules" }, resourcesSection(rerender), effectsSection(), visibilitySection(rerender), buildPlayerSheetSection(rerender, checkboxRow), moveRuleSection(rerender));
 }

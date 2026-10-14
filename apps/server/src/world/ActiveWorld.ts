@@ -3,6 +3,7 @@ import type { ConfiguredPermissions } from "@tabbletop/common";
 import {
   MAP_LOCKED_SETTING_KEY,
   parseTokenMoveRule,
+  PLAYER_SHEET_EDITING_SETTING_KEY,
   SCENE_PAUSED_SETTING_KEY,
   TABLE_SESSION_OPEN_SETTING_KEY,
   TOKEN_MOVE_RULE_SETTING_KEY,
@@ -70,6 +71,7 @@ export class ActiveWorld {
       () => settings.readWorldValue<boolean>(SCENE_PAUSED_SETTING_KEY) === true,
       () => settings.readWorldValue<boolean>(TABLE_SESSION_OPEN_SETTING_KEY) !== true,
       () => parseTokenMoveRule(settings.readWorldValue<string>(TOKEN_MOVE_RULE_SETTING_KEY)),
+      () => settings.readWorldValue<boolean>(PLAYER_SHEET_EDITING_SETTING_KEY) === true,
     );
     const doorAccess = new DoorAccessPolicy(permissions, readConfiguredPermissions, () => actorStore?.values() ?? []);
     const documents = new DocumentService(stores, new DocumentSourceValidator(systemModel, manifest.system), permissions, doorAccess);

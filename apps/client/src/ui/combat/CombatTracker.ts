@@ -79,7 +79,7 @@ export class CombatTracker extends DomApplication {
   }
 
   #buildHeader(combat: any): HTMLElement {
-    const status = combat.started ? `Rodada ${combat.round}` : "Aguardando início";
+    const status = combat.started ? `Turno ${combat.round}` : "Aguardando início";
     const current = combat.started && combat.combatant?.visible ? combat.combatant : null;
     const turnPosition = current ? this.#turnPosition(combat, current) : null;
     const movement = current && (game.user.isGM || playersSeeTurnMovement()) ? currentTurnMovementLabel(combat) : null;
@@ -88,14 +88,14 @@ export class CombatTracker extends DomApplication {
       { class: "combat-header", "aria-live": "polite" },
       h("div", { class: "combat-header-line" }, h("strong", { class: "combat-round" }, status), turnPosition ? h("span", { class: "combat-turn-position" }, turnPosition) : null),
       current ? h("span", { class: "combat-current" }, h("i", { class: "fa-solid fa-play", "aria-hidden": "true" }), ` Vez de ${current.name || "Sem nome"}`) : null,
-      movement ? h("span", { class: "combat-moved", title: "Quanto o personagem da vez já andou neste turno" }, h("i", { class: "fa-solid fa-shoe-prints", "aria-hidden": "true" }), ` Andou ${movement}`) : null,
+      movement ? h("span", { class: "combat-moved", title: "Quanto o personagem da vez já andou neste turno" }, h("i", { class: "fa-solid fa-shoe-prints", "aria-hidden": "true" }), " ", h("span", {}, "Andou"), " ", h("span", {}, movement)) : null,
     );
   }
 
   #turnPosition(combat: any, current: any): string | null {
     const turns: any[] = combat.turns.filter((combatant: any) => combatant.visible);
     const index = turns.indexOf(current);
-    return index >= 0 ? `Turno ${index + 1} de ${turns.length}` : null;
+    return index >= 0 ? `Vez ${index + 1} de ${turns.length}` : null;
   }
 
   #buildGameMasterTools(combat: any): Node[] {
@@ -114,7 +114,7 @@ export class CombatTracker extends DomApplication {
   #buildFooter(combat: any): HTMLElement {
     const footer = h("footer", { class: "combat-controls" });
     if (!game.user.isGM) {
-      footer.append(h("span", { class: "hint" }, combat.started ? "O mestre avança os turnos." : "O mestre está definindo a iniciativa."));
+      footer.append(h("span", { class: "hint" }, combat.started ? "O mestre passa a vez." : "O mestre está definindo a iniciativa."));
       return footer;
     }
     if (!combat.started) {
@@ -122,10 +122,10 @@ export class CombatTracker extends DomApplication {
       return footer;
     }
     footer.append(
-      actionButton("fa-solid fa-backward-fast", "Rodada anterior", () => combat.previousRound(), { iconOnly: true }),
-      actionButton("fa-solid fa-backward-step", "Turno anterior", () => combat.previousTurn(), { iconOnly: true }),
-      actionButton("fa-solid fa-forward-step", "Próximo turno", () => combat.nextTurn(), { primary: true }),
-      actionButton("fa-solid fa-forward-fast", "Próxima rodada", () => combat.nextRound(), { iconOnly: true }),
+      actionButton("fa-solid fa-backward-fast", "Turno anterior", () => combat.previousRound(), { iconOnly: true }),
+      actionButton("fa-solid fa-backward-step", "Voltar a vez", () => combat.previousTurn(), { iconOnly: true }),
+      actionButton("fa-solid fa-forward-step", "Passar a vez", () => combat.nextTurn(), { primary: true }),
+      actionButton("fa-solid fa-forward-fast", "Próximo turno", () => combat.nextRound(), { iconOnly: true }),
     );
     return footer;
   }

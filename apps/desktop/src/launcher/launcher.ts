@@ -1,3 +1,4 @@
+import { detectLanguage, t, translatePage } from "@tabbletop/i18n";
 import type { DesktopBridge, LauncherState, RoomSummary } from "../ipcChannels";
 import type { InviteAddress } from "../inviteAddresses";
 
@@ -65,7 +66,7 @@ function buildInviteItem(invite: InviteAddress): HTMLLIElement {
     url.classList.toggle("hidden-link", !revealed);
     const action = revealed ? "Ocultar link" : "Mostrar link";
     revealButton.title = action;
-    revealButton.setAttribute("aria-label", `${action}: ${invite.label}`);
+    revealButton.setAttribute("aria-label", revealed ? `Ocultar link: ${invite.label}` : `Mostrar link: ${invite.label}`);
     revealButton.setAttribute("aria-pressed", String(revealed));
     revealButton.replaceChildren(eyeIcon(revealed ? "closed" : "open"));
   };
@@ -143,6 +144,7 @@ function buildRoomItem(room: RoomSummary): HTMLLIElement {
   item.className = `room${room.active ? " active" : ""}`;
   const name = document.createElement("span");
   name.className = "room-name";
+  name.translate = false;
   name.textContent = room.title;
   item.append(name);
   if (room.active) {
@@ -162,7 +164,7 @@ function buildRoomItem(room: RoomSummary): HTMLLIElement {
   openButton.type = "button";
   openButton.textContent = "Abrir";
   openButton.addEventListener("click", () => {
-    if (window.confirm(`Abrir a sala "${room.title}"? Quem estiver na mesa será recarregado.`)) void runRoomAction(() => bridge.openRoom(room.id));
+    if (window.confirm(t(`Abrir a sala "${room.title}"? Quem estiver na mesa será recarregado.`))) void runRoomAction(() => bridge.openRoom(room.id));
   });
   item.append(openButton, buildDeleteButton(room));
   return item;
@@ -175,8 +177,9 @@ function buildDeleteButton(room: RoomSummary): HTMLButtonElement {
   deleteButton.textContent = "Excluir";
   deleteButton.setAttribute("aria-label", `Excluir a sala ${room.title}`);
   deleteButton.addEventListener("click", () => {
-    const warning = `Excluir a sala "${room.title}" para sempre?\n\nPersonagens, cenas, chat e jogadores dessa sala serão apagados e não dá para desfazer. A pasta de arquivos (mapas e imagens) continua em rpgs.`;
-    if (window.confirm(warning)) void runRoomAction(() => bridge.deleteRoom(room.id));
+    const question = t(`Excluir a sala "${room.title}" para sempre?`);
+    const consequence = t("Personagens, cenas, chat e jogadores dessa sala serão apagados e não dá para desfazer. A pasta de arquivos (mapas e imagens) continua em rpgs.");
+    if (window.confirm(`${question}\n\n${consequence}`)) void runRoomAction(() => bridge.deleteRoom(room.id));
   });
   return deleteButton;
 }
@@ -250,6 +253,7 @@ function playIntro(): void {
   window.addEventListener("keydown", onKey);
 }
 
+void translatePage(detectLanguage(navigator.languages)).catch(() => undefined);
 playIntro();
 bindActions();
 void refresh();

@@ -1,19 +1,11 @@
 import type { ClientSettings } from "@tabbletop/api";
+import { LANGUAGE_NAMES } from "@tabbletop/i18n";
+import { systemLanguage } from "./languagePreference";
 import { ACTOR_CATEGORIES_SETTING } from "../ui/actors/actorCategoryStore";
 import { DEFAULT_TEMPLATES_SETTING, MIMICDICE_SETTINGS_NAMESPACE, SHEET_TEMPLATES_SETTING } from "../ui/sheets/layout/sheetTemplateStore";
 import { registerTableSettings } from "./tableControls";
 
-export const LANGUAGE_STORAGE_KEY = "core.language";
-export const DEFAULT_LANGUAGE = "pt-BR";
-
-export function readPreferredLanguage(): string {
-  try {
-    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as string) : DEFAULT_LANGUAGE;
-  } catch {
-    return DEFAULT_LANGUAGE;
-  }
-}
+export { readPreferredLanguage } from "./languagePreference";
 
 export function registerCoreSettings(settings: ClientSettings): void {
   settings.register("core", "moduleConfiguration", {
@@ -69,8 +61,8 @@ export function registerCoreSettings(settings: ClientSettings): void {
     scope: "client",
     config: true,
     type: String,
-    default: DEFAULT_LANGUAGE,
-    choices: { "pt-BR": "Português (Brasil)", en: "English" },
+    default: systemLanguage(),
+    choices: { ...LANGUAGE_NAMES },
     requiresReload: true,
   });
   registerPackageFacingSettings(settings);

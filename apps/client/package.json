@@ -1,6 +1,6 @@
 {
   "name": "@tabbletop/client",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,6 +16,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",
     "@tabbletop/api": "*",
+    "@tabbletop/i18n": "*",
     "@tabbletop/protocol": "*",
     "socket.io-client": "^4.8.4"
   }

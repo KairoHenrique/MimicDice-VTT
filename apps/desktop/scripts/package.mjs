@@ -72,7 +72,8 @@ async function packageApplication(desktopManifest) {
         oneClick: false,
         perMachine: false,
         allowToChangeInstallationDirectory: true,
-        installerLanguages: ["pt_BR", "en_US"],
+        // NSIS picks the Windows language; any language not listed falls back to the first one.
+        installerLanguages: ["en_US", "pt_BR", "es_ES"],
         multiLanguageInstaller: true,
         displayLanguageSelector: true,
         include: path.join(desktopRoot, "build", "installer.nsh"),

@@ -12,6 +12,14 @@ const MAX_MOVE_DURATION_MS = 2_000;
 const LIVE_DRAG_EASE_MS = 80;
 const DISPOSITION_COLORS: Record<number, number> = { [-2]: 0xa612d4, [-1]: 0xe72124, 0: 0xf1d836, 1: 0x43dfdf };
 
+/** A small colored disc over the token, e.g. a condition: one glyph (icon font or emoji) on a background color. */
+export interface TokenBadge {
+  text: string;
+  color: string;
+  fontFamily?: string;
+  fontWeight?: string;
+}
+
 interface MoveAnimation {
   from: Point;
   to: Point;
@@ -24,10 +32,15 @@ export class Token extends PlaceableObject {
   /** Table rules for dragging tokens the user does not control; the server enforces the same rules. */
   static dragWithoutControlRule: ((token: Token, user: any) => boolean) | null = null;
 
+  /** Badges drawn along the token's top edge. */
+  static badgesRule: ((token: Token) => TokenBadge[]) | null = null;
+
   mesh: PIXI.Sprite | null = null;
   border = new PIXI.Graphics();
   bars = new PIXI.Graphics();
+  badges = new PIXI.Container();
   nameplate: PIXI.Text | null = null;
+  #badgeSignature = "";
   #animation: MoveAnimation | null = null;
   #animationTick = () => this.#stepAnimation();
   #livePosition: Point | null = null;
@@ -72,10 +85,19 @@ export class Token extends PlaceableObject {
     return { type: "move", ignoreWalls: Boolean(currentGame()?.user?.isGM && currentGame()?.keyboard?.isModifierActive?.("Alt")), ignoreCost: false };
   }
 
+  /** Caps vision (scene distance units) for conditions like blindness; null leaves it alone. */
+  static visionLimitRule: ((token: Token) => number | null) | null = null;
+
   /** Vision radius in pixels; 0 means unlimited (bounded by walls only). */
   get sightRange(): number {
     const range = Number(this.document.sight?.range) || 0;
     return range > 0 ? range * currentCanvas().dimensions.distancePixels + Math.max(this.w, this.h) / 2 : 0;
+  }
+
+  /** Farthest this token sees at all, lights and global light included, in pixels. */
+  get visionCap(): number {
+    const limit = (this.constructor as typeof Token).visionLimitRule?.(this) ?? null;
+    return limit === null ? Infinity : limit * currentCanvas().dimensions.distancePixels + Math.max(this.w, this.h) / 2;
   }
 
   protected override async _draw(): Promise<void> {
@@ -87,7 +109,9 @@ export class Token extends PlaceableObject {
     this.bars = new PIXI.Graphics();
     this.nameplate = new PIXI.Text(this.document.name ?? "", new PIXI.TextStyle({ fontFamily: "Signika, Arial, sans-serif", fontSize: 22, fill: 0xffffff, stroke: 0x111111, strokeThickness: 4, align: "center" }));
     this.nameplate.anchor.set(0.5, 0);
-    this.addChild(this.mesh, this.bars, this.border, this.nameplate);
+    this.badges = new PIXI.Container();
+    this.#badgeSignature = "";
+    this.addChild(this.mesh, this.bars, this.border, this.badges, this.nameplate);
     this.position.set(this.document.x, this.document.y);
   }
 
@@ -98,6 +122,7 @@ export class Token extends PlaceableObject {
     this.#refreshMesh(w, h);
     this.#refreshBorder(w, h);
     this.#refreshBars(w, h);
+    this.#refreshBadges(w);
     this.nameplate.text = this.document.name ?? "";
     this.nameplate.position.set(w / 2, h + 4);
     this.nameplate.visible = this.hover || this.controlled || Number(this.document.displayName) >= CONST.TOKEN_DISPLAY_MODES.ALWAYS;
@@ -140,6 +165,34 @@ export class Token extends PlaceableObject {
       this.bars.beginFill(0x000000, 0.6).drawRect(0, barY, width, barHeight).endFill();
       this.bars.beginFill(color, 0.9).drawRect(1, barY + 1, (width - 2) * ratio, barHeight - 2).endFill();
     }
+  }
+
+  /** Draws the badges again, e.g. once the icon font they use finished loading. */
+  redrawBadges(): void {
+    this.#badgeSignature = "";
+    this.refresh();
+  }
+
+  /** Rebuilt only when the badges change, since refresh runs on every hover and drag. */
+  #refreshBadges(width: number): void {
+    const badges = (this.constructor as typeof Token).badgesRule?.(this) ?? [];
+    const signature = `${width}|${badges.map((badge) => `${badge.text}${badge.color}${badge.fontFamily ?? ""}`).join(",")}`;
+    if (signature === this.#badgeSignature) return;
+    this.#badgeSignature = signature;
+    for (const child of this.badges.removeChildren()) child.destroy({ children: true });
+    const radius = Math.max(9, Math.min(16, width / 8));
+    badges.forEach((badge, index) => this.badges.addChild(this.#badge(badge, radius, radius + index * (radius * 2 + 2), radius)));
+  }
+
+  #badge(badge: TokenBadge, radius: number, x: number, y: number): PIXI.Container {
+    const disc = new PIXI.Container();
+    const background = new PIXI.Graphics();
+    background.lineStyle(2, 0x111111, 0.8).beginFill(colorToNumber(badge.color, 0x666666), 0.95).drawCircle(0, 0, radius).endFill();
+    const glyph = new PIXI.Text(badge.text, new PIXI.TextStyle({ fontFamily: badge.fontFamily ?? "Signika, Arial, sans-serif", fontWeight: (badge.fontWeight ?? "normal") as PIXI.TextStyleFontWeight, fontSize: Math.round(radius * 1.1), fill: 0xffffff }));
+    glyph.anchor.set(0.5);
+    disc.addChild(background, glyph);
+    disc.position.set(x, y);
+    return disc;
   }
 
   protected override redrawKeys(): string[] {

@@ -15,6 +15,9 @@ import { valueRootForActorType } from "./layout/sheetValueRoot";
 import { chooseTemplateDialog, roleSelect, saveTemplateDialog } from "./layout/templateDialogs";
 import { buildRollFormulasSection } from "./rollFormulasSection";
 import { buildSystemFieldsEditor } from "./systemFieldsEditor";
+import { actorVariants, chooseActorVariantsDialog, chooseVariantDialog } from "./sheetVariants";
+import { playersEditSheets } from "../../game/tableRules";
+import { buildAppearanceStrip } from "../actors/appearances";
 
 type SheetTab = "sheet" | "rolls" | "items";
 
@@ -79,7 +82,10 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
       const presentation = ROLE_PRESENTATION[role];
       meta.append(h("span", { class: `md-role-badge role-${role}` }, h("i", { class: presentation.icon }), ` ${presentation.label}`));
     }
-    return editable ? [meta, this.#buildToolbar(role)] : [meta];
+    const looks = buildAppearanceStrip(this.document);
+    const extras: Node[] = editable ? [meta, this.#buildToolbar(role)] : [meta];
+    if (looks) extras.push(looks);
+    return extras;
   }
 
   #roleControl(role: ActorRole): HTMLElement {
@@ -97,9 +103,10 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     return h("label", { class: "md-meta-field" }, h("i", { class: "fa-solid fa-user" }), select);
   }
 
-  /** Players never open a layout holding GM-only components, so the editor cannot reveal or drop them. */
+  /** Players edit only when the GM allows it, and never a layout holding GM-only components (the editor could reveal or drop them). */
   #canChangeLayout(): boolean {
-    return game.user.isGM || !allComponents(this.layout).some((component) => component.gmOnly);
+    if (game.user.isGM) return true;
+    return playersEditSheets() && !allComponents(this.layout).some((component) => component.gmOnly);
   }
 
   #buildToolbar(role: ActorRole): HTMLElement {
@@ -109,8 +116,15 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
         toolbarButton(this.#editing ? "fa-solid fa-check" : "fa-solid fa-pen-ruler", this.#editing ? "Concluir edição" : "Editar ficha", () => this.#toggleEditing(), this.#editing),
         toolbarButton("fa-solid fa-wand-magic-sparkles", "Modelos", () => this.#applyTemplate(role)),
       );
+    } else if (actorVariants(this.document).length > 0) {
+      toolbar.append(toolbarButton("fa-solid fa-repeat", "Trocar modelo", () => chooseVariantDialog(this.document)));
     }
-    if (game.user.isGM) toolbar.append(toolbarButton("fa-solid fa-floppy-disk", "Salvar como modelo", () => saveTemplateDialog(this.layout, role, this.document.name)));
+    if (game.user.isGM) {
+      toolbar.append(
+        toolbarButton("fa-solid fa-floppy-disk", "Salvar como modelo", () => saveTemplateDialog(this.layout, role, this.document.name)),
+        toolbarButton("fa-solid fa-layer-group", "Modelos do jogador", () => chooseActorVariantsDialog(this.document)),
+      );
+    }
     if (this.#canChangeLayout()) toolbar.append(toolbarButton("fa-solid fa-file-export", "Exportar", () => exportActorSheet(this.document.name, role, this.layout)));
     return toolbar;
   }

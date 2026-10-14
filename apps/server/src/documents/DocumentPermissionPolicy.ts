@@ -8,7 +8,7 @@ import {
   type DocumentTypeDefinition,
   type UserPermissionName,
 } from "@tabbletop/common";
-import { type DocumentSource, isMoveOnlyChange, mayMoveUnownedToken, type TokenMoveRule } from "@tabbletop/protocol";
+import { type DocumentSource, isMoveOnlyChange, mayMoveUnownedToken, refusedActorChange, type TokenMoveRule } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
 import type { DocumentNode } from "./documentTree";
 
@@ -27,7 +27,15 @@ export class DocumentPermissionPolicy {
     private readonly isScenePaused: () => boolean = () => false,
     private readonly isTableSessionClosed: () => boolean = () => false,
     private readonly readTokenMoveRule: () => TokenMoveRule = () => "owner",
+    private readonly isPlayerSheetEditingAllowed: () => boolean = () => false,
   ) {}
+
+  /** Sheet models handed out by the GM, the layout itself and the actor's looks follow the GM's sheet rules. */
+  assertActorChangeAllowed(actor: DocumentActor, definition: DocumentTypeDefinition, before: DocumentSource | null, after: DocumentSource): void {
+    if (definition.name !== "Actor") return;
+    const refusal = refusedActorChange({ isGameMaster: this.isGameMaster(actor), playerEditingAllowed: this.isPlayerSheetEditingAllowed(), before: before ?? {}, after });
+    if (refusal) throw HttpError.forbidden(refusal);
+  }
 
   isGameMaster(actor: DocumentActor): boolean {
     return isGameMasterRole(actor.role);

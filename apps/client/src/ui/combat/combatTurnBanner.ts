@@ -9,7 +9,7 @@ function buildBanner(combat: any, combatant: any): HTMLElement {
   const banner = h(
     "button",
     { type: "button", id: BANNER_ID, class: `combat-turn-banner${isOwnTurn ? " own-turn" : ""}`, title: "Ver no mapa", "aria-live": "polite" },
-    h("span", { class: "combat-turn-round" }, `Rodada ${combat.round}`),
+    h("span", { class: "combat-turn-round" }, `Turno ${combat.round}`),
     h("span", { class: "combat-turn-name" }, isOwnTurn ? `Sua vez: ${combatant.name}` : `Vez de ${combatant.name || "Sem nome"}`),
   );
   banner.addEventListener("click", () => panToCombatant(combatant));

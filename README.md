@@ -1,8 +1,8 @@
 # MimicDice VTT
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.1.0-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.1.1-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-> **Versão atual: 1.1.0.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
+> **Versão atual: 1.1.1.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
 
 Mesa virtual (VTT) para jogar RPG com os amigos. Você hospeda a mesa no seu próprio computador, envia o link de convite e os jogadores entram pelo navegador, sem precisar de assinatura nem de servidor na nuvem.
 
@@ -10,7 +10,8 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 
 ## Funcionalidades
 
-- **App desktop para o mestre (Windows):** instalador em português que deixa escolher a pasta e se quer o atalho na Área de Trabalho; inicia o servidor local, mostra os links de convite da rede (Wi-Fi/LAN e Radmin VPN), ocultos até você clicar no olho, e libera a porta no Firewall do Windows com um clique.
+- **Português, inglês e espanhol:** o app abre no idioma do computador (inglês para qualquer outro idioma) e dá para trocar na tela de entrada ou nas Configurações.
+- **App desktop para o mestre (Windows):** instalador em português, inglês e espanhol que remove os arquivos da versão anterior antes de atualizar, deixa escolher a pasta e se quer o atalho na Área de Trabalho; inicia o servidor local, mostra os links de convite da rede (Wi-Fi/LAN e Radmin VPN), ocultos até você clicar no olho, e libera a porta no Firewall do Windows com um clique.
 - **Sessão da mesa:** o mestre inicia e fecha a sessão; fechada, os jogadores ficam congelados na última visão (ficha e dados continuam). Fecha sozinha após 1 hora parada.
 - **Controlar boneco:** o mestre vê e joga exatamente como um personagem, e escolhe quais jogadores controlam cada boneco ou NPC.
 - **Jogadores pelo navegador:** quem foi convidado só precisa abrir o link, sem instalar nada.
@@ -26,7 +27,9 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 - **Limite de visão:** o mestre define até quantos metros os jogadores enxergam a partir dos seus tokens.
 - **Tradução automática:** textos em inglês de sistemas e módulos aparecem em português, sem internet.
 - **Pings no mapa:** aperte P para destacar um ponto para todos; o mestre, com Shift + P, leva a câmera de todos até lá.
-- **Rastreador de iniciativa:** aba Combate com rodada, de quem é a vez (também num aviso no topo, para todos) e quanto o personagem da vez já andou. O mestre reordena arrastando ou com as setas e manda alguém para o fim da fila (ficou tonto, atrasou a ação).
+- **Efeitos do mestre:** crie efeitos (envenenado, tonto, cego...) com ícone e cor, que tiram vida por turno, fazem agir por último ou limitam a visão, e aplique por quantos turnos quiser.
+- **Aparências:** até 5 imagens por personagem, trocadas pelo dono ou pelo mestre.
+- **Rastreador de iniciativa:** aba Combate com turno, de quem é a vez (também num aviso no topo, para todos) e quanto o personagem da vez já andou. O mestre reordena arrastando ou com as setas e manda alguém para o fim da fila (ficou tonto, atrasou a ação).
 - **Painel de status:** janela arrastável com vida, PE e sanidade. O mestre escolhe quem aparece (jogadores, combate, cena ou um por um); cada jogador vê só os próprios personagens.
 - **Controle do mestre:** aba nas Configurações para escolher quais barras existem (e com quais nomes da ficha), o que os jogadores veem e quem pode arrastar tokens de outros.
 - **Barra lateral recolhível:** esconda chat, combate e atores para ver o mapa inteiro.
@@ -99,7 +102,16 @@ npm run package -w @tabbletop/desktop  # gera o instalador em apps/desktop/relea
 ```bash
 npm test
 npm run typecheck
+npm run i18n:check
 ```
+
+### Traduções
+
+Os textos são escritos em português direto no código; `packages/i18n/catalogs/en.json` e `es.json` guardam as traduções. Depois de criar ou mudar textos da interface:
+
+1. `npm run i18n:missing` gera `i18n-missing.json` com o que falta traduzir;
+2. traduza num arquivo `{ "texto": { "en": "...", "es": "..." } }` e rode `npm run i18n:merge -- arquivo.json`;
+3. `npm run i18n:prune` remove traduções de textos que não existem mais.
 
 ## Configuração
 

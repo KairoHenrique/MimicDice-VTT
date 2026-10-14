@@ -12,6 +12,10 @@
     "build": "npm run build -w @tabbletop/client",
     "start": "npm run start -w @tabbletop/server",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "i18n:check": "node scripts/i18n/extract.mjs --check",
+    "i18n:missing": "node scripts/i18n/extract.mjs --write-missing i18n-missing.json",
+    "i18n:merge": "node scripts/i18n/merge.mjs",
+    "i18n:prune": "node scripts/i18n/prune.mjs"
   }
 }

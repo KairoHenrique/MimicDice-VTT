@@ -34,7 +34,7 @@ const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const keySchema = z.string().regex(SHEET_FIELD_KEY_PATTERN);
 const formulaSchema = z.string().trim().max(300);
 /** Relative server paths or http(s) URLs only; no `javascript:`/`data:` and nothing that could break out of an attribute. */
-const imagePathSchema = z.string().trim().max(500).regex(/^(?!\s*(?:javascript|data|vbscript):)[^\s"'<>`]+$/i);
+export const imagePathSchema = z.string().trim().max(500).regex(/^(?!\s*(?:javascript|data|vbscript):)[^\s"'<>`]+$/i);
 const initialSchema = z.union([z.number().finite(), z.string().max(2000), z.boolean()]);
 
 export const sheetComponentStyleSchema = z.object({

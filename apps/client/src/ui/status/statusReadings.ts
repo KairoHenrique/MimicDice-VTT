@@ -11,10 +11,17 @@ const MAX_LISTED_ACTORS = 40;
 export interface ResourceReading {
   resource: StatusResource;
   label: string;
+  /** "bar" holds `{ value, max }`; "number" is a single value with no maximum. */
+  kind: "bar" | "number";
   value: number;
   max: number;
   min: number;
   path: string;
+}
+
+function readPlainNumber(raw: unknown): number {
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  return readResource(raw).value;
 }
 
 /** Current, maximum and minimum of each enabled resource the actor's sheet has, in the GM's order. */
@@ -27,8 +34,11 @@ export function readActorResources(actor: any, resources: readonly StatusResourc
   for (const resource of resources) {
     const component = matches.get(resource.id);
     if (!component?.key) continue;
-    const { value, max } = readResource(store.read(component.key));
-    readings.push({ resource, label: resource.label, value, max, min: typeof component.min === "number" ? component.min : 0, path: store.pathOf(component.key) });
+    const min = typeof component.min === "number" ? component.min : 0;
+    const path = store.pathOf(component.key);
+    const raw = store.read(component.key);
+    if (component.kind === "number") readings.push({ resource, label: resource.label, kind: "number", value: readPlainNumber(raw), max: 0, min, path });
+    else readings.push({ resource, label: resource.label, kind: "bar", ...readResource(raw), min, path });
   }
   return readings;
 }

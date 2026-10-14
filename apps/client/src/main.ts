@@ -8,10 +8,13 @@ import "./styles/tableTools.css";
 import "./styles/editors.css";
 import "./styles/sheets.css";
 import "./styles/sheetBoard.css";
+import { translatePage } from "@tabbletop/i18n";
 import { bootGame } from "./game/bootGame";
+import { readPreferredLanguage } from "./game/languagePreference";
 import { serverApi } from "./net/apiClient";
 import { h } from "./views/dom";
 import { renderJoinView } from "./views/joinView";
+import { languagePicker } from "./views/languagePicker";
 import { renderSetupView } from "./views/setupView";
 
 async function start(): Promise<void> {
@@ -20,11 +23,13 @@ async function start(): Promise<void> {
     const status = await serverApi.status();
     if (!status.configured) {
       renderSetupView(root, status, () => void start());
+      root.append(languagePicker());
       return;
     }
     const session = await serverApi.session();
     if (!session) {
       await renderJoinView(root, status, () => void start());
+      root.append(languagePicker());
       return;
     }
     await bootGame(root);
@@ -34,4 +39,13 @@ async function start(): Promise<void> {
   }
 }
 
-void start();
+async function translateThenStart(): Promise<void> {
+  try {
+    await translatePage(readPreferredLanguage());
+  } catch (error) {
+    console.error("MimicDice | Tradução indisponível", error);
+  }
+  await start();
+}
+
+void translateThenStart();

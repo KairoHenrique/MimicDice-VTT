@@ -6,6 +6,7 @@ import { registerPlayerVisionSetting } from "./playerVision";
 import { registerStatusPanelState } from "../ui/status/statusPanelState";
 import { registerScenePauseSetting } from "./scenePause";
 import { registerTableRuleSettings } from "./tableRules";
+import { registerEffectSettings } from "../ui/effects/effectStore";
 import { isTableSessionOpen, registerTableSessionSetting } from "./tableSession";
 import { registerTokenKeyboardMovement } from "./tokenKeyboardMovement";
 
@@ -57,6 +58,7 @@ export function registerTableSettings(settings: ClientSettings): void {
   });
   registerScenePauseSetting(settings);
   registerTableRuleSettings(settings);
+  registerEffectSettings(settings);
   registerStatusPanelState(settings);
   registerTableSessionSetting(settings);
   registerPlayerVisionSetting(settings);

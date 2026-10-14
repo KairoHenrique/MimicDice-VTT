@@ -1,12 +1,12 @@
 import type { SheetComponent, StatusResource } from "@tabbletop/protocol";
 import { describe, expect, it } from "vitest";
-import { matchResourceComponents, parseAliases } from "./statusResourceMatching";
+import { collectSheetFields, matchResourceComponents, parseAliases } from "./statusResourceMatching";
 
 const bar = (key: string, label: string): SheetComponent => ({ id: key, kind: "resource", key, label, x: 0, y: 0, w: 6, h: 2 }) as SheetComponent;
 const resources: StatusResource[] = [
-  { id: "vida", label: "Vida", aliases: ["hp", "pv"], color: "#c0392b", enabled: true },
-  { id: "pe", label: "PE", aliases: ["pontos_de_esforco"], color: "#2f80d1", enabled: true },
-  { id: "sanidade", label: "Sanidade", aliases: ["san"], color: "#7d5fff", enabled: false },
+  { id: "vida", label: "Vida", aliases: ["hp", "pv"], color: "#c0392b", enabled: true, playersSee: true },
+  { id: "pe", label: "PE", aliases: ["pontos_de_esforco"], color: "#2f80d1", enabled: true, playersSee: true },
+  { id: "sanidade", label: "Sanidade", aliases: ["san"], color: "#7d5fff", enabled: false, playersSee: true },
 ];
 
 describe("matchResourceComponents", () => {
@@ -22,9 +22,26 @@ describe("matchResourceComponents", () => {
     expect(matches.has("vida")).toBe(false);
   });
 
-  it("only reads bars, never other fields with the same name", () => {
+  it("prefers a bar and falls back to a number field with the same name", () => {
     const numberField = { ...bar("hp", "HP"), kind: "number" } as SheetComponent;
-    expect(matchResourceComponents([numberField], resources).size).toBe(0);
+    expect(matchResourceComponents([numberField, bar("pv", "PV")], resources).get("vida")?.kind).toBe("resource");
+    expect(matchResourceComponents([numberField], resources).get("vida")?.kind).toBe("number");
+  });
+
+  it("never reads text or other kinds of fields", () => {
+    const textField = { ...bar("hp", "HP"), kind: "text" } as SheetComponent;
+    expect(matchResourceComponents([textField], resources).size).toBe(0);
+  });
+});
+
+describe("collectSheetFields", () => {
+  it("lists each bar or number field once, bars first", () => {
+    const numberField = { ...bar("defesa", "Defesa"), kind: "number" } as SheetComponent;
+    const fields = collectSheetFields([[bar("pv", "Pontos de Vida"), numberField], [bar("pv", "PV")]]);
+    expect(fields).toEqual([
+      { key: "pv", label: "Pontos de Vida", kind: "resource" },
+      { key: "defesa", label: "Defesa", kind: "number" },
+    ]);
   });
 });
 

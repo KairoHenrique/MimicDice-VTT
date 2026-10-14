@@ -358,9 +358,16 @@ export class Combat extends ClientDocumentMixin(BaseCombat) {
     return current ? this.turns.indexOf(current) : (this.turn ?? -1);
   }
 
+  /** Combatants this rule marks act after everyone else, keeping their relative order. */
+  static actsLastRule: ((combatant: Combatant) => boolean) | null = null;
+
   get turns(): Combatant[] {
     const combatants: Combatant[] = Array.from(this.combatants?.values() ?? []);
-    return combatants.sort(this.hasManualOrder ? compareManualOrder : compareTurnOrder);
+    const ordered = combatants.sort(this.hasManualOrder ? compareManualOrder : compareTurnOrder);
+    const actsLast = (this.constructor as typeof Combat).actsLastRule;
+    if (!actsLast) return ordered;
+    const last = ordered.filter((combatant) => actsLast(combatant));
+    return last.length === 0 ? ordered : [...ordered.filter((combatant) => !last.includes(combatant)), ...last];
   }
 
   get isActive(): boolean {

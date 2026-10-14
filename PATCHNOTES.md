@@ -1,5 +1,35 @@
 # Notas de versão
 
+## 1.1.1
+
+### Idiomas: português, inglês e espanhol
+
+- O app inteiro (mesa, launcher e tela de entrada) agora existe em **português, inglês e espanhol**.
+- O idioma segue o do computador: português abre em português, inglês em inglês, espanhol em espanhol. **Qualquer outro idioma abre em inglês.**
+- Dá para trocar na tela de entrada (canto superior direito) ou em **Configurações > Idioma**. A escolha fica salva.
+- O **instalador** também está nos três idiomas e já vem com o do Windows selecionado.
+
+### Instalador
+
+- Ao instalar por cima de uma versão antiga, os arquivos antigos do programa são apagados antes de copiar os novos, inclusive restos de instalações que deram erro. **Mundos, fichas e mapas não são tocados.**
+
+### Combate
+
+- "Rodada" virou **"Turno"** no combate.
+- **Efeitos criados pelo mestre** (envenenado, tonto, cego, sangrando ou qualquer outro):
+  - cada efeito tem nome, ícone ou emoji, cor e descrição;
+  - pode **tirar (ou dar) vida por turno**, fazer o personagem **agir por último** ou **limitar a visão** dele a alguns metros;
+  - o mestre aplica pelo botão direito no token (vale para todos os selecionados) ou pelo painel de status, com busca, e escolhe **quantos turnos** dura e o dano;
+  - o efeito aparece no token, no painel de status e na lista do combate, e o chat avisa o dano e quando acaba;
+  - gerenciados em **Configurações > Controle do mestre > Efeitos**.
+
+### Fichas e status
+
+- O valor das barras de status agora também pode ser **digitado** (além dos botões - e +), e o bug que impedia alterar alguns status foi corrigido.
+- O mestre escolhe **quais campos da ficha aparecem no painel de status**.
+- **Jogadores não trocam mais o modelo da ficha.** O mestre define a ficha padrão de todos os jogadores e pode liberar outros modelos para um jogador específico.
+- **Aparências:** cada personagem pode ter até **5 aparências** (imagens), trocadas pelo dono ou pelo mestre na ficha ou no botão direito do token.
+
 ## 1.1.0
 
 ### Combate e turnos

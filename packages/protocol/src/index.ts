@@ -3,3 +3,5 @@ export * from "./requests";
 export * from "./records";
 export * from "./sheetLayout";
 export * from "./tableRules";
+export * from "./actorSheetRules";
+export * from "./combatEffects";

@@ -4,6 +4,7 @@ import {
   mayMoveUnownedToken,
   parseStatusResources,
   parseTokenMoveRule,
+  PLAYER_SHEET_EDITING_SETTING_KEY,
   type StatusResource,
   TOKEN_MOVE_RULE_SETTING_KEY,
   type TokenMoveRule,
@@ -13,6 +14,7 @@ const [RULES_NAMESPACE, TOKEN_MOVE_RULE_KEY] = TOKEN_MOVE_RULE_SETTING_KEY.split
 const STATUS_RESOURCES_KEY = "statusResources";
 const STATUS_PANEL_FOR_PLAYERS_KEY = "statusPanelForPlayers";
 const TURN_MOVEMENT_FOR_PLAYERS_KEY = "turnMovementForPlayers";
+const PLAYER_SHEET_EDITING_KEY = PLAYER_SHEET_EDITING_SETTING_KEY.split(".")[1] as string;
 
 /** Fired whenever the GM changes a rule that changes what the status panel or the combat tab show. */
 export const TABLE_RULES_CHANGED_HOOK = "tableRulesChanged";
@@ -49,6 +51,17 @@ export function registerTableRuleSettings(settings: ClientSettings): void {
     type: Boolean,
     default: true,
     onChange: announceRulesChanged,
+  });
+  settings.register(RULES_NAMESPACE, PLAYER_SHEET_EDITING_KEY, {
+    name: "Jogadores editam a própria ficha",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: false,
+    onChange: () => {
+      announceRulesChanged();
+      for (const app of Object.values(ui.windows ?? {}) as any[]) if (app?.document?.documentName === "Actor") void app.render();
+    },
   });
   settings.register(RULES_NAMESPACE, TURN_MOVEMENT_FOR_PLAYERS_KEY, {
     name: "Jogadores veem quanto o personagem da vez andou",
@@ -93,6 +106,14 @@ export function playersSeeTurnMovement(): boolean {
 
 export function setPlayersSeeTurnMovement(visible: boolean): Promise<unknown> {
   return game.settings.set(RULES_NAMESPACE, TURN_MOVEMENT_FOR_PLAYERS_KEY, visible);
+}
+
+export function playersEditSheets(): boolean {
+  return game.settings.get(RULES_NAMESPACE, PLAYER_SHEET_EDITING_KEY) === true;
+}
+
+export function setPlayersEditSheets(allowed: boolean): Promise<unknown> {
+  return game.settings.set(RULES_NAMESPACE, PLAYER_SHEET_EDITING_KEY, allowed);
 }
 
 /** The board lets players drag what the server would accept, so a forbidden drag never starts. */

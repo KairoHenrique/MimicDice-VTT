@@ -1,4 +1,6 @@
 import { h } from "../../views/dom";
+import { actorEffects } from "../effects/effectStore";
+import { effectChipRow } from "../effects/effectVisuals";
 import { panToCombatant } from "./combatActions";
 
 function iconButton(icon: string, label: string, onClick: () => unknown, pressed?: boolean): HTMLButtonElement {
@@ -90,7 +92,7 @@ export function buildCombatantRow(combatant: any, isCurrentTurn: boolean): HTMLE
     { class: classes.filter(Boolean).join(" "), "data-combatant-id": combatant.id, "aria-current": isCurrentTurn ? "true" : "false", title: "Clique para ver no mapa" },
     game.user.isGM ? orderHandle(combatant) : null,
     portrait,
-    name,
+    h("span", { class: "combatant-name-block" }, name, effectChipRow(actorEffects(combatant.actor), "combatant-effects")),
     game.user.isGM ? gameMasterControls(combatant) : null,
     initiativeCell(combatant),
   );

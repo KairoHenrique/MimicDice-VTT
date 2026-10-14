@@ -9,7 +9,7 @@ export function announceOwnTurns(): void {
     if (!TURN_FIELDS.some((field) => Object.hasOwn(change, field))) return;
     const combatant = combat.combatant;
     if (!combatant?.isOwner || combatant.defeated) return;
-    ui.notifications.info(`É o seu turno, ${combatant.name}!`);
+    ui.notifications.info(`É a sua vez, ${combatant.name}!`);
     panToCombatant(combatant);
   });
 }

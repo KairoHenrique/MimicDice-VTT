@@ -26,6 +26,9 @@ import { installTokenDragRule } from "./tableRules";
 import { installCombatTurnBanner } from "../ui/combat/combatTurnBanner";
 import { trackTurnMovement } from "../ui/combat/turnMovement";
 import { installStatusPanel } from "../ui/status/StatusPanel";
+import { registerAppearanceMenu } from "../ui/actors/appearances";
+import { registerEffectMenu } from "../ui/effects/applyEffectDialog";
+import { installEffectRules } from "../ui/effects/effectEngine";
 import { controlOwnTokenOnSceneLoad, listenForPullToScene, registerTableKeybindings, syncClientPreferences, syncLightAreasOnSceneLoad } from "./tableControls";
 
 const SNAPSHOT_TIMEOUT_MS = 15_000;
@@ -120,6 +123,9 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   installScenePause();
   installTableSession(socket);
   registerPuppetControl();
+  registerAppearanceMenu();
+  registerEffectMenu();
+  installEffectRules();
   installTokenDragRule();
   trackTurnMovement();
   installCombatTurnBanner();

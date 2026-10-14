@@ -132,6 +132,7 @@ export class DocumentService {
     const isTakenId = (documentId: string) => idsInBatch.has(documentId) || target.isTakenId(documentId);
     const created = data.map((rawData) => {
       const source = this.validator.prepareCreate(target.definition, rawData, author, { keepId, isTakenId });
+      this.permissions.assertActorChangeAllowed(actor, target.definition, null, source);
       idsInBatch.add(source._id);
       return source;
     });
@@ -148,6 +149,7 @@ export class DocumentService {
       this.permissions.assertAuthoredNotLocked(actor, target.definition, existing);
       const result = this.validator.prepareUpdate(target.definition, existing, rawChanges, author);
       this.permissions.assertMayChangeOwnership(actor, result.changes);
+      this.permissions.assertActorChangeAllowed(actor, target.definition, existing, result.source);
       return { before: deepClone(existing), after: result.source, changes: result.changes };
     });
     for (const entry of prepared) target.replace(entry.after);
