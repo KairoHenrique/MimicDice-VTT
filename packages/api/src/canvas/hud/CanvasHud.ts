@@ -154,7 +154,9 @@ export class CanvasHud {
 
   showTileMenu(tile: Tile, event: PIXI.FederatedPointerEvent): void {
     if (!currentGame()?.user?.isGM) return;
-    this.#openMenu([this.#pinEntry(tile.document), { label: "Excluir tile", icon: "fa-solid fa-trash", onSelect: () => tile.document.delete() }], event);
+    const entries: MenuEntry[] = [this.#pinEntry(tile.document), { label: "Excluir tile", icon: "fa-solid fa-trash", onSelect: () => tile.document.delete() }];
+    Hooks.callAll("getTileMenuEntries", tile, entries);
+    this.#openMenu(entries, event);
   }
 
   showWallMenu(wall: Wall, event: PIXI.FederatedPointerEvent): void {

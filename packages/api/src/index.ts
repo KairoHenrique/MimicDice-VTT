@@ -10,6 +10,7 @@ export { Keybindings, type KeyBinding, type KeybindingOverrides } from "./game/K
 export type { MovePathMode } from "./canvas/interaction/CanvasInteraction";
 export { actorTokenData } from "./canvas/interaction/canvasDrop";
 export type { TokenBadge } from "./canvas/placeables/Token";
+export type { TileLayerState } from "./canvas/placeables/simplePlaceables";
 export type { MenuEntry } from "./canvas/hud/CanvasHud";
 export { Hooks } from "./hooks/Hooks";
 export { escapeHTML } from "./utils/miscUtils";

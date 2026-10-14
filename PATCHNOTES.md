@@ -1,5 +1,20 @@
 # Notas de versão
 
+## 1.2.0
+
+### Mapa em camadas (estilo Owlbear + editor de imagem)
+
+- O mapa agora é montado em **4 grupos fixos**, de baixo para cima: **Mapa (chão)**, **Props (objetos)**, **Personagens (tokens)** e **Notas** (notas e desenhos ficam sempre por cima).
+- Dentro de **Mapa** e **Props** o mestre cria **várias camadas** (até 20 por grupo), como no Photoshop:
+  - a ordem do painel é a ordem no mapa, e as setas **sobem ou descem** a camada;
+  - **esconder** (some para todos), **travar** (ninguém seleciona nem arrasta nada nela) e **opacidade** de 0 a 100%;
+  - **mesclar** junta a camada na de baixo sem perder nenhum objeto, mantendo a ordem;
+  - renomear (duplo clique no nome) e apagar (pede confirmação se a camada tiver objetos).
+- A **camada ativa** recebe os novos objetos. Se ela estiver travada, o app avisa em vez de colocar o objeto.
+- **Botão direito num tile:** trazer para a frente, subir um, descer um, enviar para trás ou **mover para outra camada**.
+- O painel **Camadas** abre sozinho na ferramenta Tiles (ou pelo botão de camadas), pode ser arrastado e lembra a posição. Só o mestre edita as camadas.
+- Mapas antigos continuam iguais: os tiles existentes entram na camada "Chão".
+
 ## 1.1.1
 
 ### Idiomas: português, inglês e espanhol

@@ -192,6 +192,21 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     ],
   },
   {
+    id: "layers",
+    title: "Camadas do mapa",
+    icon: "fa-solid fa-layer-group",
+    audience: "gm",
+    summary: "Monte o mapa em camadas, como num editor de imagem: chão, props, personagens e notas.",
+    steps: [
+      "No modo edição, abra a ferramenta Tiles: o painel Camadas aparece (ou use o botão de camadas). A ordem do painel é a ordem no mapa: o que está em cima cobre o que está embaixo.",
+      "Notas ficam sempre por cima, depois os personagens (tokens), depois as camadas de Props e, embaixo, as de Mapa (chão).",
+      "Clique numa camada para torná-la a ativa: os tiles novos entram nela. O + cria outra camada no grupo; clique duas vezes no nome para renomear.",
+      "Olho esconde a camada, cadeado trava (ninguém seleciona nem arrasta nada nela) e a barra muda a opacidade. As setas sobem ou descem a camada.",
+      "Mesclar junta a camada na de baixo, sem perder nenhum objeto. Apagar remove a camada junto com os objetos dela.",
+      "Botão direito num tile: trazer para a frente, subir um, descer um, enviar para trás ou mover para outra camada.",
+    ],
+  },
+  {
     id: "appearances",
     title: "Aparências",
     icon: "fa-solid fa-masks-theater",

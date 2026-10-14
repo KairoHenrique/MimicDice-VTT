@@ -29,6 +29,8 @@ import { installStatusPanel } from "../ui/status/StatusPanel";
 import { registerAppearanceMenu } from "../ui/actors/appearances";
 import { registerEffectMenu } from "../ui/effects/applyEffectDialog";
 import { installEffectRules } from "../ui/effects/effectEngine";
+import { installLayerRules } from "../ui/layers/layerEngine";
+import { installLayersPanel } from "../ui/layers/LayersPanel";
 import { controlOwnTokenOnSceneLoad, listenForPullToScene, registerTableKeybindings, syncClientPreferences, syncLightAreasOnSceneLoad } from "./tableControls";
 
 const SNAPSHOT_TIMEOUT_MS = 15_000;
@@ -126,6 +128,8 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   registerAppearanceMenu();
   registerEffectMenu();
   installEffectRules();
+  installLayerRules();
+  installLayersPanel();
   installTokenDragRule();
   trackTurnMovement();
   installCombatTurnBanner();

@@ -17,10 +17,32 @@ function userCarriesItem(itemName: string): boolean {
 const labelStyle = (fontSize: number, fill = 0xffffff) =>
   new PIXI.TextStyle({ fontFamily: "Signika, Arial, sans-serif", fontSize, fill, stroke: 0x111111, strokeThickness: 4, align: "center" });
 
+/** How the layer holding a tile affects it; set by the app through `Tile.layerStateRule`. */
+export interface TileLayerState {
+  order: number;
+  visible: boolean;
+  opacity: number;
+  locked: boolean;
+}
+
 export class Tile extends PlaceableObject {
   static override embeddedName = "Tile";
+  static layerStateRule: ((document: any) => TileLayerState) | null = null;
   mesh: PIXI.Sprite | null = null;
   frame = new PIXI.Graphics();
+
+  get layerState(): TileLayerState | null {
+    return (this.constructor as typeof Tile).layerStateRule?.(this.document) ?? null;
+  }
+
+  override get isVisible(): boolean {
+    return super.isVisible && this.layerState?.visible !== false;
+  }
+
+  /** A locked layer cannot be clicked, selected or dragged, by anyone. */
+  override canControl(user: any = currentGame()?.user): boolean {
+    return super.canControl(user) && this.layerState?.locked !== true;
+  }
 
   override get bounds(): Rectangle {
     return { x: this.document.x, y: this.document.y, width: Number(this.document.width), height: Number(this.document.height) };
@@ -45,7 +67,10 @@ export class Tile extends PlaceableObject {
       this.mesh.angle = Number(this.document.rotation) || 0;
       this.mesh.tint = colorToNumber(this.document.texture?.tint, 0xffffff);
     }
-    this.alpha = this.document.hidden ? 0.5 : Number(this.document.alpha ?? 1);
+    const layerState = this.layerState;
+    this.zIndex = layerState?.order ?? (Number(this.document.sort) || 0);
+    this.eventMode = layerState?.locked ? "none" : "static";
+    this.alpha = (this.document.hidden ? 0.5 : Number(this.document.alpha ?? 1)) * (layerState?.opacity ?? 1);
     this.frame.clear();
     if (this.controlled || (this.hover && this.layer?.active)) this.frame.lineStyle(3, this.controlled ? 0x3b82f6 : 0xffffff, 0.9).drawRect(0, 0, width, height);
     this.hitArea = new PIXI.Rectangle(0, 0, width, height);

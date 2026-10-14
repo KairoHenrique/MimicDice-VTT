@@ -1,4 +1,5 @@
 import { isGmEditMode, isMapLocked } from "../../game/tableControls";
+import { toggleLayersPanel } from "../layers/LayersPanel";
 
 export interface SceneControlTool {
   name: string;
@@ -105,7 +106,12 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
     },
     tiles: {
       name: "tiles", order: 3, title: "Tiles", icon: "fa-solid fa-cubes", layer: "tiles", activeTool: "select", visible: editing,
-      tools: { select: selectTool(), tile: tool("tile", 2, "Colocar tile (imagem)", "fa-solid fa-image"), clear: clearTool("tiles", "tiles") },
+      tools: {
+        select: selectTool(),
+        tile: tool("tile", 2, "Colocar tile (imagem)", "fa-solid fa-image"),
+        layers: tool("layers", 3, "Camadas (mapa, props, personagens, notas)", "fa-solid fa-layer-group", { button: true, visible: isGM, onChange: () => toggleLayersPanel() }),
+        clear: clearTool("tiles", "tiles"),
+      },
     },
     drawings: {
       name: "drawings", order: 4, title: "Desenhos", icon: "fa-solid fa-pencil-alt", layer: "drawings", activeTool: "rect", visible: can("DRAWING_CREATE"),

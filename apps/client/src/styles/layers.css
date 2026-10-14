@@ -1,0 +1,166 @@
+/* GM layers panel: groups top to bottom in stacking order, like an image editor. */
+.md-layers-panel {
+  position: fixed;
+  z-index: 42;
+  display: flex;
+  flex-direction: column;
+  width: 336px;
+  max-height: min(76vh, 720px);
+  background: rgb(12 12 15 / 94%);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.85em;
+}
+
+.md-layers-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.md-layers-header strong {
+  flex: 1;
+}
+
+.md-layers-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.md-layer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 2%);
+}
+
+.md-layer-group.fixed {
+  opacity: 0.8;
+}
+
+.md-layer-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.md-layer-group .hint {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.md-layer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.md-layer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+
+.md-layer.active {
+  border-color: var(--brand);
+}
+
+.md-layer.hidden-layer .md-layer-name,
+.md-layer.locked-layer .md-layer-name {
+  color: var(--muted-foreground);
+}
+
+.md-layer-main,
+.md-layer-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.md-layer-name {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 8px;
+  text-align: left;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.md-layer-name > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-layer-count {
+  min-width: 24px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 8%);
+  color: var(--muted-foreground);
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.md-layer-tool {
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.md-layer-tool[aria-pressed="true"] .fa-lock {
+  color: #fbbf24;
+}
+
+.md-layer-opacity {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--muted-foreground);
+}
+
+.md-layer-opacity input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--brand);
+}
+
+.md-layer-opacity-value {
+  width: 32px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

@@ -5,3 +5,4 @@ export * from "./sheetLayout";
 export * from "./tableRules";
 export * from "./actorSheetRules";
 export * from "./combatEffects";
+export * from "./mapLayers";
