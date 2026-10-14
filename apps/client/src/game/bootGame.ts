@@ -16,9 +16,13 @@ import { Sidebar } from "../ui/sidebar/Sidebar";
 import { registerCoreSettings, readPreferredLanguage } from "./coreSettings";
 import { registerCoreSheets } from "./coreSheets";
 import { listenForPings, registerPingKeybinding } from "./canvasPings";
-import { registerPullPlayersMenu } from "./pullPlayers";
+import { registerLiveTokenDrag } from "./liveTokenDrag";
+import { registerBoardContextMenu } from "./boardContextMenu";
+import { registerContextHelp } from "../ui/help/contextHelp";
 import { installScenePause } from "./scenePause";
-import { controlOwnTokenOnSceneLoad, listenForPullToScene, registerTableKeybindings, syncClientPreferences } from "./tableControls";
+import { installTableSession } from "./tableSession";
+import { registerPuppetControl } from "./puppetControl";
+import { controlOwnTokenOnSceneLoad, listenForPullToScene, registerTableKeybindings, syncClientPreferences, syncLightAreasOnSceneLoad } from "./tableControls";
 
 const SNAPSHOT_TIMEOUT_MS = 15_000;
 
@@ -103,10 +107,15 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   registerTableKeybindings();
   registerPingKeybinding(socket);
   listenForPullToScene(socket);
-  registerPullPlayersMenu(socket);
+  registerBoardContextMenu(socket);
+  registerContextHelp();
+  registerLiveTokenDrag(socket);
+  syncLightAreasOnSceneLoad();
   listenForPings(socket);
   announceOwnTurns();
   installScenePause();
+  installTableSession(socket);
+  registerPuppetControl();
   controlOwnTokenOnSceneLoad();
   syncClientPreferences();
   game.keybindings.activateListeners();

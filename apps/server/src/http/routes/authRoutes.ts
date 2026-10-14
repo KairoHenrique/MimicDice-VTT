@@ -81,7 +81,7 @@ export function createAuthRoutes(context: ServerContext): Router {
       context.logger.warn("Login recusado", { remote: maskAddress(request.socket.remoteAddress) });
       throw HttpError.unauthorized("Usuário ou senha incorretos");
     }
-    const session = context.sessions.create(user._id);
+    const session = context.sessions.create(user._id, context.deviceFingerprints.keyFor(request.socket.remoteAddress));
     writeSessionCookie(response, session.token, context.config.sessionLifetimeMs);
     if (joinRequest.remember) {
       const device = await context.rememberedDevices.remember(user._id, world.manifest.id);
@@ -119,8 +119,13 @@ export function createAuthRoutes(context: ServerContext): Router {
   router.post("/join/player", playerJoinRateLimiter, async (request, response) => {
     const world = requireActiveWorld(context);
     const { name } = parseRequestBody(playerJoinRequestSchema, request);
+    const deviceKey = context.deviceFingerprints.keyFor(request.socket.remoteAddress);
+    if (world.bans.isBanned(name, deviceKey)) {
+      context.logger.warn("Entrada recusada: jogador banido", { remote: maskAddress(request.socket.remoteAddress) });
+      throw HttpError.forbidden("Você foi banido desta mesa pelo mestre.");
+    }
     const user = await world.users.joinPlayerByName(name);
-    const session = context.sessions.create(user._id);
+    const session = context.sessions.create(user._id, deviceKey);
     writeSessionCookie(response, session.token, context.config.sessionLifetimeMs);
     context.logger.info("Jogador entrou pelo nome", { userId: user._id, remote: maskAddress(request.socket.remoteAddress) });
     response.json({ userId: user._id } satisfies SessionResponse);

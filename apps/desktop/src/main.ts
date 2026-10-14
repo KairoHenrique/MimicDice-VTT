@@ -44,6 +44,7 @@ function resolvePaths() {
     clientDist: app.isPackaged ? path.join(process.resourcesPath, "client") : path.resolve(appPath, "..", "client", "dist"),
     launcherHtml: path.join(appPath, "dist", "launcher", "index.html"),
     preload: path.join(appPath, "dist", "preload.cjs"),
+    windowIcon: path.join(appPath, "dist", "icon.png"),
     serverLog: path.join(logsPath, "server.log"),
   };
 }
@@ -61,7 +62,7 @@ class DesktopApplication {
     logFilePath: this.#paths.serverLog,
     launcherToken: this.#launcherToken,
   });
-  readonly #windows = new WindowManager({ launcherHtml: this.#paths.launcherHtml, preload: this.#paths.preload, tableUrl: this.#server.localUrl });
+  readonly #windows = new WindowManager({ launcherHtml: this.#paths.launcherHtml, preload: this.#paths.preload, icon: this.#paths.windowIcon, tableUrl: this.#server.localUrl });
   #serverState: ServerState = "starting";
   #serverError: string | null = null;
   #firewall: FirewallStatus = "missing";

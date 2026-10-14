@@ -73,6 +73,15 @@ export class CanvasInteraction {
     return this.#lastWorld;
   }
 
+  /** Keyboard movement: shifts the given tokens by whole grid squares, with the same wall and permission rules as dragging. */
+  async stepTokens(tokens: PlaceableObject[], columns: number, rows: number): Promise<void> {
+    const movable = tokens.filter((token) => token.document.documentName === "Token" && token.canDrag());
+    if (movable.length === 0 || this.#session) return;
+    const gridSize = this.canvas.grid.size;
+    this.canvas.hud.cancelMoveConfirmation();
+    await this.#commitMove(movable, columns * gridSize, rows * gridSize, true, false);
+  }
+
   beginObjectDrag(placeable: PlaceableObject, event: PIXI.FederatedPointerEvent): void {
     const objects = (placeable.layer.controlled as PlaceableObject[]).filter((object) => object.canDrag());
     if (objects.length === 0) return;
@@ -134,6 +143,7 @@ export class CanvasInteraction {
       }
       case "move":
         for (const object of session.objects) object.previewOffset(world.x - session.origin.x, world.y - session.origin.y);
+        this.#announceTokenDrag(session.objects, false);
         if (this.#pathModeActive) this.#previewTokenPath(session.objects[0], world.x - session.origin.x, world.y - session.origin.y, !event.shiftKey);
         else this.#clearOverlay();
         break;
@@ -225,6 +235,7 @@ export class CanvasInteraction {
     const world = this.#toWorld(event);
     switch (session.kind) {
       case "move":
+        this.#announceTokenDrag(session.objects, true);
         void this.#commitMove(session.objects, world.x - session.origin.x, world.y - session.origin.y, !event.shiftKey, this.#pathModeActive);
         break;
       case "create":
@@ -239,6 +250,13 @@ export class CanvasInteraction {
       default:
         break;
     }
+  }
+
+  /** Lets the client share where dragged tokens are right now (`ended` once the pointer is released). */
+  #announceTokenDrag(objects: PlaceableObject[], ended: boolean): void {
+    const tokens = objects.filter((object) => object.document.documentName === "Token" && !object.destroyed);
+    if (tokens.length === 0) return;
+    Hooks.callAll("dragTokenPreview", tokens.map((token) => ({ tokenId: token.id, x: Math.round(token.position.x), y: Math.round(token.position.y) })), ended);
   }
 
   /** A right click on an empty spot (no drag) lets packages and the client offer actions for that point. */

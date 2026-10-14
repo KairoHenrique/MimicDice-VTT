@@ -64,6 +64,28 @@ export class DocumentService {
     await Promise.all(Array.from(this.#storesByCollection.values(), (store) => store.flush()));
   }
 
+  /**
+   * For live drag previews: the token exists on the scene and the actor could move it right now
+   * (ownership, map lock, scene pause and pinned objects). Reads the stored scene without copying it.
+   */
+  inspectTokenMove(actor: DocumentActor, sceneId: string, tokenId: string): { hidden: boolean } | null {
+    try {
+      const lookup = (collectionName: string, documentId: string) => this.#storesByCollection.get(collectionName)?.get(documentId);
+      const { ancestors } = resolveParentChain(`Scene.${sceneId}`, lookup);
+      const scene = ancestors[ancestors.length - 1];
+      const { definition, fieldName } = resolveEmbeddedTarget(scene, "Token");
+      const tokens = scene.source[fieldName];
+      const token = Array.isArray(tokens) ? (tokens as DocumentSource[]).find((candidate) => candidate._id === tokenId) : undefined;
+      if (!token) return null;
+      this.permissions.assertMapUnlocked(actor, ancestors);
+      this.permissions.assertOwner(actor, definition, token, ancestors);
+      this.permissions.assertNotPinned(actor, token, { x: token.x, y: token.y });
+      return { hidden: token.hidden === true };
+    } catch {
+      return null;
+    }
+  }
+
   async modify(request: ModifyDocumentRequest, actor: DocumentActor): Promise<ModificationOutcome> {
     const parentUuid = request.operation.parentUuid ?? null;
     const target = parentUuid ? this.#embeddedTarget(request.type, parentUuid) : this.#worldTarget(request.type);
@@ -123,6 +145,7 @@ export class DocumentService {
       if (this.doorAccess.isDoorOperation(target.definition, existing, rawChanges)) this.doorAccess.assertMayOperateDoor(actor, existing);
       else this.permissions.assertOwner(actor, target.definition, existing, target.ancestors);
       this.permissions.assertNotPinned(actor, existing, rawChanges);
+      this.permissions.assertAuthoredNotLocked(actor, target.definition, existing);
       const result = this.validator.prepareUpdate(target.definition, existing, rawChanges, author);
       this.permissions.assertMayChangeOwnership(actor, result.changes);
       return { before: deepClone(existing), after: result.source, changes: result.changes };
@@ -149,7 +172,10 @@ export class DocumentService {
   #delete(target: OperationTarget, ids: string[], actor: DocumentActor, deleteAll: boolean): AffectedDocument[] {
     const idsToDelete = deleteAll ? target.siblings().map((sibling) => sibling._id) : ids;
     const existing = Array.from(new Set(idsToDelete), (documentId) => this.#requireExisting(target, documentId));
-    for (const source of existing) this.permissions.assertCanDelete(actor, target.definition, source, target.ancestors);
+    for (const source of existing) {
+      this.permissions.assertCanDelete(actor, target.definition, source, target.ancestors);
+      this.permissions.assertAuthoredNotLocked(actor, target.definition, source);
+    }
     for (const source of existing) target.remove(source._id);
     return existing.map((source) => ({ before: source, after: null }));
   }

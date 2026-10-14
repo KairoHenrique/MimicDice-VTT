@@ -18,7 +18,7 @@ async function start(): Promise<void> {
   try {
     const status = await serverApi.status();
     if (!status.configured) {
-      renderSetupView(root, status.isLocalRequest, () => void start());
+      renderSetupView(root, status, () => void start());
       return;
     }
     const session = await serverApi.session();

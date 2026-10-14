@@ -4,6 +4,7 @@ import { ClassicLevel } from "classic-level";
 export const WORLD_COLLECTION_NAMES = [
   "users",
   "settings",
+  "bans",
   "actors",
   "items",
   "scenes",

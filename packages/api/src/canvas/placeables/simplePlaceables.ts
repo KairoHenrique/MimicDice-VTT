@@ -4,6 +4,7 @@ import { CONST } from "../../constants";
 import { currentCanvas, currentGame, currentUi } from "../../runtime";
 import type { Point, Rectangle, Segment } from "../geometry";
 import { colorToNumber, loadTexture } from "../textures";
+import { seesEverything } from "../perception/viewpoint";
 import { DoorControl } from "./DoorControl";
 import { PlaceableObject } from "./PlaceableObject";
 
@@ -101,7 +102,7 @@ export class Wall extends PlaceableObject {
 
   /** The GM always sees walls (faded outside the walls layer); players only see doors. */
   override get isVisible(): boolean {
-    return Boolean(currentGame()?.user?.isGM) || this.isDoor;
+    return seesEverything() || this.isDoor;
   }
 
   protected override async _draw(): Promise<void> {
@@ -134,7 +135,7 @@ export class Wall extends PlaceableObject {
   #drawLine(editing: boolean): void {
     const [ax, ay, bx, by] = this.coords;
     this.line.clear();
-    if (!currentGame()?.user?.isGM || (this.isDoor && !editing)) return;
+    if (!seesEverything() || (this.isDoor && !editing)) return;
     const color = this.isDoor ? (this.isOpen ? 0x5fd35f : 0xd38f2c) : this.controlled ? 0x3b82f6 : 0xf0f0f0;
     this.line.alpha = editing ? 1 : INACTIVE_WALL_ALPHA;
     this.line.lineStyle(9, 0x000000, 0.6).moveTo(ax, ay).lineTo(bx, by);
@@ -281,7 +282,7 @@ export class Note extends PlaceableObject {
   }
 
   override get isVisible(): boolean {
-    if (currentGame()?.user?.isGM) return true;
+    if (seesEverything()) return true;
     const entry = this.document.entry;
     return !entry || entry.testUserPermission?.(currentGame()?.user, "LIMITED") === true;
   }

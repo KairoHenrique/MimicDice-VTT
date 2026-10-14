@@ -1,6 +1,16 @@
 import type { Server as HttpServer } from "node:http";
 import { Server, type Socket } from "socket.io";
-import { canvasPingRequestSchema, MAX_PACKAGE_EVENT_BYTES, modifySettingRequestSchema, pullToSceneRequestSchema, SOCKET_EVENTS } from "@tabbletop/protocol";
+import {
+  canvasPingRequestSchema,
+  MAX_PACKAGE_EVENT_BYTES,
+  MAX_PINGS_PER_WINDOW,
+  modifySettingRequestSchema,
+  PING_WINDOW_MS,
+  pullToSceneRequestSchema,
+  SOCKET_EVENTS,
+  TABLE_SESSION_IDLE_CLOSE_MS,
+  TABLE_SESSION_OPEN_SETTING_KEY,
+} from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
 import { readSessionToken } from "../security/cookies";
 import { maskAddress } from "../security/networkAddress";
@@ -9,7 +19,9 @@ import { buildWorldSnapshot } from "./buildWorldSnapshot";
 import { registerDocumentHandlers } from "./documentHandlers";
 import { attachPackageEventRelay } from "./packageEventRelay";
 import { PresenceTracker } from "./PresenceTracker";
-import { SocketRateLimiter } from "./SocketRateLimiter";
+import { SlidingWindowLimiter } from "./SlidingWindowLimiter";
+import { attachTokenDragRelay } from "./tokenDragRelay";
+import { TableSessionIdleCloser } from "../world/TableSessionIdleCloser";
 
 interface SocketIdentity {
   userId: string;
@@ -35,7 +47,7 @@ function safeAcknowledge(candidate: unknown): Acknowledge {
   return typeof candidate === "function" ? (candidate as Acknowledge) : () => undefined;
 }
 
-function registerCoreHandlers(context: ServerContext, io: Server, socket: Socket, presence: PresenceTracker): void {
+function registerCoreHandlers(context: ServerContext, io: Server, socket: Socket, presence: PresenceTracker, pingLimiter: SlidingWindowLimiter): void {
   const { userId } = identityOf(socket);
 
   socket.on(SOCKET_EVENTS.WORLD, (acknowledgeCandidate: unknown) => {
@@ -78,19 +90,16 @@ function registerCoreHandlers(context: ServerContext, io: Server, socket: Socket
     acknowledge({ ok: true });
   });
 
-  registerPingHandler(context, socket, userId);
+  registerPingHandler(context, socket, userId, pingLimiter);
 }
 
-const PING_BURST = 4;
-const PINGS_PER_SECOND = 1;
-
 /** Pings are relayed to everyone else on the server; only a GM ping may move other players' cameras. */
-function registerPingHandler(context: ServerContext, socket: Socket, userId: string): void {
-  const rateLimiter = new SocketRateLimiter(PING_BURST, PINGS_PER_SECOND);
+function registerPingHandler(context: ServerContext, socket: Socket, userId: string, pingLimiter: SlidingWindowLimiter): void {
   socket.on(SOCKET_EVENTS.CANVAS_PING, (payload: unknown) => {
     const world = context.activeWorld.current;
     const parsed = canvasPingRequestSchema.safeParse(payload);
-    if (!world || !parsed.success || !rateLimiter.tryConsume()) return;
+    if (!world || !parsed.success || !pingLimiter.tryConsume(userId)) return;
+    if (!world.users.isGameMaster(userId) && !isTableSessionOpen(context)) return;
     const sceneExists = world.documents.listCollection("scenes").some((scene) => scene._id === parsed.data.sceneId);
     if (!sceneExists) return;
     const pull = parsed.data.pull === true && world.users.isGameMaster(userId);
@@ -99,7 +108,7 @@ function registerPingHandler(context: ServerContext, socket: Socket, userId: str
 }
 
 /** The public record rides along so clients that booted before a player first joined can add that player. */
-function trackPresence(context: ServerContext, io: Server, socket: Socket, presence: PresenceTracker): void {
+function trackPresence(context: ServerContext, io: Server, socket: Socket, presence: PresenceTracker, onLastDisconnect: (userId: string) => void): void {
   const { userId } = identityOf(socket);
   void socket.join(`user:${userId}`);
   if (presence.registerConnection(userId)) {
@@ -107,12 +116,35 @@ function trackPresence(context: ServerContext, io: Server, socket: Socket, prese
     io.emit(SOCKET_EVENTS.USER_ACTIVITY, { userId, active: true, user });
   }
   socket.on("disconnect", () => {
-    if (presence.releaseConnection(userId)) io.emit(SOCKET_EVENTS.USER_ACTIVITY, { userId, active: false });
+    if (!presence.releaseConnection(userId)) return;
+    io.emit(SOCKET_EVENTS.USER_ACTIVITY, { userId, active: false });
+    onLastDisconnect(userId);
+  });
+}
+
+function isTableSessionOpen(context: ServerContext): boolean {
+  return context.activeWorld.current?.settings.readWorldValue<boolean>(TABLE_SESSION_OPEN_SETTING_KEY) === true;
+}
+
+/** Every inbound message (including the clients' input heartbeat) counts as activity at the table. */
+function createIdleCloser(context: ServerContext, io: Server): TableSessionIdleCloser {
+  return new TableSessionIdleCloser({
+    idleLimitMs: TABLE_SESSION_IDLE_CLOSE_MS,
+    isSessionOpen: () => isTableSessionOpen(context),
+    closeSession: async () => {
+      const world = context.activeWorld.current;
+      if (!world) return;
+      const setting = await world.settings.applyModification({ scope: "world", key: TABLE_SESSION_OPEN_SETTING_KEY, value: "false" }, { userId: "server", isGameMaster: true });
+      io.emit(SOCKET_EVENTS.SETTING_UPDATED, setting);
+      context.logger.info("Sessão da mesa fechada por inatividade");
+    },
+    onError: (error) => context.logger.error("Falha ao fechar a sessão por inatividade", error),
   });
 }
 
 export function createSocketServer(context: ServerContext, httpServer: HttpServer): Server {
   const presence = new PresenceTracker();
+  const pingLimiter = new SlidingWindowLimiter(MAX_PINGS_PER_WINDOW, PING_WINDOW_MS);
   const io = new Server(httpServer, {
     serveClient: false,
     maxHttpBufferSize: MAX_PACKAGE_EVENT_BYTES * 2,
@@ -141,11 +173,19 @@ export function createSocketServer(context: ServerContext, httpServer: HttpServe
 
   context.activeWorld.onReloaded(() => io.emit(SOCKET_EVENTS.WORLD_RELOADED));
 
+  const idleCloser = createIdleCloser(context, io);
+  idleCloser.start();
+
   io.on("connection", (socket) => {
-    trackPresence(context, io, socket, presence);
-    registerCoreHandlers(context, io, socket, presence);
+    socket.use((_packet, next) => {
+      idleCloser.recordActivity();
+      next();
+    });
+    trackPresence(context, io, socket, presence, (userId) => pingLimiter.forget(userId));
+    registerCoreHandlers(context, io, socket, presence, pingLimiter);
     registerDocumentHandlers(context, io, socket, presence, identityOf(socket).userId);
     attachPackageEventRelay(context, socket);
+    attachTokenDragRelay(context, io, socket, identityOf(socket).userId);
   });
 
   return io;

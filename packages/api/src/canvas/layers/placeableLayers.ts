@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { Hooks } from "../../hooks/Hooks";
 import { currentCanvas, currentGame } from "../../runtime";
 import type { Point } from "../geometry";
 import { testWallCollision } from "../geometryClasses";
@@ -16,8 +17,44 @@ export class TokenLayer extends PlaceablesLayer {
     return (this.placeables as Token[]).filter((token) => token.document.testUserPermission?.(user, "OWNER"));
   }
 
-  /** Tokens whose eyes the current user looks through: controlled ones first, otherwise every owned token (players only). */
+  #puppetId: string | null = null;
+
+  get puppetId(): string | null {
+    return this.#puppetId;
+  }
+
+  /** The token a GM is playing as ("Controlar boneco"): they see only what it sees until they let go. */
+  get puppet(): Token | null {
+    if (!this.#puppetId) return null;
+    const token = (this.placeables as Token[]).find((candidate) => candidate.id === this.#puppetId);
+    return token && !token.destroyed ? token : null;
+  }
+
+  /** GM only. Every placeable is refreshed because what counts as visible depends on whose eyes are in use. */
+  setPuppet(token: Token | null): boolean {
+    if (token && !currentGame()?.user?.isGM) return false;
+    if ((token?.id ?? null) === this.#puppetId) return true;
+    this.#puppetId = token?.id ?? null;
+    if (token) token.control({ releaseOthers: true });
+    else this.releaseAll();
+    for (const layer of currentCanvas()?.placeableLayers ?? []) for (const placeable of layer.placeables) placeable.refresh();
+    currentCanvas()?.perception?.update?.();
+    Hooks.callAll("puppetToken", token);
+    return true;
+  }
+
+  override async tearDown(): Promise<this> {
+    if (this.#puppetId) {
+      this.#puppetId = null;
+      Hooks.callAll("puppetToken", null);
+    }
+    return super.tearDown();
+  }
+
+  /** Tokens whose eyes the current user looks through: the puppet, then controlled ones, otherwise every owned token (players only). */
   get visionSources(): Token[] {
+    const puppet = this.puppet;
+    if (puppet) return [puppet];
     const controlled = this.controlled as Token[];
     if (controlled.length > 0) return controlled;
     if (currentGame()?.user?.isGM) return [];
@@ -32,7 +69,8 @@ export class TilesLayer extends PlaceablesLayer {
 
 export class DrawingsLayer extends PlaceablesLayer {
   static override documentName = "Drawing";
-  static override layerOptions = { name: "drawings", zIndex: 120 };
+  /** Above tokens and the fog so sketches read as notes over the whole board; below the GM's wall and light editors. */
+  static override layerOptions = { name: "drawings", zIndex: 650 };
 }
 
 export class TemplateLayer extends PlaceablesLayer {

@@ -5,6 +5,7 @@ import { IPC_CHANNELS } from "./ipcChannels";
 export interface WindowManagerOptions {
   launcherHtml: string;
   preload: string;
+  icon: string;
   tableUrl: string;
 }
 
@@ -41,6 +42,7 @@ export class WindowManager {
       minWidth: 560,
       minHeight: 520,
       title: "MimicDice VTT",
+      icon: this.options.icon,
       backgroundColor: BACKGROUND_COLOR,
       autoHideMenuBar: true,
       webPreferences: { preload: this.options.preload, contextIsolation: true, sandbox: true, nodeIntegration: false },
@@ -62,6 +64,7 @@ export class WindowManager {
       width: 1440,
       height: 900,
       title: "MimicDice VTT - Mesa",
+      icon: this.options.icon,
       backgroundColor: BACKGROUND_COLOR,
       autoHideMenuBar: true,
       webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false },

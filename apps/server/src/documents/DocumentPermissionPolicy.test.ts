@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { worldDocumentType } from "@tabbletop/common";
+import { embeddedDocumentType, worldDocumentType } from "@tabbletop/common";
 import { USER_ROLES } from "@tabbletop/protocol";
 import { DocumentPermissionPolicy } from "./DocumentPermissionPolicy";
 import type { DocumentNode } from "./documentTree";
@@ -39,5 +39,37 @@ describe("scene pause", () => {
   it("lets the GM keep editing and players keep their sheets", () => {
     expect(() => paused.assertMapUnlocked(gameMaster, sceneAncestor)).not.toThrow();
     expect(() => paused.assertMapUnlocked(player, actorAncestor)).not.toThrow();
+  });
+});
+
+describe("closed table session", () => {
+  const closed = new DocumentPermissionPolicy(() => ({}), () => undefined, () => false, () => false, () => true);
+
+  it("keeps players off the board until the GM starts the session", () => {
+    expect(() => closed.assertMapUnlocked(player, sceneAncestor)).toThrow(/sessão está fechada/);
+  });
+
+  it("still lets the GM prepare scenes and players use their sheets", () => {
+    expect(() => closed.assertMapUnlocked(gameMaster, sceneAncestor)).not.toThrow();
+    expect(() => closed.assertMapUnlocked(player, actorAncestor)).not.toThrow();
+  });
+});
+
+describe("locked drawings", () => {
+  const drawingDefinition = embeddedDocumentType("Drawing")!;
+  const tokenDefinition = embeddedDocumentType("Token")!;
+  const lockedDrawing = { _id: "DrawingId0000001", author: player.userId, locked: true };
+
+  it("stops players, even the author, from editing or erasing a locked drawing", () => {
+    expect(() => policy(false).assertAuthoredNotLocked(player, drawingDefinition, lockedDrawing)).toThrow(/travou este desenho/);
+  });
+
+  it("lets the GM handle locked drawings and players handle unlocked ones", () => {
+    expect(() => policy(false).assertAuthoredNotLocked(gameMaster, drawingDefinition, lockedDrawing)).not.toThrow();
+    expect(() => policy(false).assertAuthoredNotLocked(player, drawingDefinition, { ...lockedDrawing, locked: false })).not.toThrow();
+  });
+
+  it("leaves pinned tokens to the placement rule", () => {
+    expect(() => policy(false).assertAuthoredNotLocked(player, tokenDefinition, { _id: "TokenId000000001", locked: true })).not.toThrow();
   });
 });

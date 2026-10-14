@@ -1,8 +1,8 @@
 # MimicDice VTT
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-0.2.1-blue) ![Status](https://img.shields.io/badge/status-alpha-orange) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.0.0-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-> **Versão atual: 0.2.1 (alpha).** O projeto está em desenvolvimento ativo, e funcionalidades podem mudar entre versões. Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
+> **Versão atual: 1.0.0.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
 
 Mesa virtual (VTT) para jogar RPG com os amigos. Você hospeda a mesa no seu próprio computador, envia o link de convite e os jogadores entram pelo navegador, sem precisar de assinatura nem de servidor na nuvem.
 
@@ -10,12 +10,16 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 
 ## Funcionalidades
 
-- **App desktop para o mestre (Windows):** inicia o servidor local, mostra os links de convite da rede (Wi-Fi/LAN e Radmin VPN) e libera a porta no Firewall do Windows com um clique.
+- **App desktop para o mestre (Windows):** instalador com atalhos (ou versão portátil), inicia o servidor local, mostra os links de convite da rede (Wi-Fi/LAN e Radmin VPN), ocultos até você clicar no olho, e libera a porta no Firewall do Windows com um clique.
+- **Sessão da mesa:** o mestre inicia e fecha a sessão; fechada, os jogadores ficam congelados na última visão (ficha e dados continuam). Fecha sozinha após 1 hora parada.
+- **Controlar boneco:** o mestre vê e joga exatamente como um personagem, e escolhe quais jogadores controlam cada boneco ou NPC.
 - **Jogadores pelo navegador:** quem foi convidado só precisa abrir o link, sem instalar nada.
 - **Mundos:** crie e alterne entre campanhas, cada uma com seus próprios dados.
 - **Sistemas e módulos:** instale pelo link do manifesto, com download e extração em ambiente controlado.
 - **Mesa:** canvas com mapas e tokens (PixiJS), rolagem de dados, fichas, chat e sidebar de documentos.
-- **Movimento com caminho:** segure Ctrl ao arrastar um token para ver a distância e confirmar antes de andar.
+- **Movimento com caminho:** segure Ctrl ao arrastar um token para ver a distância e confirmar antes de andar. Todos veem o token andando em tempo real, e WASD move um quadrado por vez.
+- **Desenhos:** jogadores desenham numa camada acima do mapa; o mestre apaga e trava qualquer desenho.
+- **Tutorial:** botão ? no topo e Shift + clique em qualquer opção para ver a ajuda dela.
 - **Portas com chave:** portas animadas, que podem ser trancadas ou exigir um item carregado pelo personagem.
 - **Ferramentas do mestre:** modo jogo e modo edição, pausar a cena, objetos travados no lugar e "Mostrar minha visão" (mesma cena, posição e zoom para todos).
 - **Puxar jogadores:** botão direito num ponto vazio do mapa para trazer o token de todos os jogadores, ou de um só, até ali.
@@ -26,7 +30,7 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 - **Chat com sussurros:** mensagens públicas ou privadas para um jogador, com o mestre vendo todas as conversas, além de rolagens secretas.
 - **Configurações e atalhos:** preferências por usuário e teclas trocáveis, salvas na conta.
 - **Salas no launcher:** crie, abra, entre e exclua suas mesas direto pelo app desktop.
-- **Usuários e permissões:** conta do mestre (com "lembrar minha senha"), papéis por jogador e presença em tempo real via Socket.IO.
+- **Usuários e permissões:** senha do mestre por sala (opcional), "lembrar minha senha", banimento de jogadores, papéis por jogador e presença em tempo real via Socket.IO.
 
 ## Segurança
 
@@ -35,6 +39,8 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 - Rate limiting no login, nos uploads, nas instalações de pacotes e nos eventos de socket.
 - Validação de todas as entradas com Zod, sanitização de HTML e cabeçalhos de segurança com Helmet.
 - Extração de ZIP protegida contra path traversal, com tipos de arquivo de upload restritos.
+- Banimento por nome e por impressão HMAC do endereço (nunca o endereço em texto); o PC que hospeda nunca é banido.
+- Sessão fechada, mapa travado e pausa são aplicados no servidor, não só na tela.
 - O app desktop isola o renderer e restringe as permissões do Electron e os canais IPC.
 
 ## Estrutura do projeto
@@ -82,7 +88,7 @@ Acesse `http://localhost:30000`.
 ```bash
 npm run build                          # compila o cliente
 npm run start -w @tabbletop/desktop    # abre o app em modo de desenvolvimento
-npm run package -w @tabbletop/desktop  # gera o executável em apps/desktop/release
+npm run package -w @tabbletop/desktop  # gera o instalador e a versão portátil em apps/desktop/release
 ```
 
 ### Testes e checagem de tipos

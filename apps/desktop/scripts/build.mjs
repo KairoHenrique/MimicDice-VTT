@@ -22,6 +22,8 @@ async function buildLauncher() {
   const launcherOutput = path.join(outputRoot, "launcher");
   await build({ ...sharedOptions, target: "chrome130", entryPoints: [path.join(launcherSource, "launcher.ts")], outfile: path.join(launcherOutput, "launcher.js"), platform: "browser", format: "iife" });
   await Promise.all(["index.html", "launcher.css"].map((file) => copyFile(path.join(launcherSource, file), path.join(launcherOutput, file))));
+  await copyFile(path.join(desktopRoot, "build", "icon.png"), path.join(launcherOutput, "logo.png"));
+  await copyFile(path.join(desktopRoot, "build", "icon.png"), path.join(outputRoot, "icon.png"));
 }
 
 async function buildServer() {

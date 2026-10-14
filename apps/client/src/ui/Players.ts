@@ -1,4 +1,5 @@
 import type { ApplicationConfiguration } from "@tabbletop/api";
+import { playerPuppetEntries } from "../game/puppetControl";
 import { h } from "../views/dom";
 import { DomApplication } from "./DomApplication";
 
@@ -40,7 +41,16 @@ export class Players extends DomApplication {
       indicator.style.borderColor = player.color;
       const gameMasterMark = player.isGM ? h("i", { class: "fa-solid fa-crown player-gm", title: "Mestre", "aria-label": "Mestre" }) : null;
       const status = h("span", { class: "visually-hidden" }, player.active ? "(online)" : "(offline)");
-      return h("li", { class: `player${player.active ? " active" : " inactive"}${player.isSelf ? " self" : ""}`, "data-user-id": player.id }, indicator, h("span", { class: "player-name" }, player.name), gameMasterMark, status);
+      const item = h("li", { class: `player${player.active ? " active" : " inactive"}${player.isSelf ? " self" : ""}`, "data-user-id": player.id }, indicator, h("span", { class: "player-name" }, player.name), gameMasterMark, status);
+      if (game.user.isGM && !player.isGM) {
+        item.title = "Botão direito: controlar o boneco deste jogador";
+        item.addEventListener("contextmenu", (event) => {
+          event.preventDefault();
+          const user = game.users.get(player.id);
+          if (user) canvas.hud?.openMenuAt(playerPuppetEntries(user), { x: event.clientX, y: event.clientY });
+        });
+      }
+      return item;
     });
     return [h("h3", {}, "Jogadores"), h("ol", { class: "player-list" }, ...items)];
   }

@@ -2,7 +2,9 @@ import type * as PIXI from "pixi.js";
 import { DOOR_KEY_FLAG, DOOR_KEY_FLAG_SCOPE, MAX_DOOR_KEY_NAME_LENGTH, type PlainObject } from "@tabbletop/common";
 import { DialogV2 } from "../../applications/DialogV2";
 import { CONST } from "../../constants";
+import { Hooks } from "../../hooks/Hooks";
 import { currentConfig, currentGame, currentUi } from "../../runtime";
+import type { PlaceableObject } from "../placeables/PlaceableObject";
 import type { Token } from "../placeables/Token";
 import type { AmbientLight, Note, Tile, Wall } from "../placeables/simplePlaceables";
 import { buildForm, readForm, type FormFieldSpec } from "./hudForms";
@@ -116,7 +118,38 @@ export class CanvasHud {
     if (token.document.canUserModify?.(user, "delete") && (user?.isGM || user?.can?.("TOKEN_DELETE"))) {
       entries.push({ label: "Remover do mapa", icon: "fa-solid fa-trash", onSelect: () => token.document.delete() });
     }
+    Hooks.callAll("getTokenMenuEntries", token, entries);
     this.#openMenu(entries, event);
+  }
+
+  /** Drawings and templates: their author or the GM may erase them; the GM sees who made it and can lock it. */
+  showAuthoredMenu(object: PlaceableObject, event: PIXI.FederatedPointerEvent): void {
+    const user = currentGame()?.user;
+    const kind = object.document.documentName === "Drawing" ? "desenho" : "área de efeito";
+    if (!user?.isGM && object.document.locked === true) {
+      currentUi()?.notifications?.info(`O mestre travou este ${kind}.`);
+      return;
+    }
+    if (!object.document.canUserModify?.(user, "delete")) return;
+    const authorId = object.document._source?.author;
+    const authorName = authorId && authorId !== user?.id ? currentGame()?.users?.get(authorId)?.name : null;
+    const entries: MenuEntry[] = [];
+    if (authorName) entries.push({ heading: true, label: `Feito por ${authorName}`, icon: "" });
+    if (user?.isGM) entries.push(this.#lockAuthoredEntry(object.document, kind));
+    entries.push({ label: `Apagar ${kind}`, icon: "fa-solid fa-trash", onSelect: () => object.document.delete() });
+    this.#openMenu(entries, event);
+  }
+
+  #lockAuthoredEntry(document: any, kind: string): MenuEntry {
+    const locked = document.locked === true;
+    return {
+      label: locked ? `Destravar ${kind}` : `Travar ${kind}`,
+      icon: locked ? "fa-solid fa-lock-open" : "fa-solid fa-lock",
+      onSelect: async () => {
+        await document.update({ locked: !locked });
+        currentUi()?.notifications?.info(locked ? "Os jogadores podem mexer de novo." : "Travado: os jogadores não podem mover, editar nem apagar.");
+      },
+    };
   }
 
   showTileMenu(tile: Tile, event: PIXI.FederatedPointerEvent): void {

@@ -1,0 +1,343 @@
+export type HelpAudience = "all" | "gm";
+
+export interface HelpTopic {
+  id: string;
+  title: string;
+  icon: string;
+  audience: HelpAudience;
+  summary: string;
+  steps: readonly string[];
+}
+
+/** Plain text only: the help dialog renders every string with textContent. */
+export const HELP_TOPICS: readonly HelpTopic[] = [
+  {
+    id: "start",
+    title: "Primeiros passos",
+    icon: "fa-solid fa-flag-checkered",
+    audience: "all",
+    summary: "O básico para jogar na mesa.",
+    steps: [
+      "Segure Shift e clique em qualquer botão, aba ou ferramenta para ver a ajuda só dela.",
+      "Arraste o mapa com o botão direito ou do meio e use a roda do mouse para dar zoom.",
+      "Jogadores: crie seu personagem no botão \"Criar personagem\" no topo. O token dele é seu para mover.",
+      "Mestre: prepare o mapa no modo edição e volte ao modo jogo para a sessão.",
+      "Os atalhos (P para pingar, WASD para andar, Espaço para centralizar) podem ser trocados em Configurações > Atalhos.",
+    ],
+  },
+  {
+    id: "board",
+    title: "O mapa",
+    icon: "fa-solid fa-map",
+    audience: "all",
+    summary: "Navegar, pingar e usar o clique direito.",
+    steps: [
+      "Roda do mouse: zoom. Botão direito ou do meio arrastando: mover a câmera.",
+      "P faz um ping no ponto do mouse para todos verem. O limite é de 3 pings a cada 5 segundos.",
+      "Espaço centraliza a câmera no seu token.",
+      "Mestre: clique direito num ponto vazio para puxar jogadores para ali ou apagar desenhos que estejam embaixo do mouse.",
+    ],
+  },
+  {
+    id: "control:tokens",
+    title: "Tokens",
+    icon: "fa-solid fa-user",
+    audience: "all",
+    summary: "Mover personagens e ver a ficha.",
+    steps: [
+      "Arraste o token para mover. Todos veem o movimento ao vivo enquanto você arrasta.",
+      "W, A, S e D andam um quadrado por vez com o token selecionado (ou com o seu personagem). As paredes bloqueiam.",
+      "Segure Ctrl ao arrastar para ver o caminho e confirmar antes de mover.",
+      "Clique direito no token para abrir a ficha. O mestre também pode ocultar, travar a posição e colocar em combate.",
+      "Se o mestre travar o mapa ou pausar a cena, ninguém se mexe até ele liberar.",
+    ],
+  },
+  {
+    id: "tool:ruler",
+    title: "Régua",
+    icon: "fa-solid fa-ruler",
+    audience: "all",
+    summary: "Medir distâncias no mapa.",
+    steps: ["Escolha a régua e arraste do ponto de partida até o destino.", "A distância aparece nas unidades da cena (metros, pés...)."],
+  },
+  {
+    id: "control:templates",
+    title: "Áreas de efeito",
+    icon: "fa-solid fa-ruler-combined",
+    audience: "all",
+    summary: "Círculos, cones, retângulos e linhas para magias e explosões.",
+    steps: ["Escolha a forma e arraste no mapa a partir do ponto de origem.", "Clique direito numa área para apagá-la. O mestre pode apagar a de qualquer um."],
+  },
+  {
+    id: "control:drawings",
+    title: "Desenhos",
+    icon: "fa-solid fa-pencil-alt",
+    audience: "all",
+    summary: "Rabiscar por cima do mapa: setas, círculos, textos.",
+    steps: [
+      "Todos podem desenhar. O desenho fica por cima de tudo, inclusive dos tokens.",
+      "Escolha retângulo, elipse, mão livre ou texto e arraste no mapa.",
+      "Clique direito no seu desenho para apagá-lo.",
+      "O mestre pode apagar qualquer desenho e travar desenhos. Desenho travado não pode ser movido, editado nem apagado por jogadores.",
+    ],
+  },
+  {
+    id: "tool:lockAll",
+    title: "Travar todos os desenhos",
+    icon: "fa-solid fa-lock",
+    audience: "gm",
+    summary: "Congela de uma vez todos os desenhos da cena.",
+    steps: ["Um clique trava todos os desenhos da cena. Se todos já estiverem travados, o clique destrava.", "Para um desenho só, use o clique direito nele."],
+  },
+  {
+    id: "tool:clear",
+    title: "Apagar todos",
+    icon: "fa-solid fa-trash",
+    audience: "gm",
+    summary: "Remove todos os objetos desta camada na cena atual.",
+    steps: ["Pede confirmação antes de apagar.", "Só afeta a camada escolhida (desenhos, paredes, luzes...)."],
+  },
+  {
+    id: "control:tiles",
+    title: "Tiles",
+    icon: "fa-solid fa-cubes",
+    audience: "gm",
+    summary: "Imagens soltas no mapa: móveis, baús, decorações.",
+    steps: ["Disponível no modo edição.", "Escolha \"Colocar tile\", arraste a área e escolha a imagem.", "Clique direito no tile para travar ou excluir."],
+  },
+  {
+    id: "control:walls",
+    title: "Paredes e portas",
+    icon: "fa-solid fa-dungeon",
+    audience: "gm",
+    summary: "Bloqueiam a visão e o movimento dos tokens.",
+    steps: [
+      "Disponível no modo edição. Clique para começar a parede e clique de novo para cada ponto.",
+      "A ferramenta Porta cria portas que os jogadores abrem clicando.",
+      "Clique direito na porta para trancar ou exigir um item (uma chave) para abrir.",
+    ],
+  },
+  {
+    id: "control:lighting",
+    title: "Luzes",
+    icon: "fa-regular fa-lightbulb",
+    audience: "gm",
+    summary: "Iluminam a cena para quem tem visão.",
+    steps: [
+      "Disponível no modo edição. Clique no mapa para colocar uma luz.",
+      "A área amarela só aparece para o mestre no modo edição. No jogo, a luz apenas ilumina.",
+      "Clique direito na luz para mudar o raio, a cor e se as paredes a bloqueiam.",
+    ],
+  },
+  {
+    id: "control:notes",
+    title: "Notas",
+    icon: "fa-solid fa-bookmark",
+    audience: "all",
+    summary: "Marcadores no mapa ligados ao diário.",
+    steps: ["Clique no mapa para criar uma nota com texto.", "Uma nota pode abrir uma página do diário quando clicada."],
+  },
+  {
+    id: "tab:chat",
+    title: "Chat e dados",
+    icon: "fa-solid fa-comments",
+    audience: "all",
+    summary: "Conversar e rolar dados.",
+    steps: [
+      "Digite uma fórmula para rolar: 1d20 + 5, 2d6kh (mantém o maior), 4d6.",
+      "/r rola para todos, /gmr só para o mestre, /br às cegas, /sr só para você.",
+      "/w Nome mensagem manda uma mensagem privada.",
+      "Use # para dar nome à rolagem: /r 1d20 + 3 # Furtividade.",
+    ],
+  },
+  {
+    id: "tab:combat",
+    title: "Combate",
+    icon: "fa-solid fa-hand-fist",
+    audience: "all",
+    summary: "Ordem de iniciativa e turnos.",
+    steps: [
+      "O mestre coloca tokens no combate pelo clique direito no token.",
+      "Todos veem a ordem e de quem é o turno. Um aviso aparece quando chega a sua vez.",
+      "Só o mestre define a iniciativa e avança os turnos.",
+    ],
+  },
+  {
+    id: "tab:actors",
+    title: "Atores e fichas",
+    icon: "fa-solid fa-users",
+    audience: "all",
+    summary: "Personagens, NPCs e monstros.",
+    steps: [
+      "Jogadores criam o próprio personagem e só veem as fichas que podem.",
+      "Arraste um ator para o mapa para criar o token dele.",
+      "O mestre organiza os atores em categorias e define quem é dono de cada ficha.",
+    ],
+  },
+  {
+    id: "tab:items",
+    title: "Itens",
+    icon: "fa-solid fa-suitcase",
+    audience: "all",
+    summary: "Armas, poções e equipamentos.",
+    steps: ["Arraste um item para a ficha de um personagem para dar o item a ele.", "Itens com o nome certo podem servir de chave para portas."],
+  },
+  {
+    id: "tab:journal",
+    title: "Diário",
+    icon: "fa-solid fa-book-open",
+    audience: "all",
+    summary: "Textos, lore e anotações da campanha.",
+    steps: ["O mestre escolhe quem pode ler cada entrada.", "Entradas podem ser ligadas a notas no mapa."],
+  },
+  {
+    id: "tab:scenes",
+    title: "Cenas",
+    icon: "fa-solid fa-map",
+    audience: "gm",
+    summary: "Os mapas da campanha.",
+    steps: ["Crie uma cena, escolha o fundo e o tamanho da grade.", "Ative a cena para levar os jogadores até ela."],
+  },
+  {
+    id: "navigation",
+    title: "Barra de cenas",
+    icon: "fa-solid fa-signs-post",
+    audience: "gm",
+    summary: "Trocar rápido entre os mapas.",
+    steps: ["Clique numa cena para vê-la sozinho.", "Ative a cena para que os jogadores também vão para ela."],
+  },
+  {
+    id: "players",
+    title: "Jogadores online",
+    icon: "fa-solid fa-user-group",
+    audience: "all",
+    summary: "Quem está na mesa agora.",
+    steps: [
+      "Mostra quem está conectado e com qual cor.",
+      "Os pings de cada um usam essa cor.",
+      "Mestre: clique com o botão direito num jogador para controlar o boneco dele.",
+    ],
+  },
+  {
+    id: "toolbar:session",
+    title: "Iniciar e fechar sessão",
+    icon: "fa-solid fa-door-open",
+    audience: "gm",
+    summary: "Liga e desliga a mesa para os jogadores.",
+    steps: [
+      "Com a sessão fechada, cada jogador fica congelado na última imagem que viu do mapa, mesmo que você mude de cena ou puxe ele para outro lugar.",
+      "Enquanto isso eles ainda podem abrir a ficha e rolar dados.",
+      "Clique em Iniciar sessão para liberar o mapa de novo.",
+      "Se ninguém mexer em nada por 1 hora, a sessão fecha sozinha.",
+    ],
+  },
+  {
+    id: "puppet",
+    title: "Controlar boneco",
+    icon: "fa-solid fa-gamepad",
+    audience: "gm",
+    summary: "Ver e jogar exatamente como um personagem.",
+    steps: [
+      "Clique com o botão direito num token e escolha Controlar boneco (ou clique com o botão direito num jogador na lista).",
+      "Você passa a ver só o que ele vê, a ficha dele abre e as rolagens saem no nome dele. Mova com o mouse ou WASD.",
+      "Para sair, aperte Esc ou clique com o botão direito e escolha Sair do controle.",
+      "Em Quem pode controlar, você libera o boneco para outros jogadores ou para todos (bom para NPCs).",
+    ],
+  },
+  {
+    id: "toolbar:mode",
+    title: "Modo jogo e modo edição",
+    icon: "fa-solid fa-pen-ruler",
+    audience: "gm",
+    summary: "Separar a preparação do mapa da sessão.",
+    steps: ["Modo edição libera paredes, luzes e tiles.", "Modo jogo esconde essas ferramentas para não arrastar nada sem querer."],
+  },
+  {
+    id: "toolbar:pause",
+    title: "Pausar cena",
+    icon: "fa-solid fa-pause",
+    audience: "gm",
+    summary: "Cobre o mapa dos jogadores enquanto você prepara.",
+    steps: ["Os jogadores veem uma tela de pausa e não mexem em nada no mapa.", "Dados, chat e fichas continuam funcionando."],
+  },
+  {
+    id: "toolbar:lock",
+    title: "Travar mapa",
+    icon: "fa-solid fa-lock",
+    audience: "gm",
+    summary: "Impede os jogadores de mover e criar coisas no mapa.",
+    steps: ["Os jogadores ainda veem o mapa, mas não mexem em tokens, desenhos nem áreas.", "Clique de novo para liberar."],
+  },
+  {
+    id: "toolbar:vision",
+    title: "Visão dos jogadores",
+    icon: "fa-solid fa-binoculars",
+    audience: "gm",
+    summary: "Até onde os jogadores enxergam a partir dos tokens.",
+    steps: ["Escolha uma distância para limitar a visão, ou 0 para não limitar.", "Vale só para jogadores. O mestre sempre vê tudo."],
+  },
+  {
+    id: "toolbar:share-view",
+    title: "Mostrar minha visão",
+    icon: "fa-solid fa-eye",
+    audience: "gm",
+    summary: "Leva todos para a sua cena, posição e zoom.",
+    steps: ["Útil para mostrar um detalhe do mapa para a mesa inteira.", "Para mover os tokens dos jogadores para um ponto, use o clique direito no mapa."],
+  },
+  {
+    id: "toolbar:modules",
+    title: "Módulos",
+    icon: "fa-solid fa-puzzle-piece",
+    audience: "gm",
+    summary: "Liga e desliga extensões da mesa.",
+    steps: ["Ative só os módulos de que precisa.", "A mesa recarrega para todos ao mudar."],
+  },
+  {
+    id: "toolbar:users",
+    title: "Jogadores da mesa",
+    icon: "fa-solid fa-users",
+    audience: "gm",
+    summary: "Personagens, papéis, remover e banir.",
+    steps: [
+      "Ligue cada jogador ao personagem dele.",
+      "Transforme alguém em mestre (ele passa a entrar com senha).",
+      "Banir tira o jogador na hora e impede que ele volte com o mesmo nome ou pelo mesmo computador. Para desbanir, use a lista de banidos.",
+    ],
+  },
+  {
+    id: "toolbar:files",
+    title: "Arquivos",
+    icon: "fa-solid fa-folder-open",
+    audience: "gm",
+    summary: "Suas imagens, mapas e músicas.",
+    steps: ["Abre o gerenciador de arquivos da sala numa nova aba.", "Envie imagens para usar como mapas, tokens e retratos."],
+  },
+  {
+    id: "toolbar:settings",
+    title: "Configurações",
+    icon: "fa-solid fa-gear",
+    audience: "all",
+    summary: "Preferências, atalhos e senha.",
+    steps: [
+      "Geral: animação dos dados, desempenho e outras preferências.",
+      "Atalhos: troque as teclas (WASD, P, Espaço...).",
+      "Mestre: na aba Senha do mestre, troque a senha desta sala ou deixe em branco para ficar sem senha.",
+    ],
+  },
+  {
+    id: "toolbar:character",
+    title: "Meu personagem",
+    icon: "fa-solid fa-user-shield",
+    audience: "all",
+    summary: "Criar ou abrir a sua ficha.",
+    steps: ["Sem personagem, o botão cria um novo.", "Com personagem, o botão abre a ficha dele."],
+  },
+];
+
+export function findHelpTopic(id: string): HelpTopic | undefined {
+  return HELP_TOPICS.find((topic) => topic.id === id);
+}
+
+export function helpTopicsFor(isGameMaster: boolean): HelpTopic[] {
+  return HELP_TOPICS.filter((topic) => isGameMaster || topic.audience === "all");
+}

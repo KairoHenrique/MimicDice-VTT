@@ -51,15 +51,145 @@ body {
 
 .logo {
   grid-row: span 2;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 45%));
+}
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: radial-gradient(circle at 50% 42%, #10204a 0%, #070912 62%, #030306 100%);
+  cursor: pointer;
+  animation: intro-leave 480ms ease-in 2200ms forwards;
+}
+
+.intro.done {
+  display: none;
+}
+
+.intro-stage {
+  position: relative;
+  width: 280px;
+  height: 300px;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--brand);
-  color: var(--brand-foreground);
-  font-weight: 800;
-  font-size: 13px;
+}
+
+.intro-glow {
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(59 130 246 / 55%), transparent 70%);
+  opacity: 0;
+  animation: intro-glow 1600ms ease-out 650ms forwards;
+}
+
+.intro-logo {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 24px rgb(0 0 0 / 60%));
+  transform-origin: 50% 90%;
+  opacity: 0;
+  animation:
+    intro-drop 760ms cubic-bezier(0.22, 1.4, 0.36, 1) 120ms forwards,
+    intro-chomp 520ms ease-in-out 980ms 2;
+}
+
+.intro-shadow {
+  position: absolute;
+  bottom: 0;
+  width: 140px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 55%);
+  filter: blur(6px);
+  transform: scaleX(0.2);
+  opacity: 0;
+  animation: intro-shadow 760ms ease-out 120ms forwards;
+}
+
+.intro-title {
+  margin: 8px 0 0;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #f8fafc;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: intro-rise 480ms ease-out 900ms forwards;
+}
+
+.intro-title span {
+  color: #e8b64a;
+}
+
+.intro-tagline {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: intro-rise 480ms ease-out 1150ms forwards;
+}
+
+@keyframes intro-drop {
+  0% { opacity: 0; transform: translateY(-160px) rotate(-200deg) scale(0.5); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
+
+@keyframes intro-chomp {
+  0%, 100% { transform: scale(1, 1); }
+  35% { transform: scale(1.08, 0.92); }
+  65% { transform: scale(0.96, 1.05); }
+}
+
+@keyframes intro-shadow {
+  100% { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes intro-glow {
+  0% { opacity: 0; transform: scale(0.6); }
+  50% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 0.55; transform: scale(1); }
+}
+
+@keyframes intro-rise {
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes intro-leave {
+  100% { opacity: 0; visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro {
+    animation: intro-leave 300ms ease-in 900ms forwards;
+  }
+
+  .intro-logo,
+  .intro-title,
+  .intro-tagline,
+  .intro-glow,
+  .intro-shadow {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .intro-glow {
+    opacity: 0.55;
+  }
 }
 
 .brand h1 {
@@ -238,9 +368,36 @@ button.link:hover:not(:disabled) {
   background: rgb(59 130 246 / 6%);
 }
 
-.invite button {
+.invite-url.hidden-link {
+  color: var(--muted-foreground);
+  letter-spacing: 0.08em;
+  user-select: none;
+}
+
+.invite-actions {
   grid-row: 1 / span 2;
   grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.icon-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .room-list {

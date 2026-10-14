@@ -61,6 +61,24 @@ function clearTool(layerName: string, label: string): SceneControlTool {
   });
 }
 
+/** GM-only: locks every drawing of the viewed scene so players cannot move, edit or erase them; unlocks if all are locked. */
+function lockAllDrawingsTool(): SceneControlTool {
+  return tool("lockAll", 98, "Travar/destravar todos os desenhos", "fa-solid fa-lock", {
+    button: true,
+    visible: game.user.isGM,
+    onChange: async () => {
+      const drawings: any[] = canvas.scene?.getEmbeddedCollection("Drawing").map((drawing: any) => drawing) ?? [];
+      if (drawings.length === 0) {
+        ui.notifications.info("Não há desenhos nesta cena.");
+        return;
+      }
+      const lock = drawings.some((drawing: any) => drawing.locked !== true);
+      await canvas.scene.updateEmbeddedDocuments("Drawing", drawings.map((drawing: any) => ({ _id: drawing.id, locked: lock })));
+      ui.notifications.info(lock ? `${drawings.length} desenho(s) travado(s).` : "Desenhos liberados para os jogadores.");
+    },
+  });
+}
+
 function selectTool(): SceneControlTool {
   return tool("select", 1, "Selecionar", "fa-solid fa-expand");
 }
@@ -97,6 +115,7 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
         ellipse: tool("ellipse", 3, "Elipse", "fa-solid fa-circle"),
         freehand: tool("freehand", 4, "Mão livre", "fa-solid fa-signature"),
         text: tool("text", 5, "Texto", "fa-solid fa-font"),
+        lockAll: lockAllDrawingsTool(),
         clear: clearTool("drawings", "desenhos"),
       },
     },

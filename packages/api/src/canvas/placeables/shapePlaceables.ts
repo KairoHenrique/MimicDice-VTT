@@ -1,9 +1,10 @@
 import * as PIXI from "pixi.js";
 import { CONST } from "../../constants";
-import { currentCanvas, currentGame } from "../../runtime";
+import { currentCanvas } from "../../runtime";
 import { ControlIcon } from "../containers";
 import type { Rectangle } from "../geometry";
 import { Ray } from "../geometryClasses";
+import { puppetToken, seesEverything } from "../perception/viewpoint";
 import { colorToNumber, loadTexture } from "../textures";
 import { PlaceableObject } from "./PlaceableObject";
 
@@ -12,6 +13,10 @@ const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 export class Drawing extends PlaceableObject {
   static override embeddedName = "Drawing";
   shape = new PIXI.Graphics();
+
+  override _onClickRight(event: PIXI.FederatedPointerEvent): void {
+    currentCanvas()?.hud?.showAuthoredMenu?.(this, event);
+  }
   text: PIXI.Text | null = null;
 
   override get bounds(): Rectangle {
@@ -83,6 +88,10 @@ const CONTROL_ICON_SIZE = 40;
 export class MeasuredTemplate extends PlaceableObject {
   static override embeddedName = "MeasuredTemplate";
   template = new PIXI.Graphics();
+
+  override _onClickRight(event: PIXI.FederatedPointerEvent): void {
+    currentCanvas()?.hud?.showAuthoredMenu?.(this, event);
+  }
   highlight: PIXI.Graphics | null = null;
   controlIcon: ControlIcon | null = null;
   shape: PIXI.Circle | PIXI.Polygon | PIXI.Rectangle | null = null;
@@ -101,7 +110,7 @@ export class MeasuredTemplate extends PlaceableObject {
   }
 
   override get isVisible(): boolean {
-    return !this.document.hidden || Boolean(currentGame()?.user?.isGM) || this.isOwner;
+    return !this.document.hidden || seesEverything() || (puppetToken() === null && this.isOwner);
   }
 
   /** Distances are in pixels and angles in degrees, matching the Foundry static helpers packages call. */

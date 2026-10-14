@@ -117,8 +117,84 @@ body.scene-paused:not(:has(.pause-banner)) .scene-controls {
   pointer-events: none;
 }
 
+/* Closed session: players keep a still image of their last view; the GM banner sits under the pause banner */
+.session-banner {
+  top: calc(var(--host-toolbar-bottom, 52px) + 48px);
+}
+
+.session-freeze {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  overflow: hidden;
+  background: #09090b;
+}
+
+.session-freeze-image {
+  position: absolute;
+  max-width: none;
+  filter: grayscale(0.6) brightness(0.7);
+  user-select: none;
+  pointer-events: none;
+}
+
+.session-freeze-notice {
+  position: absolute;
+  top: calc(var(--host-toolbar-bottom, 52px) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+body.table-session-closed:not(:has(.session-banner)) .scene-controls,
+body.table-session-closed:not(:has(.session-banner)) #navigation {
+  display: none;
+}
+
+/* GM looking through a token's eyes */
+.puppet-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  z-index: 46;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  transform: translateX(-50%);
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #dbeafe;
+  background: rgb(30 58 138 / 90%);
+  border: 1px solid rgb(59 130 246 / 70%);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.puppet-banner .puppet-leave {
+  padding: 4px 8px;
+  font-size: 0.95em;
+}
+
+.control-permission-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-permission-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 8px;
+}
+
+.control-permission-row .hint {
+  grid-column: 2;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .pause-curtain {
+  .pause-curtain,
+  .session-freeze {
     animation: pause-fade-in 200ms ease-out;
   }
 }

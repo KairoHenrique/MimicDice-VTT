@@ -23,6 +23,14 @@ export interface JoinableUserRecord {
   isGameMaster: boolean;
   /** Name of the player's linked character, so returning players recognize their entry; null for GMs. */
   characterName: string | null;
+  /** False for a Game Master who chose to play without a password. */
+  hasPassword: boolean;
+}
+
+export interface BanRecord {
+  _id: string;
+  name: string;
+  bannedAt: number;
 }
 
 export interface OnlineUserRecord extends PublicUserRecord {

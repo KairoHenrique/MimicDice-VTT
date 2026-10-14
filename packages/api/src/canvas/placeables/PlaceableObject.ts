@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import type { PlainObject } from "@tabbletop/common";
-import { MAP_LOCKED_SETTING_KEY, SCENE_PAUSED_SETTING_KEY } from "@tabbletop/protocol";
+import { MAP_LOCKED_SETTING_KEY, SCENE_PAUSED_SETTING_KEY, TABLE_SESSION_OPEN_SETTING_KEY } from "@tabbletop/protocol";
+import { seesEverything } from "../perception/viewpoint";
 import { Hooks } from "../../hooks/Hooks";
 import { currentCanvas, currentGame } from "../../runtime";
 import type { Point, Rectangle } from "../geometry";
@@ -16,9 +17,18 @@ function isWorldFlagOn(settingKey: string): boolean {
   }
 }
 
+function isTableSessionClosed(): boolean {
+  const [namespace, key] = TABLE_SESSION_OPEN_SETTING_KEY.split(".");
+  try {
+    return currentGame()?.settings.get(namespace, key) !== true;
+  } catch {
+    return false;
+  }
+}
+
 function isFrozenByGameMaster(user: any): boolean {
   if (!user || user.isGM) return false;
-  return isWorldFlagOn(MAP_LOCKED_SETTING_KEY) || isWorldFlagOn(SCENE_PAUSED_SETTING_KEY);
+  return isWorldFlagOn(MAP_LOCKED_SETTING_KEY) || isWorldFlagOn(SCENE_PAUSED_SETTING_KEY) || isTableSessionClosed();
 }
 
 /**
@@ -83,7 +93,7 @@ export abstract class PlaceableObject extends PIXI.Container {
   }
 
   get isVisible(): boolean {
-    return !this.document.hidden || Boolean(currentGame()?.user?.isGM);
+    return !this.document.hidden || seesEverything();
   }
 
   /** Rebuilds every child. Concurrent draws are resolved by generation so a stale texture load never wins. */

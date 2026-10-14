@@ -20,6 +20,9 @@ export interface UserProfileChanges {
 
 const MAX_USER_FLAGS_BYTES = 256 * 1024;
 
+/** Stored instead of a hash when the Game Master chose to play without a password. */
+const NO_PASSWORD = "";
+
 const USER_COLORS = ["#c0392b", "#2980b9", "#27ae60", "#8e44ad", "#d35400", "#16a085", "#f39c12", "#2c3e50"];
 
 export class UserService {
@@ -79,9 +82,9 @@ export class UserService {
   }
 
   listJoinableUsers(characterNameOf: (actorId: string) => string | null = () => null): JoinableUserRecord[] {
-    return Array.from(this.#usersById.values(), ({ _id, name, role, character }) => {
+    return Array.from(this.#usersById.values(), ({ _id, name, role, character, passwordHash }) => {
       const isGameMaster = role >= USER_ROLES.ASSISTANT;
-      return { _id, name, isGameMaster, characterName: !isGameMaster && character ? characterNameOf(character) : null };
+      return { _id, name, isGameMaster, characterName: !isGameMaster && character ? characterNameOf(character) : null, hasPassword: passwordHash !== NO_PASSWORD };
     });
   }
 
@@ -129,7 +132,7 @@ export class UserService {
       avatar: null,
       character: null,
       flags: {},
-      passwordHash: await this.passwordHasher.hashPassword(request.password),
+      passwordHash: await this.#hashOrNone(request.password),
     };
     await this.store.put(user);
     this.#usersById.set(user._id, user);
@@ -171,12 +174,27 @@ export class UserService {
     return { _id: userId, ...diff };
   }
 
+  /** Only Game Masters may turn their password off; an empty new password does exactly that. */
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = this.#usersById.get(userId);
+    if (!user || user.role < USER_ROLES.ASSISTANT) throw HttpError.forbidden("Somente o mestre pode mudar a senha");
+    if (!(await this.verifyCredentials(userId, currentPassword))) throw HttpError.unauthorized("A senha atual está incorreta");
+    const updated: UserDocument = { ...user, passwordHash: await this.#hashOrNone(newPassword) };
+    await this.store.put(updated);
+    this.#usersById.set(userId, updated);
+  }
+
+  #hashOrNone(plainPassword: string): Promise<string> {
+    return plainPassword === "" ? Promise.resolve(NO_PASSWORD) : this.passwordHasher.hashPassword(plainPassword);
+  }
+
   async verifyCredentials(userId: string, plainPassword: string): Promise<UserDocument | undefined> {
     const user = this.#usersById.get(userId);
     if (!user) {
       await this.passwordHasher.consumeEquivalentTime(plainPassword);
       return undefined;
     }
+    if (user.passwordHash === NO_PASSWORD) return user.role >= USER_ROLES.ASSISTANT ? user : undefined;
     const passwordMatches = await this.passwordHasher.verifyPassword(user.passwordHash, plainPassword);
     return passwordMatches ? user : undefined;
   }

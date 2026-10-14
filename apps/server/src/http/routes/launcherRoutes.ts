@@ -27,12 +27,11 @@ function requireLauncher(token: string | null) {
   };
 }
 
-/** Room management for the desktop launcher; the current world's Game Masters follow the table they open. */
+/** Room management for the desktop launcher; every room keeps its own Game Master password. */
 export function createLauncherRoutes(context: ServerContext): Router {
   const router = Router();
   router.use(requireLauncher(context.config.launcherToken));
   const switchLimiter = createSwitchLimiter();
-  const currentGameMasters = () => context.activeWorld.current?.users.listGameMasters() ?? [];
 
   router.get("/worlds", async (_request, response) => {
     response.json(await listWorldSummaries(context));
@@ -40,12 +39,12 @@ export function createLauncherRoutes(context: ServerContext): Router {
 
   router.post("/worlds", switchLimiter, async (request, response) => {
     const { title } = parseRequestBody(createWorldRequestSchema, request);
-    response.status(201).json({ id: await createWorld(context, title, currentGameMasters()) });
+    response.status(201).json({ id: await createWorld(context, title) });
   });
 
   router.post("/worlds/activate", switchLimiter, async (request, response) => {
     const { worldId } = parseRequestBody(activateWorldRequestSchema, request);
-    await activateWorld(context, worldId, currentGameMasters());
+    await activateWorld(context, worldId);
     response.json({ id: worldId });
   });
 

@@ -394,8 +394,10 @@ button.danger,
   font-weight: 500;
 }
 
-.brand-mark i {
-  color: var(--brand);
+.brand-mark img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 body.game {

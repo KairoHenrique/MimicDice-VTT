@@ -12,7 +12,8 @@ export const USER_PERMISSIONS = Object.freeze({
   BROADCAST_AUDIO: { label: "PERMISSION.BroadcastAudio", defaultRole: USER_ROLES.TRUSTED },
   BROADCAST_VIDEO: { label: "PERMISSION.BroadcastVideo", defaultRole: USER_ROLES.TRUSTED },
   CARDS_CREATE: { label: "PERMISSION.CardsCreate", defaultRole: USER_ROLES.ASSISTANT },
-  DRAWING_CREATE: { label: "PERMISSION.DrawingCreate", defaultRole: USER_ROLES.TRUSTED },
+  /* Players sketch on the shared board; the GM can lock or erase any drawing. */
+  DRAWING_CREATE: { label: "PERMISSION.DrawingCreate", defaultRole: USER_ROLES.PLAYER },
   /* Players upload their own portraits and tokens; uploads are confined to an allowlisted, sandboxed folder. */
   FILES_BROWSE: { label: "PERMISSION.FilesBrowse", defaultRole: USER_ROLES.PLAYER },
   FILES_UPLOAD: { label: "PERMISSION.FilesUpload", defaultRole: USER_ROLES.PLAYER },

@@ -54,12 +54,15 @@ function gameMasterForm(gameMasters: readonly JoinableUserRecord[], rememberedSt
   const selectedUserId = () => (gameMasters.length > 1 ? select.value : (gameMasters[0]?._id ?? ""));
   let remembered = rememberedUserId;
   const usesRememberedPassword = () => remembered !== null && remembered === selectedUserId();
+  const selectedHasPassword = () => gameMasters.find((user) => user._id === selectedUserId())?.hasPassword !== false;
   const refresh = () => {
     const usingRemembered = usesRememberedPassword();
+    const needsPassword = selectedHasPassword() && !usingRemembered;
     rememberedNotice.hidden = !usingRemembered;
-    passwordField.hidden = usingRemembered;
-    rememberField.hidden = usingRemembered;
-    password.required = !usingRemembered;
+    passwordField.hidden = !needsPassword;
+    rememberField.hidden = !needsPassword;
+    password.required = needsPassword;
+    if (!needsPassword) password.value = "";
   };
   const forget = () => {
     remembered = null;
@@ -88,7 +91,7 @@ function gameMasterForm(gameMasters: readonly JoinableUserRecord[], rememberedSt
         }
       }
       try {
-        await serverApi.join({ userId: selectedUserId(), password: password.value, remember: rememberBox.checked });
+        await serverApi.join({ userId: selectedUserId(), password: password.value, remember: selectedHasPassword() && rememberBox.checked });
       } catch (error) {
         password.value = "";
         throw error;

@@ -26,9 +26,10 @@ describe("pullToSceneRequestSchema", () => {
 });
 
 describe("setupRequestSchema", () => {
-  it("lets the GM choose any non-empty password", () => {
+  it("lets the GM choose any password, or none at all", () => {
     const base = { worldTitle: "Mesa", gameMasterName: "Mestre" };
     expect(setupRequestSchema.safeParse({ ...base, gameMasterPassword: "a1" }).success).toBe(true);
-    expect(setupRequestSchema.safeParse({ ...base, gameMasterPassword: "" }).success).toBe(false);
+    expect(setupRequestSchema.safeParse({ ...base, gameMasterPassword: "" }).success).toBe(true);
+    expect(setupRequestSchema.safeParse({ ...base, gameMasterPassword: "x".repeat(129) }).success).toBe(false);
   });
 });

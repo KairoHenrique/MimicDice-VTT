@@ -91,7 +91,7 @@ async function pullTargetsTo(socket: Socket, targets: PullTarget[], point: Point
   else ui.notifications.info(targets.length === 1 ? `${targets[0]!.actor.name} foi puxado para cá.` : `${targets.length} jogadores foram puxados para cá.`);
 }
 
-function pullMenuEntries(socket: Socket, point: Point): MenuEntry[] {
+export function pullMenuEntries(socket: Socket, point: Point): MenuEntry[] {
   const targets = pullTargets();
   if (targets.length === 0) return [{ heading: true, label: "Nenhum jogador tem personagem ainda", icon: "fa-solid fa-user-slash" }];
   const entries: MenuEntry[] = [{ heading: true, label: "Puxar para cá", icon: "fa-solid fa-people-pulling" }];
@@ -101,12 +101,4 @@ function pullMenuEntries(socket: Socket, point: Point): MenuEntry[] {
     entries.push({ label: `${target.actor.name} - ${target.user.name}${status}`, icon: "fa-solid fa-user", onSelect: () => void pullTargetsTo(socket, [target], point) });
   }
   return entries;
-}
-
-/** GM right click on an empty spot of the map: pull every player, or a chosen one, to that point. */
-export function registerPullPlayersMenu(socket: Socket): void {
-  Hooks.on("canvasContextMenu", (point: Point, client: Point) => {
-    if (!game.user?.isGM || !canvas.ready || !canvas.scene) return;
-    canvas.hud?.openMenuAt(pullMenuEntries(socket, point), client);
-  });
 }

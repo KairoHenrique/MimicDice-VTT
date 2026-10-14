@@ -4,6 +4,8 @@ export interface Session {
   token: string;
   userId: string;
   expiresAt: number;
+  /** Keyed hash of the device that signed in (see `DeviceFingerprinter`); null for the host PC. */
+  deviceKey: string | null;
 }
 
 type SessionRevokedListener = (session: Session) => void;
@@ -20,11 +22,12 @@ export class SessionStore {
     this.#sweepTimer.unref();
   }
 
-  create(userId: string): Session {
+  create(userId: string, deviceKey: string | null = null): Session {
     const session: Session = {
       token: randomBytes(32).toString("base64url"),
       userId,
       expiresAt: Date.now() + this.sessionLifetimeMs,
+      deviceKey,
     };
     this.#sessions.set(session.token, session);
     return session;
@@ -52,6 +55,14 @@ export class SessionStore {
     for (const session of Array.from(this.#sessions.values())) {
       if (session.userId === userId) this.revoke(session.token);
     }
+  }
+
+  deviceKeysForUser(userId: string): string[] {
+    const keys = new Set<string>();
+    for (const session of this.#sessions.values()) {
+      if (session.userId === userId && session.deviceKey) keys.add(session.deviceKey);
+    }
+    return Array.from(keys);
   }
 
   onRevoked(listener: SessionRevokedListener): void {

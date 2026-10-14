@@ -13,16 +13,27 @@ const displayNameSchema = z
 /** The Game Master picks any password; the upper bound only caps hashing cost. */
 const passwordSchema = z.string().min(1).max(128);
 
+/** An empty Game Master password means the room has no password at all. */
+const optionalPasswordSchema = z.string().max(128);
+
 export const setupRequestSchema = z.object({
   worldTitle: z.string().trim().min(1).max(80),
   gameMasterName: displayNameSchema,
-  gameMasterPassword: passwordSchema,
+  gameMasterPassword: optionalPasswordSchema,
 });
 export type SetupRequest = z.infer<typeof setupRequestSchema>;
 
+export const changePasswordRequestSchema = z.object({
+  currentPassword: optionalPasswordSchema,
+  newPassword: optionalPasswordSchema,
+});
+export type ChangePasswordRequest = z.infer<typeof changePasswordRequestSchema>;
+
+export const banIdParamSchema = documentIdSchema;
+
 export const joinRequestSchema = z.object({
   userId: documentIdSchema,
-  password: z.string().min(1).max(128),
+  password: optionalPasswordSchema,
   /** Keeps this browser signed in for the Game Master without storing the password anywhere. */
   remember: z.boolean().optional(),
 });
@@ -85,6 +96,26 @@ export type CanvasPingRequest = z.infer<typeof canvasPingRequestSchema>;
 
 export const canvasPingBroadcastSchema = canvasPingRequestSchema.extend({ userId: documentIdSchema });
 export type CanvasPingBroadcast = z.infer<typeof canvasPingBroadcastSchema>;
+
+/** Live position of tokens while their owner drags them; `ended` tells others to drop the preview. Nothing is saved. */
+export const MAX_DRAGGED_TOKENS = 20;
+export const tokenDragRequestSchema = z.object({
+  sceneId: documentIdSchema,
+  tokens: z
+    .array(
+      z.object({
+        tokenId: documentIdSchema,
+        x: z.number().finite().min(-COORDINATE_LIMIT).max(COORDINATE_LIMIT),
+        y: z.number().finite().min(-COORDINATE_LIMIT).max(COORDINATE_LIMIT),
+      }),
+    )
+    .min(1)
+    .max(MAX_DRAGGED_TOKENS),
+  ended: z.boolean().optional(),
+});
+export type TokenDragRequest = z.infer<typeof tokenDragRequestSchema>;
+export const tokenDragBroadcastSchema = tokenDragRequestSchema.extend({ userId: documentIdSchema });
+export type TokenDragBroadcast = z.infer<typeof tokenDragBroadcastSchema>;
 
 /** With `view`, players also get the GM's exact camera position and zoom. */
 export const MAX_PULLED_USERS = 50;

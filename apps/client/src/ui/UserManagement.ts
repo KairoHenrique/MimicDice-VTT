@@ -1,5 +1,5 @@
 import type { ApplicationConfiguration } from "@tabbletop/api";
-import { USER_ROLES, type PublicUserRecord } from "@tabbletop/protocol";
+import { USER_ROLES, type BanRecord, type PublicUserRecord } from "@tabbletop/protocol";
 import { getJson, sendJson } from "../net/apiClient";
 import { formErrorSlot, h, revealablePassword } from "../views/dom";
 import { assignPlayerOwner } from "./actors/actorAssignment";
@@ -24,13 +24,58 @@ export class UserManagement extends DomApplication {
   };
 
   override async _prepareContext(): Promise<Record<string, unknown>> {
-    return { users: await getJson<PublicUserRecord[]>("/api/users") };
+    const [users, bans] = await Promise.all([getJson<PublicUserRecord[]>("/api/users"), getJson<BanRecord[]>("/api/users/bans")]);
+    return { users, bans };
   }
 
   buildContent(context: Record<string, unknown>): Node[] {
     const users = context.users as PublicUserRecord[];
+    const bans = context.bans as BanRecord[];
     const hint = h("p", { class: "hint" }, "Jogadores entram só com o nome. Mestres entram com senha e controlam o mapa, as cenas e as fichas de todos.");
-    return [hint, h("ul", { class: "user-list" }, ...users.map((user) => this.#buildUserRow(user))), this.#buildCreateForm()];
+    return [hint, h("ul", { class: "user-list" }, ...users.map((user) => this.#buildUserRow(user))), this.#buildBanList(bans), this.#buildCreateForm()];
+  }
+
+  #buildBanList(bans: readonly BanRecord[]): HTMLElement {
+    const section = h("div", { class: "ban-list" }, h("h3", {}, "Banidos"));
+    if (bans.length === 0) {
+      section.append(h("p", { class: "hint" }, "Ninguém banido nesta sala."));
+      return section;
+    }
+    const list = h("ul", { class: "user-list" });
+    for (const ban of bans) {
+      const unbanButton = h("button", { type: "button", title: `Desbanir ${ban.name}` }, h("i", { class: "fas fa-unlock" }), " Desbanir");
+      unbanButton.addEventListener("click", () => void this.#unban(ban));
+      list.append(h("li", { class: "user-row" }, h("span", { class: "user-name" }, ban.name), h("span", { class: "hint" }, new Date(ban.bannedAt).toLocaleDateString("pt-BR")), unbanButton));
+    }
+    section.append(list);
+    return section;
+  }
+
+  async #banUser(user: PublicUserRecord): Promise<void> {
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: "Banir jogador" },
+      content: `<p>Banir <strong>${foundry.utils.escapeHTML(user.name)}</strong> desta sala?</p><p>Ele sai na hora e não consegue voltar com esse nome nem pelo mesmo computador. O personagem dele continua na mesa.</p>`,
+      yes: { label: "Banir" },
+      no: { label: "Cancelar" },
+    });
+    if (!confirmed) return;
+    try {
+      await sendJson("POST", `/api/users/${encodeURIComponent(user._id)}/ban`);
+      ui.notifications.info(`${user.name} foi banido.`);
+    } catch (error) {
+      ui.notifications.error(error instanceof Error ? error.message : "Falha ao banir");
+    }
+    await this.render();
+  }
+
+  async #unban(ban: BanRecord): Promise<void> {
+    try {
+      await sendJson("DELETE", `/api/users/bans/${encodeURIComponent(ban._id)}`);
+      ui.notifications.info(`${ban.name} pode entrar de novo.`);
+    } catch (error) {
+      ui.notifications.error(error instanceof Error ? error.message : "Falha ao desbanir");
+    }
+    await this.render();
   }
 
   #buildUserRow(user: PublicUserRecord): HTMLElement {
@@ -44,7 +89,13 @@ export class UserManagement extends DomApplication {
     const deleteButton = h("button", { type: "button", class: "icon", title: "Remover", disabled: isSelf }, h("i", { class: "fas fa-trash" }));
     deleteButton.addEventListener("click", () => void this.#deleteUser(user));
     const characterControl = isGameMasterAccount(user) ? h("span", { class: "hint" }, "vê tudo") : this.#characterSelect(user);
-    return h("li", { class: "user-row" }, h("span", { class: "user-name" }, user.name), characterControl, roleSelect, deleteButton);
+    const row = h("li", { class: "user-row" }, h("span", { class: "user-name" }, user.name), characterControl, roleSelect, deleteButton);
+    if (!isGameMasterAccount(user)) {
+      const banButton = h("button", { type: "button", class: "icon danger", title: `Banir ${user.name}`, "aria-label": `Banir ${user.name}` }, h("i", { class: "fas fa-ban" }));
+      banButton.addEventListener("click", () => void this.#banUser(user));
+      row.append(banButton);
+    }
+    return row;
   }
 
   /** Linking a character makes the player its owner, so its tokens are theirs to move as soon as they join. */

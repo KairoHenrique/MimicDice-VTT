@@ -145,13 +145,10 @@ dialog.application {
 }
 
 .host-brand {
-  display: grid;
-  place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-md);
-  background: var(--brand);
-  color: var(--brand-foreground);
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 50%));
 }
 
 .host-toolbar .toolbar-identity {
@@ -245,6 +242,95 @@ dialog.application {
   flex: 1;
   overflow-y: auto;
   padding-right: 4px;
+}
+
+.help-dialog .window-content {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  min-height: 0;
+}
+
+.help-nav {
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  padding-right: 8px;
+}
+
+.help-index {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.help-index button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 8px;
+}
+
+.help-index button.active {
+  background: var(--accent, var(--muted));
+  font-weight: 600;
+}
+
+.help-topic {
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.help-topic h2 {
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.help-summary {
+  margin: 0 0 12px;
+  color: var(--muted-foreground);
+}
+
+.help-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+.help-tip {
+  margin-top: 16px;
+}
+
+.help-tip kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+.client-configuration .password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.client-configuration .password-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.client-configuration .password-form button[type="submit"] {
+  align-self: flex-start;
 }
 
 .client-configuration .config-group h3 {
@@ -465,6 +551,10 @@ dialog.application {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ban-list h3 {
+  margin: 16px 0 8px;
 }
 
 .user-row select {

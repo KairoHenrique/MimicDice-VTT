@@ -8,6 +8,7 @@ import { CanvasLayer } from "../layers/CanvasLayer";
 import type { Token } from "../placeables/Token";
 import type { AmbientLight, Wall } from "../placeables/simplePlaceables";
 import { FogExplorationStore } from "./FogExplorationStore";
+import { puppetToken, seesEverything } from "./viewpoint";
 
 const [VISION_LIMIT_NAMESPACE, VISION_LIMIT_KEY] = PLAYER_VISION_LIMIT_SETTING_KEY.split(".") as [string, string];
 const MAX_FOG_TEXTURE_SIZE = 2048;
@@ -32,6 +33,7 @@ export class VisibilityLayer extends CanvasLayer {
   #explorationTexture: PIXI.RenderTexture | null = null;
   #textureScale = 1;
   #shapes: VisionShapes = { sight: [], lineOfSight: [], lights: [] };
+  #showLightAreas = false;
   #dirty = true;
   #fogStore: FogExplorationStore | null = null;
   #tick = () => this.#refreshIfDirty();
@@ -44,10 +46,10 @@ export class VisibilityLayer extends CanvasLayer {
     return currentCanvas()?.scene?._source.environment?.globalLight?.enabled !== false;
   }
 
-  /** How far players may see, in scene distance units, as set by the GM; 0 means no limit. Never limits the GM. */
+  /** How far players may see, in scene distance units, as set by the GM; 0 means no limit. Limits the GM only through a puppet. */
   get playerVisionLimit(): number {
     const game = currentGame();
-    if (!game?.user || game.user.isGM) return 0;
+    if (!game?.user || seesEverything()) return 0;
     try {
       const limit = Number(game.settings.get(VISION_LIMIT_NAMESPACE, VISION_LIMIT_KEY));
       return Number.isFinite(limit) && limit > 0 ? limit : 0;
@@ -107,7 +109,8 @@ export class VisibilityLayer extends CanvasLayer {
   }
 
   isTokenVisible(token: Token): boolean {
-    if (!this.active || token.isOwner) return true;
+    const puppet = puppetToken();
+    if (!this.active || (puppet ? token === puppet : token.isOwner)) return true;
     const { x, y, width, height } = token.bounds;
     const inset = Math.min(width, height) * 0.2;
     const probes: Point[] = [token.center, { x: x + inset, y: y + inset }, { x: x + width - inset, y: y + inset }, { x: x + inset, y: y + height - inset }, { x: x + width - inset, y: y + height - inset }];
@@ -161,8 +164,20 @@ export class VisibilityLayer extends CanvasLayer {
       });
   }
 
+  /** The tinted light areas are an editing aid for the GM; otherwise lights only reveal the map, with no colored overlay. */
+  get showLightAreas(): boolean {
+    return this.#showLightAreas;
+  }
+
+  set showLightAreas(show: boolean) {
+    if (this.#showLightAreas === show) return;
+    this.#showLightAreas = show;
+    this.update();
+  }
+
   #drawIllumination(canvas: any): void {
     this.illumination.removeChildren().forEach((child) => child.destroy());
+    if (!this.#showLightAreas) return;
     const glow = new PIXI.Graphics();
     for (const { light, polygon } of this.#lightPolygons(canvas)) {
       const alpha = Math.min(Math.max(Number(light.document.config?.alpha ?? 0.5), 0), 1) * 0.45;

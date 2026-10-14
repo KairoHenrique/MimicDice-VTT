@@ -1,5 +1,57 @@
 # Notas de versão
 
+## 1.0.0
+
+### Sessão da mesa
+
+- Novo botão **Iniciar sessão / Fechar sessão** na barra do mestre.
+- Com a sessão fechada, cada jogador fica **congelado na última imagem que viu do mapa**, mesmo que o mestre mude de cena ou puxe ele para outro lugar. A ficha e os dados continuam funcionando.
+- Quem entra com a sessão fechada vê o aviso "Aguarde o mestre iniciar a sessão".
+- A sessão **fecha sozinha depois de 1 hora** sem ninguém mexer em nada.
+- A mesa sempre começa com a sessão fechada: os jogadores esperam o mestre clicar em Iniciar sessão.
+
+### Controlar boneco
+
+- Botão direito num token: **Controlar boneco**. O mestre passa a ver exatamente o que o personagem vê (alcance de visão, paredes, tokens escondidos), a ficha abre e as rolagens saem no nome dele. Também funciona pelo botão direito no nome do jogador na lista.
+- Mova o boneco com o mouse ou com WASD. Para sair: **Esc** ou botão direito > **Sair do controle**.
+- **Quem pode controlar:** o mestre escolhe quais jogadores controlam cada boneco, ou libera para todos (bom para NPCs).
+
+### Movimento e mapa
+
+- **Movimento em tempo real:** todos veem o token andando enquanto ele é arrastado.
+- **WASD** move o token selecionado um quadrado por vez, respeitando paredes, mapa travado e pausa.
+- **Pings limitados** a 3 a cada 5 segundos por pessoa, com aviso de quanto tempo esperar.
+- A área colorida das luzes só aparece para o mestre no modo edição.
+
+### Desenhos
+
+- Os jogadores podem desenhar numa camada acima de tudo.
+- O mestre pode **apagar qualquer desenho** (um por um ou todos os dos jogadores de uma vez) e **travar desenhos** para ninguém mexer, um a um ou todos da cena.
+
+### Senha do mestre e banimento
+
+- A **senha do mestre agora é por sala** e é opcional: deixar vazia significa entrar sem senha.
+- Nova aba **Senha do mestre** em Configurações para trocar ou remover a senha.
+- O mestre pode **banir** um jogador (ele é desconectado e não volta pelo mesmo nome nem pelo mesmo aparelho) e **desbanir** depois, na janela Jogadores.
+
+### Tutorial
+
+- Botão **?** na barra do topo abre o tutorial.
+- **Shift + clique** em qualquer botão ou opção mostra a ajuda daquela opção.
+
+### Aplicativo
+
+- Nova logo e ícone do aplicativo, com uma animação de abertura no launcher.
+- Os links de convite ficam **ocultos por padrão**, com um olho para mostrar; o botão de copiar funciona mesmo oculto.
+- Instalador para Windows: escolhe a pasta de instalação, cria atalhos na área de trabalho e no Menu Iniciar e tem desinstalador. As campanhas ficam guardadas fora da pasta de instalação, então atualizar ou desinstalar não apaga nada. A versão portátil continua disponível.
+
+### Segurança
+
+- Com a sessão fechada, o servidor recusa qualquer mudança dos jogadores no mapa, além dos pings.
+- Banimento guarda só uma impressão criptográfica (HMAC) do endereço, nunca o endereço em texto. O PC que hospeda nunca é banido.
+- Troca de senha limitada a 10 tentativas a cada 15 minutos e só pelo mestre, conferindo a senha atual.
+- Só o mestre muda quem controla cada personagem.
+
 ## 0.2.1
 
 ### Puxar jogadores pelo botão direito

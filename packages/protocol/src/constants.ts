@@ -24,9 +24,25 @@ export const MAP_LOCKED_SETTING_KEY = "core.mapLocked";
 /** World setting (JSON boolean): the GM paused the scene; players cannot act on it and its view is covered. */
 export const SCENE_PAUSED_SETTING_KEY = "core.scenePaused";
 
+/**
+ * World setting (JSON boolean): the GM started the game session. Anything but `true` means closed: players keep
+ * their last view of the board and cannot act on scenes, only on their own sheet and dice.
+ */
+export const TABLE_SESSION_OPEN_SETTING_KEY = "core.tableSessionOpen";
+
+/** An open session with no input from anyone for this long is closed by the server. */
+export const TABLE_SESSION_IDLE_CLOSE_MS = 60 * 60 * 1000;
+
+/** Clients report user input at most this often, so idle detection costs one tiny message per minute. */
+export const TABLE_ACTIVITY_REPORT_INTERVAL_MS = 60 * 1000;
+
 /** World setting (JSON number, scene distance units): how far players see around their tokens; 0 = no limit. */
 export const PLAYER_VISION_LIMIT_SETTING_KEY = "core.playerVisionLimit";
 export const MAX_PLAYER_VISION_LIMIT = 1000;
+
+/** Each user may ping at most this many times inside any window of `PING_WINDOW_MS`. */
+export const MAX_PINGS_PER_WINDOW = 3;
+export const PING_WINDOW_MS = 5_000;
 
 export const SOCKET_EVENTS = Object.freeze({
   WORLD: "world",
@@ -38,6 +54,8 @@ export const SOCKET_EVENTS = Object.freeze({
   WORLD_RELOADED: "worldReloaded",
   PULL_TO_SCENE: "pullToScene",
   CANVAS_PING: "canvasPing",
+  TOKEN_DRAG: "tokenDrag",
+  TABLE_ACTIVITY: "tableActivity",
 });
 
 export const MAX_DOCUMENT_BYTES = 1024 * 1024;

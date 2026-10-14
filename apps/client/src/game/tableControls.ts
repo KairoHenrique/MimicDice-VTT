@@ -4,6 +4,8 @@ import type { Socket } from "socket.io-client";
 import { findOwnCharacter } from "../ui/actors/ownCharacter";
 import { registerPlayerVisionSetting } from "./playerVision";
 import { registerScenePauseSetting } from "./scenePause";
+import { isTableSessionOpen, registerTableSessionSetting } from "./tableSession";
+import { registerTokenKeyboardMovement } from "./tokenKeyboardMovement";
 
 const [MAP_LOCK_NAMESPACE, MAP_LOCK_KEY] = MAP_LOCKED_SETTING_KEY.split(".") as [string, string];
 const PULL_TIMEOUT_MS = 5_000;
@@ -43,6 +45,7 @@ export function registerTableSettings(settings: ClientSettings): void {
     onChange: () => void ui.hostToolbar?.render(),
   });
   registerScenePauseSetting(settings);
+  registerTableSessionSetting(settings);
   registerPlayerVisionSetting(settings);
   settings.register(MAP_LOCK_NAMESPACE, MAP_LOCK_KEY, {
     name: "Mapa travado",
@@ -91,7 +94,17 @@ export async function toggleGmEditMode(): Promise<void> {
   ui.notifications.info(editing ? "Modo edição: paredes, luzes e tiles liberados." : "Modo jogo: só tokens e o que se usa na partida.");
 }
 
+/** Light areas are tinted only while the GM edits the map; in play they just light it up. */
+function syncLightAreas(): void {
+  if (canvas?.visibility) canvas.visibility.showLightAreas = isGmEditMode();
+}
+
+export function syncLightAreasOnSceneLoad(): void {
+  Hooks.on("canvasReady", () => syncLightAreas());
+}
+
 async function applyGmMode(): Promise<void> {
+  syncLightAreas();
   void ui.hostToolbar?.render();
   if (!isGmEditMode() && isEditOnlyControl(ui.controls?.activeControl ?? "")) await ui.controls?.activate({ control: "tokens" });
   else await ui.controls?.render();
@@ -136,7 +149,7 @@ export function listenForPullToScene(socket: Socket): void {
       if (view) void canvas.animatePan(view);
       return;
     }
-    ui.notifications.info(`O mestre levou você para "${scene.name}".`);
+    if (game.user.isGM || isTableSessionOpen()) ui.notifications.info(`O mestre levou você para "${scene.name}".`);
     if (view) Hooks.once("canvasReady", () => void canvas.animatePan(view));
     void scene.view();
   });
@@ -156,6 +169,7 @@ function isInteractiveElement(element: Element | null): boolean {
 }
 
 export function registerTableKeybindings(): void {
+  registerTokenKeyboardMovement();
   game.keybindings.register("core", "centerOwnToken", {
     name: "Centralizar no meu token",
     editable: [{ key: "Space" }],

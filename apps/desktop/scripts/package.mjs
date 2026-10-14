@@ -62,7 +62,26 @@ async function packageApplication(desktopManifest) {
       directories: { output: releaseRoot },
       files: ["dist/**/*", "node_modules/**/*", "package.json"],
       extraResources: [{ from: clientDist, to: "client" }],
-      win: { target: [{ target: "portable", arch: ["x64"] }], artifactName: "MimicDice-VTT-${version}-portable.exe" },
+      win: {
+        icon: path.join(desktopRoot, "build", "icon.ico"),
+        target: [
+          { target: "nsis", arch: ["x64"] },
+          { target: "portable", arch: ["x64"] },
+        ],
+      },
+      portable: { artifactName: "MimicDice-VTT-${version}-portable.exe" },
+      nsis: {
+        artifactName: "MimicDice-VTT-${version}-instalador.exe",
+        oneClick: false,
+        perMachine: false,
+        allowToChangeInstallationDirectory: true,
+        createDesktopShortcut: "always",
+        createStartMenuShortcut: true,
+        shortcutName: desktopManifest.productName,
+        installerIcon: path.join(desktopRoot, "build", "icon.ico"),
+        uninstallerIcon: path.join(desktopRoot, "build", "icon.ico"),
+        deleteAppDataOnUninstall: false,
+      },
     },
   });
 }

@@ -25,6 +25,28 @@ function byId<T extends HTMLElement>(id: string): T {
   return element as T;
 }
 
+const HIDDEN_INVITE_TEXT = "•".repeat(22);
+/** Survives re-renders while the launcher is open; every new launch starts with the links hidden again. */
+const revealedInviteUrls = new Set<string>();
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+const EYE_PATHS = {
+  open: ["M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z", "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"],
+  closed: ["M3 3l18 18", "M10.6 5.1A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1", "M6.6 6.6C3.9 8.3 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6", "M9.9 9.9a3 3 0 0 0 4.2 4.2"],
+} as const;
+
+function eyeIcon(state: keyof typeof EYE_PATHS): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NAMESPACE, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  for (const definition of EYE_PATHS[state]) {
+    const path = document.createElementNS(SVG_NAMESPACE, "path");
+    path.setAttribute("d", definition);
+    svg.append(path);
+  }
+  return svg;
+}
+
+/** Links start hidden so a screenshot or a stream never leaks the host's address; copying works either way. */
 function buildInviteItem(invite: InviteAddress): HTMLLIElement {
   const item = document.createElement("li");
   item.className = `invite ${invite.kind}`;
@@ -33,16 +55,42 @@ function buildInviteItem(invite: InviteAddress): HTMLLIElement {
   label.textContent = invite.label;
   const url = document.createElement("span");
   url.className = "invite-url";
-  url.textContent = invite.url;
+
+  const revealButton = document.createElement("button");
+  revealButton.type = "button";
+  revealButton.className = "icon-button";
+  let revealed = revealedInviteUrls.has(invite.url);
+  const applyVisibility = () => {
+    url.textContent = revealed ? invite.url : HIDDEN_INVITE_TEXT;
+    url.classList.toggle("hidden-link", !revealed);
+    const action = revealed ? "Ocultar link" : "Mostrar link";
+    revealButton.title = action;
+    revealButton.setAttribute("aria-label", `${action}: ${invite.label}`);
+    revealButton.setAttribute("aria-pressed", String(revealed));
+    revealButton.replaceChildren(eyeIcon(revealed ? "closed" : "open"));
+  };
+  revealButton.addEventListener("click", () => {
+    revealed = !revealed;
+    if (revealed) revealedInviteUrls.add(invite.url);
+    else revealedInviteUrls.delete(invite.url);
+    applyVisibility();
+  });
+  applyVisibility();
+
   const copyButton = document.createElement("button");
   copyButton.type = "button";
   copyButton.textContent = "Copiar";
+  copyButton.setAttribute("aria-label", `Copiar link: ${invite.label}`);
   copyButton.addEventListener("click", async () => {
     await bridge.copyText(invite.url);
     copyButton.textContent = "Copiado!";
     setTimeout(() => (copyButton.textContent = "Copiar"), COPIED_FEEDBACK_MS);
   });
-  item.append(label, url, copyButton);
+
+  const actions = document.createElement("div");
+  actions.className = "invite-actions";
+  actions.append(revealButton, copyButton);
+  item.append(label, url, actions);
   return item;
 }
 
@@ -185,5 +233,23 @@ function bindActions(): void {
   bridge.onStateChanged(() => void refresh());
 }
 
+/** The intro fades itself out; a click or Escape skips it, and it is removed so it never blocks the launcher. */
+function playIntro(): void {
+  const intro = byId("intro");
+  const finish = () => {
+    intro.classList.add("done");
+    window.removeEventListener("keydown", onKey);
+  };
+  const onKey = (event: KeyboardEvent) => {
+    if (event.key === "Escape" || event.key === "Enter" || event.key === " ") finish();
+  };
+  intro.addEventListener("animationend", (event) => {
+    if (event.target === intro) finish();
+  });
+  intro.addEventListener("click", finish);
+  window.addEventListener("keydown", onKey);
+}
+
+playIntro();
 bindActions();
 void refresh();

@@ -204,9 +204,9 @@ export const EMBEDDED_DOCUMENT_TYPES: Readonly<Record<string, DocumentTypeDefini
   Wall: scenePlaceable("Wall", "walls"),
   AmbientLight: scenePlaceable("AmbientLight", "lights", { gmOnlyWhenField: "hidden" }),
   Note: scenePlaceable("Note", "notes"),
-  /** Players may sketch and place templates; the author owns them. */
-  Drawing: scenePlaceable("Drawing", "drawings", { accessModel: "authored", createPermission: "DRAWING_CREATE", gmOnlyWhenField: "hidden" }),
-  MeasuredTemplate: scenePlaceable("MeasuredTemplate", "templates", { accessModel: "authored", createPermission: "TEMPLATE_CREATE", gmOnlyWhenField: "hidden" }),
+  /** Players may sketch and place templates; the author owns them, but only the GM locks or unlocks them. */
+  Drawing: scenePlaceable("Drawing", "drawings", { accessModel: "authored", createPermission: "DRAWING_CREATE", gmOnlyWhenField: "hidden", gmOnlyFields: ["locked"] }),
+  MeasuredTemplate: scenePlaceable("MeasuredTemplate", "templates", { accessModel: "authored", createPermission: "TEMPLATE_CREATE", gmOnlyWhenField: "hidden", gmOnlyFields: ["locked"] }),
 });
 
 export function worldDocumentType(documentName: string): DocumentTypeDefinition | undefined {

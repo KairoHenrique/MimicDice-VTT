@@ -19,7 +19,7 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, attributes: Att
 }
 
 export function brandMark(): HTMLElement {
-  return h("span", { class: "brand-mark" }, h("i", { class: "fa-solid fa-dice-d20" }), "MimicDice VTT");
+  return h("span", { class: "brand-mark" }, h("img", { src: "/logo.png", alt: "", width: 28, height: 28 }), "MimicDice VTT");
 }
 
 /** Wraps a password input with an eye button that shows or hides what was typed. */

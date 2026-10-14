@@ -4,10 +4,12 @@ import { CONST } from "../../constants";
 import { currentCanvas, currentGame } from "../../runtime";
 import type { Point, Rectangle } from "../geometry";
 import { colorToNumber, loadTexture } from "../textures";
+import { puppetToken, seesEverything } from "../perception/viewpoint";
 import { PlaceableObject } from "./PlaceableObject";
 
 const MOVE_SQUARES_PER_SECOND = 6;
 const MAX_MOVE_DURATION_MS = 2_000;
+const LIVE_DRAG_EASE_MS = 80;
 const DISPOSITION_COLORS: Record<number, number> = { [-2]: 0xa612d4, [-1]: 0xe72124, 0: 0xf1d836, 1: 0x43dfdf };
 
 interface MoveAnimation {
@@ -26,6 +28,7 @@ export class Token extends PlaceableObject {
   nameplate: PIXI.Text | null = null;
   #animation: MoveAnimation | null = null;
   #animationTick = () => this.#stepAnimation();
+  #livePosition: Point | null = null;
 
   get w(): number {
     return Number(this.document.width) * currentCanvas().grid.size;
@@ -48,7 +51,7 @@ export class Token extends PlaceableObject {
   }
 
   get isVisible(): boolean {
-    if (currentGame()?.user?.isGM) return true;
+    if (seesEverything() || this === puppetToken()) return true;
     if (this.document.hidden) return false;
     return currentCanvas()?.perception?.isTokenVisible?.(this) ?? true;
   }
@@ -84,7 +87,7 @@ export class Token extends PlaceableObject {
   protected override _refresh(): void {
     if (!this.mesh || !this.nameplate) return;
     const { w, h } = this;
-    if (!this.#animation) this.position.set(this.document.x, this.document.y);
+    if (!this.#animation) this.position.set(this.#livePosition?.x ?? this.document.x, this.#livePosition?.y ?? this.document.y);
     this.#refreshMesh(w, h);
     this.#refreshBorder(w, h);
     this.#refreshBars(w, h);
@@ -138,6 +141,7 @@ export class Token extends PlaceableObject {
 
   override _onUpdate(changed: PlainObject, options: PlainObject, userId: string): void {
     const moved = "x" in changed || "y" in changed;
+    if (moved) this.#livePosition = null;
     if (moved && options.animate !== false) this.#animateTo({ x: this.document.x, y: this.document.y });
     super._onUpdate(changed, options, userId);
   }
@@ -160,13 +164,20 @@ export class Token extends PlaceableObject {
     super._onDelete(options, userId);
   }
 
-  #animateTo(destination: Point): void {
+  /** Where another user is dragging this token right now; `null` returns it to its saved position. */
+  showLivePosition(point: Point | null): void {
+    if (this.destroyed) return;
+    this.#livePosition = point;
+    this.#animateTo(point ?? { x: this.document.x, y: this.document.y }, LIVE_DRAG_EASE_MS);
+  }
+
+  #animateTo(destination: Point, fixedDurationMs?: number): void {
     const from = { x: this.position.x, y: this.position.y };
     const distance = Math.hypot(destination.x - from.x, destination.y - from.y);
     if (distance < 1) return;
     this.#stopAnimation();
     const pixelsPerSecond = MOVE_SQUARES_PER_SECOND * (currentCanvas()?.grid?.size || 100);
-    const duration = Math.min((distance / pixelsPerSecond) * 1000, MAX_MOVE_DURATION_MS);
+    const duration = fixedDurationMs ?? Math.min((distance / pixelsPerSecond) * 1000, MAX_MOVE_DURATION_MS);
     this.#animation = { from, to: destination, startedAt: performance.now(), duration };
     currentCanvas()?.app?.ticker?.add(this.#animationTick);
   }

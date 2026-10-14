@@ -5,6 +5,7 @@ import { createHttpApp } from "./http/createHttpApp";
 import { logger } from "./logging/logger";
 import { PackageInstaller } from "./packages/PackageInstaller";
 import { PackageRegistry } from "./packages/PackageRegistry";
+import { DeviceFingerprinter } from "./security/DeviceFingerprinter";
 import { PasswordHasher } from "./security/PasswordHasher";
 import { RememberedDeviceStore } from "./security/RememberedDeviceStore";
 import { SessionStore } from "./security/SessionStore";
@@ -30,6 +31,7 @@ async function startServer(): Promise<void> {
     logger,
     sessions: new SessionStore(config.sessionLifetimeMs),
     rememberedDevices: RememberedDeviceStore.inConfigDirectory(config.configPath),
+    deviceFingerprints: await DeviceFingerprinter.inConfigDirectory(config.configPath),
     worlds,
     activeWorld,
     packageRegistry,

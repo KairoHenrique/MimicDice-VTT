@@ -4,6 +4,7 @@ import { CONST } from "../constants";
 import { Roll } from "../dice/Roll";
 import { Hooks } from "../hooks/Hooks";
 import { currentGame, currentUi } from "../runtime";
+import { puppetToken } from "../canvas/perception/viewpoint";
 import { escapeHTML } from "../utils/miscUtils";
 import type { DocumentOperation } from "./abstract/Document";
 import { ClientDocumentMixin } from "./abstract/ClientDocumentMixin";
@@ -119,11 +120,12 @@ export class ChatMessage extends ClientDocumentMixin(BaseChatMessage) {
 
   static getSpeaker({ scene, actor, token, alias }: { scene?: any; actor?: any; token?: any; alias?: string } = {}): ChatSpeaker {
     const game = currentGame();
-    const speakerActor = actor ?? token?.actor ?? game?.user?.character ?? null;
+    const speakerToken = token ?? (actor ? null : puppetToken()?.document) ?? null;
+    const speakerActor = actor ?? speakerToken?.actor ?? game?.user?.character ?? null;
     return {
-      scene: scene?.id ?? scene ?? null,
+      scene: scene?.id ?? scene ?? (token ? null : (speakerToken?.parent?.id ?? null)),
       actor: speakerActor?.id ?? null,
-      token: token?.id ?? null,
+      token: speakerToken?.id ?? null,
       alias: alias ?? speakerActor?.name ?? game?.user?.name,
     };
   }

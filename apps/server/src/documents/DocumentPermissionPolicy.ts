@@ -25,15 +25,17 @@ export class DocumentPermissionPolicy {
     private readonly findActor: (actorId: string) => DocumentSource | undefined = () => undefined,
     private readonly isMapLocked: () => boolean = () => false,
     private readonly isScenePaused: () => boolean = () => false,
+    private readonly isTableSessionClosed: () => boolean = () => false,
   ) {}
 
   isGameMaster(actor: DocumentActor): boolean {
     return isGameMasterRole(actor.role);
   }
 
-  /** While the GM keeps the map locked or the scene paused, players cannot create, move or delete anything inside a scene. */
+  /** While the session is closed, the map locked or the scene paused, players cannot create, move or delete anything inside a scene. */
   assertMapUnlocked(actor: DocumentActor, ancestors: readonly DocumentNode[]): void {
     if (ancestors[0]?.definition.name !== "Scene" || this.isGameMaster(actor)) return;
+    if (this.isTableSessionClosed()) throw HttpError.forbidden("A sessão está fechada pelo mestre");
     if (this.isScenePaused()) throw HttpError.forbidden("A cena está pausada pelo mestre");
     if (this.isMapLocked()) throw HttpError.forbidden("O mestre travou o mapa");
   }
@@ -42,6 +44,12 @@ export class DocumentPermissionPolicy {
   assertNotPinned(actor: DocumentActor, existing: DocumentSource, changes: Record<string, unknown>): void {
     if (existing.locked !== true || this.isGameMaster(actor)) return;
     if (Object.keys(changes).some((key) => PLACEMENT_KEYS.has(key))) throw HttpError.forbidden("O mestre travou este objeto no lugar");
+  }
+
+  /** A drawing or template the GM locked cannot be edited or erased by players, not even by its author. */
+  assertAuthoredNotLocked(actor: DocumentActor, definition: DocumentTypeDefinition, existing: DocumentSource): void {
+    if (definition.accessModel !== "authored" || existing.locked !== true || this.isGameMaster(actor)) return;
+    throw HttpError.forbidden("O mestre travou este desenho");
   }
 
   /** Ownership level the actor holds over a document, resolving INHERIT through its ancestors. */
