@@ -1,0 +1,416 @@
+/* Roll log (ui.chat) */
+.chat-sidebar {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chat-sidebar.active {
+  display: flex;
+}
+
+.chat-log {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-tabs .item[data-unread]:not([data-unread=""])::after {
+  content: attr(data-unread);
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: var(--brand-foreground);
+  font-size: 0.75em;
+  font-weight: 700;
+}
+
+.chat-message {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+}
+
+.chat-message.whisper {
+  border-color: rgb(139 92 246 / 45%);
+  background: rgb(139 92 246 / 8%);
+}
+
+.chat-message.blind {
+  border-style: dashed;
+}
+
+.message-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin-bottom: 4px;
+}
+
+.message-sender {
+  margin: 0;
+  flex: 1;
+  font-size: 1em;
+  padding-left: 6px;
+  border-left: 3px solid var(--color-border);
+}
+
+.message-metadata {
+  display: flex;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+}
+
+.message-delete {
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.message-delete:hover {
+  color: var(--color-danger);
+}
+
+.whisper-to,
+.flavor-text {
+  width: 100%;
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+}
+
+.flavor-text {
+  color: var(--color-text);
+  font-style: italic;
+}
+
+.blind-notice {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Roll card */
+.dice-roll {
+  cursor: pointer;
+}
+
+.dice-formula {
+  text-align: center;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.dice-total {
+  margin: 6px 0 0;
+  text-align: center;
+  font-size: 1.6em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.chat-message.rolling .dice-total {
+  color: transparent;
+  text-shadow: 0 0 8px var(--color-text-muted);
+}
+
+.dice-tooltip {
+  display: none;
+  margin-top: 4px;
+}
+
+.dice-roll.expanded .dice-tooltip {
+  display: block;
+}
+
+.tooltip-part .part-header {
+  display: flex;
+  gap: 6px;
+  font-size: 0.85em;
+  color: var(--color-text-muted);
+}
+
+.part-formula {
+  flex: 1;
+}
+
+.dice-rolls {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.dice-rolls .roll {
+  min-width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--color-surface-raised);
+  font-weight: 600;
+}
+
+.dice-rolls .roll.max,
+.dice-rolls .roll.success {
+  color: var(--color-success);
+}
+
+.dice-rolls .roll.min,
+.dice-rolls .roll.failure {
+  color: var(--color-danger);
+}
+
+.dice-rolls .roll.discarded,
+.dice-rolls .roll.rerolled {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.dice-rolls .roll.exploded::after {
+  content: "!";
+  font-size: 0.7em;
+}
+
+/* Roll form */
+.roll-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.quick-dice {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.quick-die {
+  position: relative;
+  min-height: 32px;
+  padding: 4px 0;
+  font-size: 0.8em;
+}
+
+.quick-die.selected {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: rgb(59 130 246 / 10%);
+}
+
+.die-count {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: var(--brand-foreground);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.die-count:empty {
+  display: none;
+}
+
+.dice-pool {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+}
+
+.dice-pool-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 20px;
+  font-size: 0.75em;
+  color: var(--muted-foreground);
+}
+
+.dice-pool-clear {
+  min-height: 24px;
+  padding: 1px 8px;
+  font-size: 1em;
+}
+
+.roll-submit {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+}
+
+.roll-submit:hover:not(:disabled) {
+  background: #e4e4e7;
+}
+
+.roll-submit.has-pool {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-foreground);
+  font-weight: 700;
+}
+
+.roll-submit.has-pool:hover:not(:disabled) {
+  background: #60a5fa;
+}
+
+.roll-form-row {
+  display: flex;
+  gap: 6px;
+}
+
+.roll-form-row select {
+  flex: 1;
+}
+
+/* Sheet roll buttons */
+.rolls-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.roll-formulas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.roll-formula {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roll-formula code {
+  flex: 1;
+}
+
+.attribute-roll {
+  color: var(--brand);
+}
+
+/* Animated dice tray */
+#dice-tray {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+}
+
+.dice-group {
+  --die-color: var(--brand);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  max-width: 60vw;
+  transition: opacity 0.4s ease;
+}
+
+.dice-group.fading {
+  opacity: 0;
+}
+
+.anim-die {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  background: var(--die-color);
+  color: #fff;
+  font-size: 1.7em;
+  font-weight: 800;
+  text-shadow: 0 2px 3px rgb(0 0 0 / 60%);
+  filter: drop-shadow(0 8px 10px rgb(0 0 0 / 55%));
+  animation: die-tumble 1s cubic-bezier(0.2, 0.7, 0.3, 1) var(--delay, 0ms) both;
+}
+
+.anim-die.settled {
+  animation: die-settle 0.35s ease-out both;
+}
+
+.anim-die.discarded {
+  opacity: 0.35;
+}
+
+.anim-die .die-face {
+  transform: translateY(2px);
+}
+
+.shape-d4 { clip-path: polygon(50% 0, 100% 92%, 0 92%); }
+.shape-d4 .die-face { transform: translateY(14px); font-size: 0.85em; }
+.shape-d6 { border-radius: 12px; }
+.shape-d8 { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.shape-d10 { clip-path: polygon(50% 0, 100% 42%, 50% 100%, 0 42%); }
+.shape-d12 { clip-path: polygon(50% 0, 98% 35%, 80% 95%, 20% 95%, 2% 35%); }
+.shape-d20 { clip-path: polygon(50% 0, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%); }
+.shape-d100,
+.shape-coin,
+.shape-generic { border-radius: 50%; }
+.shape-d100 .die-face { font-size: 0.75em; }
+.shape-fate { border-radius: 10px; background: #5b5b6b; }
+.shape-d2,
+.shape-d3 { border-radius: 50%; }
+
+@keyframes die-tumble {
+  0% {
+    opacity: 0;
+    transform: translate(var(--from-x), var(--from-y)) rotate(0deg) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) rotate(var(--spin)) scale(1);
+  }
+}
+
+@keyframes die-settle {
+  0% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-die,
+  .anim-die.settled {
+    animation: none;
+  }
+}

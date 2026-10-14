@@ -1,0 +1,72 @@
+import { BitMask } from "./BitMask";
+import { Collection } from "./Collection";
+import { Color } from "./Color";
+import { debounce, encodeURL, escapeHTML, isNewerVersion, randomID, sleep, throttle, timeSince } from "./miscUtils";
+import { getRoute, parseS3URL, srcExists } from "./routes";
+import {
+  deepClone,
+  diffObject,
+  duplicate,
+  expandObject,
+  filterObject,
+  flattenObject,
+  getProperty,
+  getType,
+  hasProperty,
+  invertObject,
+  isEmpty,
+  mergeObject,
+  objectsEqual,
+  setProperty,
+} from "@tabbletop/common";
+
+export const foundryUtils = Object.freeze({
+  BitMask,
+  Collection,
+  Color,
+  getRoute,
+  parseS3URL,
+  srcExists,
+  debounce,
+  deepClone,
+  diffObject,
+  duplicate,
+  encodeURL,
+  escapeHTML,
+  expandObject,
+  filterObject,
+  flattenObject,
+  getProperty,
+  getType,
+  hasProperty,
+  invertObject,
+  isEmpty,
+  isNewerVersion,
+  mergeObject,
+  objectsEqual,
+  randomID,
+  setProperty,
+  sleep,
+  throttle,
+  timeSince,
+});
+
+export {
+  Collection,
+  Color,
+  debounce,
+  deepClone,
+  diffObject,
+  duplicate,
+  escapeHTML,
+  expandObject,
+  flattenObject,
+  getProperty,
+  getType,
+  hasProperty,
+  isEmpty,
+  isNewerVersion,
+  mergeObject,
+  randomID,
+  setProperty,
+};

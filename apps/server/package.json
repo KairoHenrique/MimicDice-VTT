@@ -1,0 +1,32 @@
+{
+  "name": "@tabbletop/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.2.2",
+    "@tabbletop/common": "*",
+    "@tabbletop/protocol": "*",
+    "classic-level": "^3.0.0",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "sanitize-html": "^2.18.0",
+    "socket.io": "^4.8.4",
+    "yauzl": "^3.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/sanitize-html": "^2.16.2",
+    "@types/yauzl": "^3.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

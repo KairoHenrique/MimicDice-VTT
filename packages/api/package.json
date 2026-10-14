@@ -1,0 +1,25 @@
+{
+  "name": "@tabbletop/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/jquery": "^3.5.34",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  },
+  "dependencies": {
+    "@tabbletop/common": "*",
+    "@tabbletop/protocol": "*",
+    "handlebars": "^4.7.10",
+    "jquery": "3.7",
+    "pixi.js": "^7.4.3",
+    "socket.io-client": "^4.8.4"
+  }
+}

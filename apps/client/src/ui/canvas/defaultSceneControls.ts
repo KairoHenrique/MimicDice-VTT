@@ -1,0 +1,121 @@
+import { isMapLocked } from "../../game/tableControls";
+
+export interface SceneControlTool {
+  name: string;
+  order: number;
+  title: string;
+  icon: string;
+  visible?: boolean;
+  toggle?: boolean;
+  active?: boolean;
+  button?: boolean;
+  onChange?: (event: Event, active: boolean) => unknown;
+}
+
+export interface SceneControl {
+  name: string;
+  order: number;
+  title: string;
+  icon: string;
+  layer?: string;
+  visible?: boolean;
+  activeTool: string;
+  tools: Record<string, SceneControlTool>;
+  onChange?: (event: Event, active: boolean) => unknown;
+  onToolChange?: (event: Event, tool: SceneControlTool) => unknown;
+}
+
+const PLACEABLE_BY_LAYER: Record<string, string> = {
+  tokens: "Token",
+  templates: "MeasuredTemplate",
+  tiles: "Tile",
+  drawings: "Drawing",
+  walls: "Wall",
+  lighting: "AmbientLight",
+  notes: "Note",
+};
+
+function tool(name: string, order: number, title: string, icon: string, extra: Partial<SceneControlTool> = {}): SceneControlTool {
+  return { name, order, title, icon, visible: true, ...extra };
+}
+
+/** GM-only button that removes every object of the layer from the viewed scene after confirmation. */
+function clearTool(layerName: string, label: string): SceneControlTool {
+  return tool("clear", 99, `Apagar todos: ${label}`, "fa-solid fa-trash", {
+    button: true,
+    visible: game.user.isGM,
+    onChange: async () => {
+      const scene = canvas.scene;
+      const documentName = PLACEABLE_BY_LAYER[layerName];
+      if (!scene || !documentName) return;
+      const confirmed = await foundry.applications.api.DialogV2.confirm({
+        window: { title: "Confirmar" },
+        content: `<p>Apagar todos os objetos desta camada (${label}) na cena atual?</p>`,
+        yes: { label: "Apagar" },
+        no: { label: "Cancelar" },
+      });
+      if (!confirmed) return;
+      const ids = scene.getEmbeddedCollection(documentName).map((document: any) => document.id);
+      if (ids.length > 0) await scene.deleteEmbeddedDocuments(documentName, ids);
+    },
+  });
+}
+
+function selectTool(): SceneControlTool {
+  return tool("select", 1, "Selecionar", "fa-solid fa-expand");
+}
+
+/** Controls in the v13 shape (records keyed by name), before `getSceneControlButtons` lets packages edit them. */
+export function buildDefaultSceneControls(): Record<string, SceneControl> {
+  const isGM = game.user.isGM;
+  const can = (permission: string) => isGM || (!isMapLocked() && game.user.can?.(permission) === true);
+  return {
+    tokens: {
+      name: "tokens", order: 1, title: "Tokens", icon: "fa-solid fa-user", layer: "tokens", activeTool: "select", visible: true,
+      tools: { select: selectTool(), ruler: tool("ruler", 2, "Medir distância", "fa-solid fa-ruler") },
+    },
+    templates: {
+      name: "templates", order: 2, title: "Áreas de efeito", icon: "fa-solid fa-ruler-combined", layer: "templates", activeTool: "circle", visible: can("TEMPLATE_CREATE"),
+      tools: {
+        circle: tool("circle", 1, "Círculo", "fa-regular fa-circle"),
+        cone: tool("cone", 2, "Cone", "fa-solid fa-angle-left"),
+        rect: tool("rect", 3, "Retângulo", "fa-regular fa-square"),
+        ray: tool("ray", 4, "Linha", "fa-solid fa-arrows-alt-v"),
+        clear: clearTool("templates", "áreas"),
+      },
+    },
+    tiles: {
+      name: "tiles", order: 3, title: "Tiles", icon: "fa-solid fa-cubes", layer: "tiles", activeTool: "select", visible: isGM,
+      tools: { select: selectTool(), tile: tool("tile", 2, "Colocar tile (imagem)", "fa-solid fa-image"), clear: clearTool("tiles", "tiles") },
+    },
+    drawings: {
+      name: "drawings", order: 4, title: "Desenhos", icon: "fa-solid fa-pencil-alt", layer: "drawings", activeTool: "rect", visible: can("DRAWING_CREATE"),
+      tools: {
+        select: selectTool(),
+        rect: tool("rect", 2, "Retângulo", "fa-solid fa-square"),
+        ellipse: tool("ellipse", 3, "Elipse", "fa-solid fa-circle"),
+        freehand: tool("freehand", 4, "Mão livre", "fa-solid fa-signature"),
+        text: tool("text", 5, "Texto", "fa-solid fa-font"),
+        clear: clearTool("drawings", "desenhos"),
+      },
+    },
+    walls: {
+      name: "walls", order: 5, title: "Paredes", icon: "fa-solid fa-dungeon", layer: "walls", activeTool: "walls", visible: isGM,
+      tools: {
+        select: selectTool(),
+        walls: tool("walls", 2, "Parede", "fa-solid fa-bars"),
+        door: tool("door", 3, "Porta", "fa-solid fa-door-open"),
+        secret: tool("secret", 4, "Porta secreta", "fa-solid fa-user-secret"),
+        clear: clearTool("walls", "paredes"),
+      },
+    },
+    lighting: {
+      name: "lighting", order: 6, title: "Luzes", icon: "fa-regular fa-lightbulb", layer: "lighting", activeTool: "light", visible: isGM,
+      tools: { select: selectTool(), light: tool("light", 2, "Colocar luz", "fa-solid fa-lightbulb"), clear: clearTool("lighting", "luzes") },
+    },
+    notes: {
+      name: "notes", order: 7, title: "Notas", icon: "fa-solid fa-bookmark", layer: "notes", activeTool: "select", visible: true,
+      tools: { select: selectTool(), journal: tool("journal", 2, "Nova nota", "fa-solid fa-book-medical", { visible: can("NOTE_CREATE") }), clear: clearTool("notes", "notas") },
+    },
+  };
+}

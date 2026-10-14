@@ -1,0 +1,22 @@
+{
+  "name": "@tabbletop/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@types/jquery": "^3.5.34",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.3.1",
+    "@tabbletop/api": "*",
+    "@tabbletop/protocol": "*",
+    "socket.io-client": "^4.8.4"
+  }
+}

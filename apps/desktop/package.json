@@ -1,0 +1,24 @@
+{
+  "name": "@tabbletop/desktop",
+  "productName": "MimicDice VTT",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MimicDice VTT - mesa virtual para jogar com os amigos",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/build.mjs && electron .",
+    "package": "node scripts/build.mjs && node scripts/package.mjs",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@tabbletop/protocol": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "electron": "^44.7.1",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

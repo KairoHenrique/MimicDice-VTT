@@ -1,0 +1,421 @@
+/* Design tokens follow shadcn/ui's dark "zinc" theme; legacy --color-* names alias them. */
+:root {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #0c0c0f;
+  --card-foreground: #fafafa;
+  --popover: #0c0c0f;
+  --muted: #18181b;
+  --muted-strong: #27272a;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #71717a;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --secondary: #27272a;
+  --destructive: #ef4444;
+  --success: #22c55e;
+  --warning: #eab308;
+  --brand: #3b82f6;
+  --brand-foreground: #ffffff;
+  --accent: var(--brand);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-lg: 0 16px 48px -12px rgb(0 0 0 / 70%), 0 0 0 1px rgb(255 255 255 / 3%);
+  --focus-ring: 0 0 0 3px rgb(161 161 170 / 30%);
+  --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  --color-bg: var(--background);
+  --color-surface: var(--card);
+  --color-surface-raised: var(--muted);
+  --color-border: var(--border);
+  --color-text: var(--foreground);
+  --color-text-muted: var(--muted-foreground);
+  --color-accent: var(--primary);
+  --color-accent-strong: #ffffff;
+  --color-danger: var(--destructive);
+  --color-success: var(--success);
+  --radius: var(--radius-md);
+  --font-body: "Geist", "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+input,
+select,
+textarea {
+  min-height: 36px;
+  background: transparent;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+select {
+  background: var(--background);
+}
+
+textarea {
+  line-height: 1.5;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  accent-color: var(--primary);
+  box-shadow: none;
+}
+
+input[type="color"] {
+  width: 40px;
+  padding: 3px;
+  cursor: pointer;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #71717a;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: var(--focus-ring);
+}
+
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition), border-color var(--transition), color var(--transition), opacity var(--transition);
+}
+
+button:hover:not(:disabled) {
+  background: var(--muted-strong);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.default,
+button.primary,
+.entry-card button[type="submit"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+}
+
+button.default:hover:not(:disabled),
+button.primary:hover:not(:disabled),
+.entry-card button[type="submit"]:hover:not(:disabled) {
+  background: #e4e4e7;
+}
+
+button.danger,
+.danger {
+  color: var(--destructive);
+}
+
+.hint {
+  color: var(--muted-foreground);
+  font-size: 0.875em;
+}
+
+.form-error {
+  color: var(--destructive);
+  min-height: 1.2em;
+  margin: 0;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-strong);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.entry-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgb(120 119 198 / 18%), transparent),
+    var(--background);
+}
+
+.entry-card {
+  width: min(400px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.entry-card h1 {
+  margin: 0 0 4px;
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.join-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+
+.join-mode {
+  justify-content: center;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted-foreground);
+  box-shadow: none;
+}
+
+.join-mode.active {
+  border-color: var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.join-section-title {
+  margin: 0;
+  font-weight: 500;
+}
+
+.join-players {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.join-player {
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.join-player > i:first-child {
+  color: var(--brand);
+  width: 18px;
+}
+
+.join-player:hover:not(:disabled) {
+  border-color: var(--brand);
+}
+
+.join-player-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  white-space: normal;
+}
+
+.join-player-go {
+  color: var(--muted-foreground);
+}
+
+.join-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted-foreground);
+  font-size: 0.85em;
+}
+
+.join-divider::before,
+.join-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.entry-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.brand-mark i {
+  color: var(--brand);
+}
+
+body.game {
+  overflow: hidden;
+}
+
+#board {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  background:
+    radial-gradient(circle at 1px 1px, rgb(255 255 255 / 6%) 1px, transparent 0) 0 0 / 24px 24px,
+    var(--background);
+}
+
+#board > canvas {
+  display: block;
+}
+
+#board.no-scene > canvas {
+  opacity: 0;
+}
+
+#notifications {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(420px, 90vw);
+}
+
+#notifications .notification {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--popover);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  font-weight: 500;
+  cursor: pointer;
+  animation: toast-in 200ms ease-out;
+}
+
+#notifications .notification::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+#notifications .notification.warning::before {
+  background: var(--warning);
+}
+
+#notifications .notification.error::before {
+  background: var(--destructive);
+}
+
+#notifications .notification.success::before {
+  background: var(--success);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+
+  #notifications .notification {
+    animation: none;
+  }
+}

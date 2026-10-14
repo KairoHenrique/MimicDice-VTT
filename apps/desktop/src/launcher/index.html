@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'" />
+    <title>MimicDice VTT</title>
+    <link rel="stylesheet" href="launcher.css" />
+  </head>
+  <body>
+    <main class="launcher">
+      <header class="brand">
+        <span class="logo" aria-hidden="true">d20</span>
+        <h1>MimicDice VTT</h1>
+        <p class="subtitle">Sua mesa virtual para jogar com os amigos</p>
+      </header>
+
+      <section class="card status-card" aria-live="polite">
+        <div class="status-line">
+          <span id="status-dot" class="status-dot starting" aria-hidden="true"></span>
+          <span id="status-text">Iniciando o servidor...</span>
+        </div>
+        <p id="status-error" class="error" hidden></p>
+        <button id="open-table" class="primary" type="button" disabled>Abrir a mesa (Mestre)</button>
+      </section>
+
+      <section class="card">
+        <h2>Convide seus amigos</h2>
+        <p class="hint">Envie um destes links. Quem usa Radmin VPN precisa estar na mesma rede Radmin que você.</p>
+        <ul id="invite-list" class="invite-list"></ul>
+        <p id="invite-empty" class="hint" hidden>Nenhuma rede encontrada. Conecte-se ao Wi-Fi ou ao Radmin VPN e reabra o app.</p>
+      </section>
+
+      <section id="firewall-card" class="card" hidden>
+        <h2>Firewall do Windows</h2>
+        <p id="firewall-text" class="hint"></p>
+        <button id="allow-firewall" type="button">Liberar porta no firewall</button>
+      </section>
+
+      <footer class="footer">
+        <button id="open-data" class="link" type="button">Abrir pasta de dados</button>
+        <span id="version"></span>
+      </footer>
+    </main>
+    <script src="launcher.js"></script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+release/
+release-*/
+*.log
+.env
+.env.*
+
+data/worlds/
+data/modules/
+data/systems/
+data/rpgs/
+data/config/
+data/.tmp/

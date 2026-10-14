@@ -1,0 +1,231 @@
+:root {
+  color-scheme: dark;
+  --background: #09090b;
+  --card: #0c0c0f;
+  --muted: #18181b;
+  --muted-strong: #27272a;
+  --border: #27272a;
+  --text: #fafafa;
+  --muted-foreground: #a1a1aa;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --brand: #3b82f6;
+  --brand-foreground: #ffffff;
+  --success: #22c55e;
+  --warning: #eab308;
+  --danger: #ef4444;
+  --ring: rgb(161 161 170 / 30%);
+  font-family: "Geist", "Inter", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgb(120 119 198 / 18%), transparent),
+    var(--background);
+  color: var(--text);
+}
+
+.launcher {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.brand {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 12px;
+}
+
+.logo {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--brand);
+  color: var(--brand-foreground);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 40%);
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-dot.starting {
+  background: var(--warning);
+}
+
+.status-dot.running {
+  background: var(--success);
+  box-shadow: 0 0 0 4px rgb(34 197 94 / 15%);
+}
+
+.status-dot.failed {
+  background: var(--danger);
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+button {
+  font: inherit;
+  font-weight: 500;
+  min-height: 36px;
+  color: var(--text);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 150ms, opacity 150ms;
+}
+
+button:hover:not(:disabled) {
+  background: var(--muted-strong);
+}
+
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primary {
+  min-height: 42px;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #e4e4e7;
+}
+
+button.link {
+  min-height: 0;
+  background: none;
+  border: none;
+  color: var(--muted-foreground);
+  text-decoration: underline;
+  padding: 0;
+}
+
+button.link:hover:not(:disabled) {
+  background: none;
+  color: var(--text);
+}
+
+.invite-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invite {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 12px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.invite-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.invite-url {
+  font-family: "Geist Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 14px;
+  user-select: all;
+}
+
+.invite.radmin {
+  border-color: rgb(59 130 246 / 50%);
+  background: rgb(59 130 246 / 6%);
+}
+
+.invite button {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
