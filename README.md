@@ -1,12 +1,16 @@
 # MimicDice VTT
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.2-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+[![Versão](https://img.shields.io/github/v/release/KairoHenrique/MimicDice-VTT?label=vers%C3%A3o&color=blue)](https://github.com/KairoHenrique/MimicDice-VTT/releases/latest) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-> **Versão atual: 1.2.2.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
+> Veja o que mudou em cada versão em [PATCHNOTES.md](PATCHNOTES.md).
 
 Mesa virtual (VTT) para jogar RPG com os amigos. Você hospeda a mesa no seu próprio computador, envia o link de convite e os jogadores entram pelo navegador, sem precisar de assinatura nem de servidor na nuvem.
 
 O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, então dá para instalar sistemas e módulos feitos para ele.
+
+## Download
+
+Baixe o instalador para Windows (`MimicDice-VTT-<versão>-instalador.exe`) na [última versão](https://github.com/KairoHenrique/MimicDice-VTT/releases/latest). O app avisa e instala sozinho as versões novas. Os jogadores não instalam nada: só abrem o link de convite no navegador.
 
 ## Funcionalidades
 
@@ -41,6 +45,15 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 - **Fichas montáveis:** o mestre monta o modelo de ficha arrastando componentes (números, barras, tabelas, perícias, cálculos e rolagens), seleciona vários de uma vez e escreve fórmulas com atalhos `@`.
 - **Pastas e notas dos jogadores:** cada jogador tem sua pasta para imagens, PDFs e notas de texto que ele escreve e edita ali mesmo.
 - **Quem está movendo:** enquanto alguém arrasta um token, todos veem o nome dessa pessoa embaixo dele.
+- **Montar o mapa arrastando:** painel com as imagens enviadas; arraste para o mapa e monte como um quebra-cabeça, com encaixe em 1/4 de quadrado. Tiles redimensionáveis pelo canto e GIFs, webm e mp4 animados.
+- **Desfazer e borracha:** Ctrl+Z desfaz movimentos, edições e exclusões; Delete apaga os selecionados, e a borracha apaga cada objeto clicado.
+- **Grupos de tokens:** tokens agrupados andam juntos mantendo a distância.
+- **Memória da névoa:** fora da visão, o jogador vê tiles e notas como estavam da última vez que os viu.
+- **Baús, percepção e armadilhas:** baús com imagem, capacidade e itens com DT de percepção, conferidos pelo servidor; objetos e notas escondidos por DT, com a percepção dos jogadores anotada por cena; armadilhas invisíveis que disparam ao pisar e aplicam efeitos. O mestre revela qualquer segredo quando quiser.
+- **Itens no mapa:** arraste itens para tokens, fichas ou para o chão; o mestre vê onde está cada cópia.
+- **Bandeja de dados:** monte a rolagem clicando nos dados e escolha somar, pegar o maior ou pegar o menor. A animação mostra os bônus e o total.
+- **Efeitos com dados:** dano ou cura por turno e duração aceitam dados (1d6+2, 1d4 turnos), e efeitos positivos somam bônus nas rolagens da ficha.
+- **Ficha padrão "Agente (planilha)":** classes, atributos, perícias, PV e PE calculados por fórmula, armaduras, armas e inventário, pronta para usar.
 
 ## Fórmulas da ficha
 
@@ -69,6 +82,10 @@ clamp(@pv_atual, 0, @pv_max)
 ```
 
 **Lista de perícias.** O mestre escreve os nomes (um por linha), escolhe de 1 a 4 colunas, se o valor é número ou bolinhas, os pontos máximos (o cabeçalho fica vermelho quando passa) e uma fórmula com `@valor`. Cada nome vira um botão de rolar.
+
+**Máximos calculados.** O máximo de uma barra (ex.: `@pv_maximo`), a quantidade de bolinhas (ex.: `@nivel`) e os pontos máximos das perícias (ex.: `(@intelecto + 6) * 5`) aceitam um cálculo e mudam sozinhos quando os valores da ficha mudam. Barra cheia continua cheia quando o máximo sobe.
+
+**Condições.** `if(condição, se sim, se não)` com `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `and`, `or` e `not`; caixas valem 1 ou 0, `@chave_n` é a posição da opção escolhida numa lista e `choose(posição, a, b, c)` escolhe um valor por ela.
 
 Se a fórmula estiver errada, a rolagem não acontece e o app avisa: confira os parênteses e se o atalho existe na ficha.
 
