@@ -276,8 +276,70 @@ function compareTurnOrder(left: Combatant, right: Combatant): number {
   return String(left.name ?? "").localeCompare(String(right.name ?? ""), "pt-BR") || String(left.id).localeCompare(String(right.id));
 }
 
-/** A combat encounter: turn order by initiative, rounds, and the GM's controls to run it. */
+/** In a manual order the GM's arrangement (`sort`) decides; initiative only breaks ties such as newcomers. */
+function compareManualOrder(left: Combatant, right: Combatant): number {
+  return (Number(left.sort) || 0) - (Number(right.sort) || 0) || compareTurnOrder(left, right);
+}
+
+const MANUAL_ORDER_FLAG = "manualTurnOrder";
+const ORDER_FLAG_SCOPE = "world";
+const SORT_STEP = 10;
+
+/** A combat encounter: turn order by initiative (or the GM's manual order), rounds, and the GM's controls to run it. */
 export class Combat extends ClientDocumentMixin(BaseCombat) {
+  get hasManualOrder(): boolean {
+    return this._source.flags?.[ORDER_FLAG_SCOPE]?.[MANUAL_ORDER_FLAG] === true;
+  }
+
+  /** `sort` for a combatant joining a manual order, so it goes after everyone already placed. */
+  get nextManualSort(): number {
+    const sorts = Array.from(this.combatants?.values() ?? [], (combatant: any) => Number(combatant.sort) || 0);
+    return (sorts.length > 0 ? Math.max(...sorts) : 0) + SORT_STEP;
+  }
+
+  /**
+   * Rearranges the turns to `orderedIds` and switches to manual order. The turn stays with the same combatant,
+   * unless `passTurnFrom` is the acting one: then the turn goes to whoever came right after it before the change.
+   */
+  async setTurnOrder(orderedIds: string[], { passTurnFrom }: { passTurnFrom?: string } = {}): Promise<unknown> {
+    const before = this.turns;
+    const known = new Set(before.map((combatant) => combatant.id));
+    const ids = [...orderedIds.filter((id) => known.has(id)), ...before.map((combatant) => combatant.id).filter((id) => !orderedIds.includes(id))];
+    let currentId = this.combatant?.id ?? null;
+    if (passTurnFrom && passTurnFrom === currentId) {
+      const followers = before.slice(before.findIndex((combatant) => combatant.id === currentId) + 1);
+      currentId = followers[0]?.id ?? currentId;
+    }
+    await this.updateEmbeddedDocuments(
+      "Combatant",
+      ids.map((id, index) => ({ _id: id, sort: (index + 1) * SORT_STEP })),
+    );
+    const turn = currentId ? ids.indexOf(currentId) : null;
+    return this.update({ [`flags.${ORDER_FLAG_SCOPE}.${MANUAL_ORDER_FLAG}`]: true, ...(this.started && turn !== null && turn >= 0 ? { turn, currentCombatantId: currentId } : {}) });
+  }
+
+  /** Moves one combatant to `index` in the turn order (0 = acts first). */
+  async moveCombatant(combatantId: string, index: number): Promise<unknown> {
+    const ids = this.turns.map((combatant) => combatant.id).filter((id) => id !== combatantId);
+    ids.splice(Math.min(Math.max(index, 0), ids.length), 0, combatantId);
+    return this.setTurnOrder(ids);
+  }
+
+  /** "Ficou tonto": the combatant drops to the end of the order; if it was acting, the next one acts now. */
+  async delayToEnd(combatantId: string): Promise<unknown> {
+    const ids = this.turns.map((combatant) => combatant.id).filter((id) => id !== combatantId);
+    return this.setTurnOrder([...ids, combatantId], { passTurnFrom: combatantId });
+  }
+
+  /** Back to ordering by initiative, keeping the turn with the same combatant. */
+  async sortByInitiative(): Promise<unknown> {
+    const currentId = this.combatant?.id ?? null;
+    const ordered: Combatant[] = Array.from(this.combatants?.values() ?? []) as Combatant[];
+    ordered.sort(compareTurnOrder);
+    const turn = currentId ? ordered.findIndex((combatant) => combatant.id === currentId) : -1;
+    return this.update({ [`flags.${ORDER_FLAG_SCOPE}.-=${MANUAL_ORDER_FLAG}`]: null, ...(this.started && turn >= 0 ? { turn } : {}) });
+  }
+
   /** Players do not receive hidden combatants, so the turn is tracked by id rather than by position in their list. */
   get combatant(): Combatant | null {
     const currentId = this._source.currentCombatantId;
@@ -298,7 +360,7 @@ export class Combat extends ClientDocumentMixin(BaseCombat) {
 
   get turns(): Combatant[] {
     const combatants: Combatant[] = Array.from(this.combatants?.values() ?? []);
-    return combatants.sort(compareTurnOrder);
+    return combatants.sort(this.hasManualOrder ? compareManualOrder : compareTurnOrder);
   }
 
   get isActive(): boolean {

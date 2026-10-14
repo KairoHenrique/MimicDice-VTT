@@ -22,6 +22,10 @@ import { registerContextHelp } from "../ui/help/contextHelp";
 import { installScenePause } from "./scenePause";
 import { installTableSession } from "./tableSession";
 import { registerPuppetControl } from "./puppetControl";
+import { installTokenDragRule } from "./tableRules";
+import { installCombatTurnBanner } from "../ui/combat/combatTurnBanner";
+import { trackTurnMovement } from "../ui/combat/turnMovement";
+import { installStatusPanel } from "../ui/status/StatusPanel";
 import { controlOwnTokenOnSceneLoad, listenForPullToScene, registerTableKeybindings, syncClientPreferences, syncLightAreasOnSceneLoad } from "./tableControls";
 
 const SNAPSHOT_TIMEOUT_MS = 15_000;
@@ -116,6 +120,10 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   installScenePause();
   installTableSession(socket);
   registerPuppetControl();
+  installTokenDragRule();
+  trackTurnMovement();
+  installCombatTurnBanner();
+  installStatusPanel();
   controlOwnTokenOnSceneLoad();
   syncClientPreferences();
   game.keybindings.activateListeners();

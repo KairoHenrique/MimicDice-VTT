@@ -1,5 +1,42 @@
 # Notas de versão
 
+## 1.1.0
+
+### Combate e turnos
+
+- O topo da aba Combate mostra a **rodada**, o **turno atual** ("Turno 2 de 3") e **de quem é a vez**.
+- **Quanto andou:** enquanto é a vez de alguém, aparece quanto o token dele já andou neste turno (ex.: "Andou 6 m (4 quadrados)"). É só um indicativo e zera quando o turno passa.
+- **Aviso no topo da tela para todos:** "Rodada 1 · Vez de Goblin", ou "Sua vez" para quem controla o personagem. Clicar leva a câmera até ele.
+- **Ordem manual do mestre:**
+  - arraste a alça de um combatente para mudar a posição dele, ou use as setas do teclado na alça;
+  - **Mandar para o fim** (ficou tonto, atrasou a ação): se for a vez dele, a vez passa para o próximo;
+  - **Ordenar pela iniciativa** volta à ordem normal, sem perder de quem é a vez.
+
+### Painel de status
+
+- Novo botão **Status** na barra do topo abre um painel arrastável com **vida, PE e sanidade** (atual e máximo).
+- **Mestre:** escolhe quem aparece: personagens dos jogadores, quem está no combate, todos os tokens da cena ou um por um (inimigos incluídos).
+- **Jogadores:** veem só os personagens que controlam.
+- Botões de **- e +** ajustam o valor sem passar do mínimo nem do máximo da ficha. Clicar no nome abre a ficha.
+- O painel lembra a posição, pode ser recolhido e fechado.
+
+### Controle do mestre
+
+Nova aba em **Configurações > Controle do mestre**:
+
+- **Quais barras existem:**
+  - ligar ou desligar (ex.: desligue a sanidade se a mesa não usa);
+  - trocar nome e cor;
+  - dizer quais nomes de campo da ficha valem para cada barra (ex.: vida, hp, pv);
+  - até 6 barras.
+- **O que os jogadores veem:** painel de status e "quanto andou" no combate.
+- **Quem pode arrastar tokens:** só quem controla, ou jogadores arrastam os personagens uns dos outros (útil para carregar um aliado caído). Inimigos e NPCs continuam protegidos.
+- No botão direito de um token, **Qualquer jogador pode arrastar** libera um objeto ou NPC específico (uma carroça, um baú). O servidor confere tudo: liberar só permite mover, nunca editar, esconder ou apagar.
+
+### Barra lateral
+
+- Novo botão para **esconder a barra lateral** (chat, combate, atores) e ver o mapa inteiro. Um botão na borda da tela traz ela de volta, e a escolha fica salva.
+
 ## 1.0.0
 
 ### Sessão da mesa

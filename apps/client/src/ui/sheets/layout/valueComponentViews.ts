@@ -6,7 +6,7 @@ import { clampNumber, rollFormulaFor } from "./sheetLayoutRules";
 
 const DEFAULT_ACCENT = "#3b82f6";
 
-interface ResourceValue {
+export interface ResourceValue {
   value: number;
   max: number;
 }
@@ -16,7 +16,7 @@ function finiteOr(value: unknown, fallback: number): number {
 }
 
 /** Older sheets may hold a plain number where the layout now expects `{ value, max }`. */
-function readResource(raw: unknown): ResourceValue {
+export function readResource(raw: unknown): ResourceValue {
   if (typeof raw === "number") return { value: raw, max: raw };
   const record = (raw ?? {}) as Partial<ResourceValue>;
   return { value: finiteOr(record.value, 0), max: finiteOr(record.max, 0) };

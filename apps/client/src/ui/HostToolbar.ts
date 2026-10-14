@@ -3,6 +3,8 @@ import { isGmEditMode, isMapLocked, isToolbarCollapsed, shareGameMasterView, tog
 import { isScenePaused, toggleScenePause } from "../game/scenePause";
 import { isTableSessionOpen, toggleTableSession } from "../game/tableSession";
 import { configurePlayerVision, playerVisionLabel, playerVisionLimit } from "../game/playerVision";
+import { playersSeeStatusPanel } from "../game/tableRules";
+import { isStatusPanelOpen, toggleStatusPanel } from "./status/statusPanelState";
 import { serverApi } from "../net/apiClient";
 import { h } from "../views/dom";
 import { ActorCreationDialog } from "./actors/ActorCreationDialog";
@@ -77,7 +79,7 @@ export class HostToolbar extends DomApplication {
     return [
       this.#group("Sessão", this.#sessionButton()),
       this.#group("Mapa", this.#modeButton(), pauseButton, lockButton),
-      this.#group("Jogadores na mesa", visionButton, shareViewButton),
+      this.#group("Jogadores na mesa", visionButton, shareViewButton, this.#statusButton()),
       this.#group(
         "Administração",
         this.#button("fas fa-puzzle-piece", "Módulos", () => new ModuleManagement().render({ force: true }), "icon", "toolbar:modules"),
@@ -100,7 +102,16 @@ export class HostToolbar extends DomApplication {
   #playerGroups(): HTMLElement[] {
     const sessionBadge = isTableSessionOpen() ? null : h("span", { class: "map-locked-badge", title: "O mestre ainda não iniciou a sessão" }, h("i", { class: "fas fa-moon" }), " Sessão fechada");
     const badge = isMapLocked() ? h("span", { class: "map-locked-badge", title: "O mestre travou o mapa" }, h("i", { class: "fas fa-lock" }), " Mapa travado") : null;
-    return [this.#group("Personagem", this.#characterButton(), sessionBadge, badge)];
+    return [this.#group("Personagem", this.#characterButton(), playersSeeStatusPanel() ? this.#statusButton() : null, sessionBadge, badge)];
+  }
+
+  #statusButton(): HTMLButtonElement {
+    const open = isStatusPanelOpen();
+    const button = this.#button("fas fa-heart-pulse", "Status", () => toggleStatusPanel(), "compact", "toolbar:status");
+    button.classList.toggle("active", open);
+    button.setAttribute("aria-pressed", String(open));
+    button.title = open ? "Esconder o painel de vida, PE e sanidade." : "Mostrar o painel de vida, PE e sanidade.";
+    return button;
   }
 
   #collapseButton(collapsed: boolean): HTMLButtonElement {

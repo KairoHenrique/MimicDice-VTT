@@ -83,7 +83,8 @@ export class CanvasInteraction {
   }
 
   beginObjectDrag(placeable: PlaceableObject, event: PIXI.FederatedPointerEvent): void {
-    const objects = (placeable.layer.controlled as PlaceableObject[]).filter((object) => object.canDrag());
+    const pool = placeable.controlled ? (placeable.layer.controlled as PlaceableObject[]) : [placeable];
+    const objects = pool.filter((object) => object.canDrag());
     if (objects.length === 0) return;
     this.#session = { kind: "move", origin: this.#toWorld(event), objects };
   }

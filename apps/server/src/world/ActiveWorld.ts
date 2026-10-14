@@ -1,6 +1,13 @@
 import { mkdir } from "node:fs/promises";
 import type { ConfiguredPermissions } from "@tabbletop/common";
-import { MAP_LOCKED_SETTING_KEY, SCENE_PAUSED_SETTING_KEY, TABLE_SESSION_OPEN_SETTING_KEY, type DocumentSource } from "@tabbletop/protocol";
+import {
+  MAP_LOCKED_SETTING_KEY,
+  parseTokenMoveRule,
+  SCENE_PAUSED_SETTING_KEY,
+  TABLE_SESSION_OPEN_SETTING_KEY,
+  TOKEN_MOVE_RULE_SETTING_KEY,
+  type DocumentSource,
+} from "@tabbletop/protocol";
 import { DocumentPermissionPolicy } from "../documents/DocumentPermissionPolicy";
 import { DocumentService } from "../documents/DocumentService";
 import { DocumentSourceValidator } from "../documents/DocumentSourceValidator";
@@ -62,6 +69,7 @@ export class ActiveWorld {
       () => settings.readWorldValue<boolean>(MAP_LOCKED_SETTING_KEY) === true,
       () => settings.readWorldValue<boolean>(SCENE_PAUSED_SETTING_KEY) === true,
       () => settings.readWorldValue<boolean>(TABLE_SESSION_OPEN_SETTING_KEY) !== true,
+      () => parseTokenMoveRule(settings.readWorldValue<string>(TOKEN_MOVE_RULE_SETTING_KEY)),
     );
     const doorAccess = new DoorAccessPolicy(permissions, readConfiguredPermissions, () => actorStore?.values() ?? []);
     const documents = new DocumentService(stores, new DocumentSourceValidator(systemModel, manifest.system), permissions, doorAccess);

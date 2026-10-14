@@ -3,7 +3,9 @@ import { MAP_LOCKED_SETTING_KEY, pullToSceneRequestSchema, SOCKET_EVENTS } from 
 import type { Socket } from "socket.io-client";
 import { findOwnCharacter } from "../ui/actors/ownCharacter";
 import { registerPlayerVisionSetting } from "./playerVision";
+import { registerStatusPanelState } from "../ui/status/statusPanelState";
 import { registerScenePauseSetting } from "./scenePause";
+import { registerTableRuleSettings } from "./tableRules";
 import { isTableSessionOpen, registerTableSessionSetting } from "./tableSession";
 import { registerTokenKeyboardMovement } from "./tokenKeyboardMovement";
 
@@ -13,6 +15,7 @@ const GM_EDIT_MODE_KEY = "gmEditMode";
 const MOVE_PATH_MODE_KEY = "movePathMode";
 const KEYBINDINGS_KEY = "keybindings";
 const TOOLBAR_COLLAPSED_KEY = "hostToolbarCollapsed";
+const SIDEBAR_COLLAPSED_KEY = "sidebarCollapsed";
 const MOVE_PATH_MODES = new Set<MovePathMode>(["modifier", "always", "never"]);
 const EDIT_ONLY_CONTROLS = new Set(["tiles", "walls", "lighting"]);
 
@@ -44,7 +47,17 @@ export function registerTableSettings(settings: ClientSettings): void {
     default: false,
     onChange: () => void ui.hostToolbar?.render(),
   });
+  settings.register("core", SIDEBAR_COLLAPSED_KEY, {
+    name: "Barra lateral escondida",
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false,
+    onChange: () => ui.sidebar?.applyCollapsed?.(),
+  });
   registerScenePauseSetting(settings);
+  registerTableRuleSettings(settings);
+  registerStatusPanelState(settings);
   registerTableSessionSetting(settings);
   registerPlayerVisionSetting(settings);
   settings.register(MAP_LOCK_NAMESPACE, MAP_LOCK_KEY, {
@@ -59,6 +72,14 @@ export function registerTableSettings(settings: ClientSettings): void {
       if (!game.user.isGM) ui.notifications.info(locked ? "O mestre travou o mapa." : "O mestre liberou o mapa.");
     },
   });
+}
+
+export function isSidebarCollapsed(): boolean {
+  return game.settings.get("core", SIDEBAR_COLLAPSED_KEY) === true;
+}
+
+export function setSidebarCollapsed(collapsed: boolean): Promise<unknown> {
+  return game.settings.set("core", SIDEBAR_COLLAPSED_KEY, collapsed);
 }
 
 export function isToolbarCollapsed(): boolean {

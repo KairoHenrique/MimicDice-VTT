@@ -27,9 +27,11 @@ export async function addTokensToCombat(tokens: any[] = selectedTokens()): Promi
   const combat = await ensureCombat();
   if (!combat) return;
   const present = new Set(combat.combatants.map((combatant: any) => combatant.tokenId));
+  const firstSort = combat.hasManualOrder ? combat.nextManualSort : 0;
   const additions = tokens
     .filter((token) => !present.has(token.id))
-    .map((token) => ({
+    .map((token, index) => ({
+      sort: combat.hasManualOrder ? firstSort + index * 10 : 0,
       tokenId: token.id,
       sceneId: token.document.parent?.id ?? canvas.scene?.id ?? null,
       actorId: token.document.actorId ?? null,

@@ -151,7 +151,13 @@ export abstract class PlaceableObject extends PIXI.Container {
   }
 
   canDrag(user: any = currentGame()?.user): boolean {
-    return this.canControl(user) && !this.document.locked && !isFrozenByGameMaster(user);
+    const mayMove = this.canControl(user) || (Boolean(this.layer?.active) && this.canDragWithoutControl(user));
+    return mayMove && !this.document.locked && !isFrozenByGameMaster(user);
+  }
+
+  /** Objects a user may drag around without controlling them (no selection, vision or sheet). */
+  canDragWithoutControl(_user: any): boolean {
+    return false;
   }
 
   control({ releaseOthers = true }: { releaseOthers?: boolean } = {}): boolean {
@@ -221,7 +227,7 @@ export abstract class PlaceableObject extends PIXI.Container {
       this._onClickLeft2();
       return;
     }
-    if (!this.controlled && !this.control({ releaseOthers: !event.shiftKey })) return;
+    if (!this.controlled && !this.control({ releaseOthers: !event.shiftKey }) && !this.canDrag()) return;
     if (this.canDrag()) currentCanvas()?.interaction?.beginObjectDrag(this, event);
   }
 }

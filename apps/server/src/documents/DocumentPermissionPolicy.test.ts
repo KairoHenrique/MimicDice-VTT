@@ -73,3 +73,31 @@ describe("locked drawings", () => {
     expect(() => policy(false).assertAuthoredNotLocked(player, tokenDefinition, { _id: "TokenId000000001", locked: true })).not.toThrow();
   });
 });
+
+describe("dragging tokens the player does not control", () => {
+  const tokenDefinition = embeddedDocumentType("Token")!;
+  const actors: Record<string, Record<string, unknown>> = {
+    HeroActor0000001: { _id: "HeroActor0000001", ownership: {}, flags: { world: { role: "player" } } },
+    GoblinActor00001: { _id: "GoblinActor00001", ownership: {}, flags: { world: { role: "enemy" } } },
+  };
+  const withRule = (rule: "owner" | "party") => new DocumentPermissionPolicy(() => ({}), (id) => actors[id] as any, () => false, () => false, () => false, () => rule);
+  const allyToken = { _id: "TokenId000000001", actorId: "HeroActor0000001" };
+  const goblinToken = { _id: "TokenId000000002", actorId: "GoblinActor00001" };
+  const move = { _id: "TokenId000000001", x: 100, y: 200 };
+
+  it("only lets whoever controls the token move it by default", () => {
+    expect(() => withRule("owner").assertOwnerOrMayMove(player, tokenDefinition, allyToken, move)).toThrow(/Sem permissão/);
+  });
+
+  it("lets players drag the other players' characters when the GM allows it, but not enemies", () => {
+    expect(() => withRule("party").assertOwnerOrMayMove(player, tokenDefinition, allyToken, move)).not.toThrow();
+    expect(() => withRule("party").assertOwnerOrMayMove(player, tokenDefinition, goblinToken, { ...move, _id: goblinToken._id })).toThrow(/Sem permissão/);
+  });
+
+  it("lets anyone drag a token the GM marked as free, and nothing else on it", () => {
+    const freeToken = { ...goblinToken, flags: { world: { freeMove: true } } };
+    expect(() => withRule("owner").assertOwnerOrMayMove(player, tokenDefinition, freeToken, { _id: freeToken._id, x: 5, y: 5 })).not.toThrow();
+    expect(() => withRule("owner").assertOwnerOrMayMove(player, tokenDefinition, freeToken, { _id: freeToken._id, x: 5, hidden: true })).toThrow(/Sem permissão/);
+    expect(() => withRule("owner").assertOwnerOrMayMove(player, tokenDefinition, { ...freeToken, hidden: true }, { _id: freeToken._id, x: 5 })).toThrow(/Sem permissão/);
+  });
+});

@@ -78,7 +78,7 @@ export class DocumentService {
       const token = Array.isArray(tokens) ? (tokens as DocumentSource[]).find((candidate) => candidate._id === tokenId) : undefined;
       if (!token) return null;
       this.permissions.assertMapUnlocked(actor, ancestors);
-      this.permissions.assertOwner(actor, definition, token, ancestors);
+      this.permissions.assertOwnerOrMayMove(actor, definition, token, { _id: token._id, x: token.x, y: token.y }, ancestors);
       this.permissions.assertNotPinned(actor, token, { x: token.x, y: token.y });
       return { hidden: token.hidden === true };
     } catch {
@@ -143,7 +143,7 @@ export class DocumentService {
     const prepared = updates.map((rawChanges) => {
       const existing = this.#requireExisting(target, rawChanges._id);
       if (this.doorAccess.isDoorOperation(target.definition, existing, rawChanges)) this.doorAccess.assertMayOperateDoor(actor, existing);
-      else this.permissions.assertOwner(actor, target.definition, existing, target.ancestors);
+      else this.permissions.assertOwnerOrMayMove(actor, target.definition, existing, rawChanges, target.ancestors);
       this.permissions.assertNotPinned(actor, existing, rawChanges);
       this.permissions.assertAuthoredNotLocked(actor, target.definition, existing);
       const result = this.validator.prepareUpdate(target.definition, existing, rawChanges, author);

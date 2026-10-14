@@ -3,10 +3,13 @@ import { h } from "../../views/dom";
 import { DomApplication } from "../DomApplication";
 import { SIDEBAR_CONTENT_ID } from "../sidebar/DocumentDirectory";
 import { addTokensToCombat, confirmEndCombat, viewedCombat } from "./combatActions";
+import { playersSeeTurnMovement, TABLE_RULES_CHANGED_HOOK } from "../../game/tableRules";
 import { buildCombatantRow } from "./combatantRow";
+import { enableTurnOrderDragging } from "./turnOrderDragging";
+import { currentTurnMovementLabel } from "./turnMovement";
 
 const RENDER_DEBOUNCE_MS = 30;
-const REFRESH_HOOKS = ["createCombat", "updateCombat", "deleteCombat", "createCombatant", "updateCombatant", "deleteCombatant", "canvasReady"];
+const REFRESH_HOOKS = ["createCombat", "updateCombat", "deleteCombat", "createCombatant", "updateCombatant", "deleteCombatant", "canvasReady", TABLE_RULES_CHANGED_HOOK];
 
 function actionButton(icon: string, label: string, onClick: () => unknown, { primary = false, iconOnly = false, shortLabel = label } = {}): HTMLButtonElement {
   const button = h("button", { type: "button", class: `${primary ? "primary" : ""}${iconOnly ? " icon" : ""}`.trim(), title: label, "aria-label": label }, h("i", { class: icon }), iconOnly ? null : ` ${shortLabel}`);
@@ -65,7 +68,8 @@ export class CombatTracker extends DomApplication {
     const current = combat.started ? combat.combatant : null;
     const list = h("ol", { class: "combat-turns", "aria-label": "Ordem dos turnos" }, ...turns.map((combatant) => buildCombatantRow(combatant, combatant === current)));
     if (turns.length === 0) list.append(h("li", { class: "directory-empty hint" }, game.user.isGM ? "Selecione tokens no mapa e clique em Adicionar." : "Ninguém no combate ainda."));
-    return [this.#buildHeader(combat), ...(game.user.isGM ? [this.#buildGameMasterTools(combat)] : []), list, this.#buildFooter(combat)];
+    if (game.user.isGM) enableTurnOrderDragging(list, combat);
+    return [this.#buildHeader(combat), ...(game.user.isGM ? this.#buildGameMasterTools(combat) : []), list, this.#buildFooter(combat)];
   }
 
   #buildEmptyState(): Node[] {
@@ -76,19 +80,35 @@ export class CombatTracker extends DomApplication {
 
   #buildHeader(combat: any): HTMLElement {
     const status = combat.started ? `Rodada ${combat.round}` : "Aguardando início";
-    const turnName = combat.started ? combat.combatant?.name : null;
-    const visibleTurn = combat.combatant?.visible ? turnName : null;
-    return h("header", { class: "combat-header" }, h("strong", { class: "combat-round" }, status), visibleTurn ? h("span", { class: "combat-current" }, `Vez de ${visibleTurn}`) : null);
+    const current = combat.started && combat.combatant?.visible ? combat.combatant : null;
+    const turnPosition = current ? this.#turnPosition(combat, current) : null;
+    const movement = current && (game.user.isGM || playersSeeTurnMovement()) ? currentTurnMovementLabel(combat) : null;
+    return h(
+      "header",
+      { class: "combat-header", "aria-live": "polite" },
+      h("div", { class: "combat-header-line" }, h("strong", { class: "combat-round" }, status), turnPosition ? h("span", { class: "combat-turn-position" }, turnPosition) : null),
+      current ? h("span", { class: "combat-current" }, h("i", { class: "fa-solid fa-play", "aria-hidden": "true" }), ` Vez de ${current.name || "Sem nome"}`) : null,
+      movement ? h("span", { class: "combat-moved", title: "Quanto o personagem da vez já andou neste turno" }, h("i", { class: "fa-solid fa-shoe-prints", "aria-hidden": "true" }), ` Andou ${movement}`) : null,
+    );
   }
 
-  #buildGameMasterTools(combat: any): HTMLElement {
-    return h(
+  #turnPosition(combat: any, current: any): string | null {
+    const turns: any[] = combat.turns.filter((combatant: any) => combatant.visible);
+    const index = turns.indexOf(current);
+    return index >= 0 ? `Turno ${index + 1} de ${turns.length}` : null;
+  }
+
+  #buildGameMasterTools(combat: any): Node[] {
+    const tools = h(
       "div",
       { class: "combat-tools", role: "toolbar", "aria-label": "Ferramentas do mestre" },
       actionButton("fa-solid fa-user-plus", "Adicionar os tokens selecionados", () => addTokensToCombat(), { shortLabel: "Adicionar" }),
       actionButton("fa-solid fa-rotate-left", "Limpar todas as iniciativas", () => combat.resetAll(), { shortLabel: "Zerar" }),
       actionButton("fa-solid fa-flag-checkered", "Encerrar combate", () => confirmEndCombat(combat), { shortLabel: "Encerrar" }),
     );
+    if (!combat.hasManualOrder) return [tools];
+    const restore = actionButton("fa-solid fa-arrow-down-9-1", "Voltar a ordenar pela iniciativa", () => combat.sortByInitiative(), { shortLabel: "Ordenar pela iniciativa" });
+    return [tools, h("div", { class: "combat-manual-order", role: "status" }, h("span", {}, h("i", { class: "fa-solid fa-hand", "aria-hidden": "true" }), " Ordem manual"), restore)];
   }
 
   #buildFooter(combat: any): HTMLElement {

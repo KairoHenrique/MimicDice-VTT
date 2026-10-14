@@ -1,4 +1,5 @@
 import type { MenuEntry } from "@tabbletop/api";
+import { TOKEN_FREE_MOVE_FLAG, WORLD_FLAG_SCOPE } from "@tabbletop/protocol";
 import { configureTokenControl } from "../ui/actors/tokenControlPermissions";
 import { findOwnCharacter } from "../ui/actors/ownCharacter";
 import { h } from "../views/dom";
@@ -65,7 +66,19 @@ function tokenEntries(token: any): MenuEntry[] {
   if (currentPuppet() === token) entries.push({ label: "Sair do controle", icon: "fa-solid fa-right-from-bracket", onSelect: () => stopPuppet() });
   else entries.push({ label: "Controlar boneco", icon: "fa-solid fa-gamepad", onSelect: () => startPuppet(token) });
   if (token.actor) entries.push({ label: "Quem pode controlar", icon: "fa-solid fa-users-gear", onSelect: () => configureTokenControl(token.actor) });
+  entries.push(freeMoveEntry(token));
   return entries;
+}
+
+function freeMoveEntry(token: any): MenuEntry {
+  const isFree = token.document.getFlag?.(WORLD_FLAG_SCOPE, TOKEN_FREE_MOVE_FLAG) === true;
+  const toggle = async () => {
+    await token.document.update({ [`flags.${WORLD_FLAG_SCOPE}.${TOKEN_FREE_MOVE_FLAG}`]: !isFree });
+    ui.notifications.info(isFree ? `${token.name}: só quem controla pode arrastar.` : `${token.name}: qualquer jogador pode arrastar (sem abrir a ficha).`);
+  };
+  return isFree
+    ? { label: "Só quem controla arrasta", icon: "fa-solid fa-hand", onSelect: toggle }
+    : { label: "Qualquer jogador pode arrastar", icon: "fa-solid fa-hand-pointer", onSelect: toggle };
 }
 
 /** For the board's right-click menu: a way out of the puppet's eyes from anywhere on the map. */

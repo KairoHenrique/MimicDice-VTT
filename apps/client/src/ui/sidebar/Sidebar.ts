@@ -1,10 +1,13 @@
-import type { ApplicationConfiguration } from "@tabbletop/api";
+import type { ApplicationConfiguration, RenderOptions } from "@tabbletop/api";
 import { h } from "../../views/dom";
 import { DomApplication } from "../DomApplication";
 import { CombatTracker } from "../combat/CombatTracker";
 import { ChatLog } from "./ChatLog";
 import { DIRECTORY_CLASSES } from "./directoryClasses";
 import { SIDEBAR_CONTENT_ID } from "./DocumentDirectory";
+import { isSidebarCollapsed, setSidebarCollapsed } from "../../game/tableControls";
+
+const SIDEBAR_REOPEN_ID = "sidebar-reopen";
 
 interface SidebarTab {
   tabName: string;
@@ -42,16 +45,39 @@ export class Sidebar extends DomApplication {
   /** Popped-out sidebar tabs keyed by tab name; tabs never pop out here, but packages probe this map. */
   readonly popouts: Record<string, unknown> = {};
 
-  /** The sidebar is always open; packages read this to keep overlays clear of it. */
+  /** Packages read this to keep overlays clear of the sidebar. */
   get expanded(): boolean {
-    return true;
+    return !isSidebarCollapsed();
   }
 
   get tabGroups(): { primary: string } {
     return { primary: this.activeTab };
   }
 
-  toggleExpanded(_expanded?: boolean): void {}
+  toggleExpanded(expanded?: boolean): void {
+    void setSidebarCollapsed(expanded === undefined ? !isSidebarCollapsed() : !expanded);
+  }
+
+  override async _onRender(context: object, options: RenderOptions): Promise<void> {
+    await super._onRender(context, options);
+    this.applyCollapsed();
+  }
+
+  /** Slides the sidebar off the right edge, leaving a small tab to bring it back. */
+  applyCollapsed(): void {
+    const collapsed = isSidebarCollapsed();
+    this.element?.classList.toggle("collapsed", collapsed);
+    this.element?.setAttribute("aria-hidden", String(collapsed));
+    this.element?.toggleAttribute("inert", collapsed);
+    document.body.classList.toggle("sidebar-collapsed", collapsed);
+    let reopen = document.getElementById(SIDEBAR_REOPEN_ID);
+    if (!reopen) {
+      reopen = h("button", { type: "button", id: SIDEBAR_REOPEN_ID, class: "sidebar-reopen", title: "Mostrar chat, combate e atores", "aria-label": "Mostrar chat, combate e atores", "data-help": "sidebar" }, h("i", { class: "fa-solid fa-chevron-left", "aria-hidden": "true" }), h("i", { class: "fa-solid fa-comments", "aria-hidden": "true" }));
+      reopen.addEventListener("click", () => void setSidebarCollapsed(false));
+      document.body.append(reopen);
+    }
+    reopen.hidden = !collapsed;
+  }
 
   buildContent(): Node[] {
     const tabList = h("nav", { class: "sidebar-tabs tabs", role: "tablist" });
@@ -65,7 +91,9 @@ export class Sidebar extends DomApplication {
       button.addEventListener("click", () => this.changeTab(tabClass.tabName));
       tabList.append(button);
     }
-    return [tabList, h("div", { id: SIDEBAR_CONTENT_ID })];
+    const collapse = h("button", { type: "button", class: "sidebar-collapse icon", title: "Esconder esta barra (chat, combate e atores)", "aria-label": "Esconder esta barra", "data-help": "sidebar" }, h("i", { class: "fa-solid fa-chevron-right", "aria-hidden": "true" }));
+    collapse.addEventListener("click", () => void setSidebarCollapsed(true));
+    return [h("div", { class: "sidebar-top" }, tabList, collapse), h("div", { id: SIDEBAR_CONTENT_ID })];
   }
 
   async renderDirectories(): Promise<void> {
@@ -76,6 +104,7 @@ export class Sidebar extends DomApplication {
       await tab.render({ force: true });
     }
     this.changeTab(this.activeTab);
+    this.applyCollapsed();
     if (!game.user.isGM) this.#watchTabAvailability();
   }
 

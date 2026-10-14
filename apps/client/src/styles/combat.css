@@ -1,22 +1,83 @@
 /* Combat tracker (sidebar tab) */
 .combat-sidebar .combat-header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
   padding: 0 12px 8px;
 }
 
+.combat-header-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .combat-round {
-  font-size: 1.05em;
+  font-size: 1.15em;
+}
+
+.combat-turn-position {
+  color: var(--muted-foreground);
+  font-size: 0.8em;
+  font-variant-numeric: tabular-nums;
 }
 
 .combat-current {
   overflow: hidden;
   color: var(--brand);
-  font-size: 0.85em;
+  font-size: 0.9em;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.combat-moved {
+  color: var(--muted-foreground);
+  font-size: 0.8em;
+}
+
+.combat-manual-order {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 8px 8px;
+  padding: 4px 4px 4px 8px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  font-size: 0.8em;
+}
+
+.combat-manual-order button {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 0.95em;
+}
+
+.combatant-handle {
+  flex: none;
+  width: 16px;
+  min-height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted-foreground);
+  cursor: grab;
+}
+
+.combatant.dragging {
+  opacity: 0.4;
+}
+
+.combatant.drop-before {
+  box-shadow: inset 0 2px 0 var(--brand);
+}
+
+.combatant.drop-after {
+  box-shadow: inset 0 -2px 0 var(--brand);
 }
 
 .combat-tools,

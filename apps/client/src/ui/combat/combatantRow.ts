@@ -39,6 +39,7 @@ function initiativeCell(combatant: any): HTMLElement {
     if (event.key === "Enter") input.blur();
   });
   input.addEventListener("change", () => {
+    if (combatant.parent?.hasManualOrder) ui.notifications.info("A ordem está manual: use \"Ordenar pela iniciativa\" para reordenar pelos números.");
     const raw = input.value.trim();
     const parsed = raw === "" ? null : Number(raw);
     if (parsed !== null && (!Number.isFinite(parsed) || Math.abs(parsed) > INITIATIVE_LIMIT)) {
@@ -51,10 +52,28 @@ function initiativeCell(combatant: any): HTMLElement {
   return input;
 }
 
+/** Drag the grip to reorder; with the keyboard, the arrow keys move the combatant up or down one place. */
+function orderHandle(combatant: any): HTMLButtonElement {
+  const label = `Mudar a posição de ${combatant.name || "combatente"} (arraste ou use as setas)`;
+  const handle = h("button", { type: "button", class: "icon combatant-handle", title: label, "aria-label": label }, h("i", { class: "fa-solid fa-grip-vertical", "aria-hidden": "true" }));
+  handle.addEventListener("click", (event) => event.stopPropagation());
+  handle.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    event.stopPropagation();
+    const combat = combatant.parent;
+    const index = combat.turns.indexOf(combatant);
+    void combat.moveCombatant(combatant.id, index + (event.key === "ArrowUp" ? -1 : 1));
+  });
+  return handle;
+}
+
 function gameMasterControls(combatant: any): HTMLElement {
+  const combat = combatant.parent;
   return h(
     "div",
     { class: "combatant-controls" },
+    iconButton("fa-solid fa-angles-down", "Mandar para o fim da ordem (ex.: ficou tonto). Se for a vez dele, passa para o próximo.", () => combat.delayToEnd(combatant.id)),
     iconButton(combatant.hidden ? "fa-solid fa-eye-slash" : "fa-solid fa-eye", combatant.hidden ? "Oculto dos jogadores" : "Visível para os jogadores", () => combatant.update({ hidden: !combatant.hidden }), combatant.hidden),
     iconButton("fa-solid fa-skull", combatant.defeated ? "Derrotado" : "Marcar como derrotado", () => combatant.update({ defeated: !combatant.defeated }), combatant.defeated),
     iconButton("fa-solid fa-xmark", "Tirar do combate", () => combatant.delete()),
@@ -69,6 +88,7 @@ export function buildCombatantRow(combatant: any, isCurrentTurn: boolean): HTMLE
   const row = h(
     "li",
     { class: classes.filter(Boolean).join(" "), "data-combatant-id": combatant.id, "aria-current": isCurrentTurn ? "true" : "false", title: "Clique para ver no mapa" },
+    game.user.isGM ? orderHandle(combatant) : null,
     portrait,
     name,
     game.user.isGM ? gameMasterControls(combatant) : null,

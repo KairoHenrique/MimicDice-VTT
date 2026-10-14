@@ -21,6 +21,8 @@ interface MoveAnimation {
 
 export class Token extends PlaceableObject {
   static override embeddedName = "Token";
+  /** Table rules for dragging tokens the user does not control; the server enforces the same rules. */
+  static dragWithoutControlRule: ((token: Token, user: any) => boolean) | null = null;
 
   mesh: PIXI.Sprite | null = null;
   border = new PIXI.Graphics();
@@ -54,6 +56,11 @@ export class Token extends PlaceableObject {
     if (seesEverything() || this === puppetToken()) return true;
     if (this.document.hidden) return false;
     return currentCanvas()?.perception?.isTokenVisible?.(this) ?? true;
+  }
+
+  override canDragWithoutControl(user: any): boolean {
+    if (!user || user.isGM || !this.isVisible) return false;
+    return Token.dragWithoutControlRule?.(this, user) === true;
   }
 
   get hasSight(): boolean {
@@ -96,7 +103,7 @@ export class Token extends PlaceableObject {
     this.nameplate.visible = this.hover || this.controlled || Number(this.document.displayName) >= CONST.TOKEN_DISPLAY_MODES.ALWAYS;
     this.alpha = this.document.hidden ? 0.5 : (Number(this.document.alpha) ?? 1);
     this.hitArea = new PIXI.Rectangle(0, 0, w, h);
-    this.cursor = this.canControl() ? "pointer" : "default";
+    this.cursor = this.canControl() || this.canDrag() ? "pointer" : "default";
   }
 
   #refreshMesh(width: number, height: number): void {

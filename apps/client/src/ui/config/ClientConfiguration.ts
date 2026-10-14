@@ -1,20 +1,23 @@
 import type { ApplicationConfiguration } from "@tabbletop/api";
 import { h } from "../../views/dom";
 import { DomApplication } from "../DomApplication";
+import { buildGameMasterRulesTab } from "./gameMasterRulesTab";
 import { buildKeybindingsTab } from "./keybindingsTab";
 import { buildPasswordTab } from "./passwordTab";
 import { buildSettingsTab } from "./settingsTab";
 
-type ConfigTab = "settings" | "keybindings" | "password";
+type ConfigTab = "settings" | "rules" | "keybindings" | "password";
 
 const TABS: ReadonlyArray<{ id: ConfigTab; icon: string; label: string; gameMasterOnly?: boolean }> = [
   { id: "settings", icon: "fas fa-sliders", label: "Geral" },
+  { id: "rules", icon: "fas fa-crown", label: "Controle do mestre", gameMasterOnly: true },
   { id: "keybindings", icon: "fas fa-keyboard", label: "Atalhos" },
   { id: "password", icon: "fas fa-key", label: "Senha do mestre", gameMasterOnly: true },
 ];
 
 function buildTabBody(tab: ConfigTab, rerender: () => void): HTMLElement {
   if (tab === "keybindings") return buildKeybindingsTab(rerender);
+  if (tab === "rules" && game.user.isGM) return buildGameMasterRulesTab(rerender);
   if (tab === "password" && game.user.isGM) return buildPasswordTab();
   return buildSettingsTab();
 }

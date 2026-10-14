@@ -8,7 +8,7 @@ import {
   type DocumentTypeDefinition,
   type UserPermissionName,
 } from "@tabbletop/common";
-import type { DocumentSource } from "@tabbletop/protocol";
+import { type DocumentSource, isMoveOnlyChange, mayMoveUnownedToken, type TokenMoveRule } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
 import type { DocumentNode } from "./documentTree";
 
@@ -26,6 +26,7 @@ export class DocumentPermissionPolicy {
     private readonly isMapLocked: () => boolean = () => false,
     private readonly isScenePaused: () => boolean = () => false,
     private readonly isTableSessionClosed: () => boolean = () => false,
+    private readonly readTokenMoveRule: () => TokenMoveRule = () => "owner",
   ) {}
 
   isGameMaster(actor: DocumentActor): boolean {
@@ -89,6 +90,19 @@ export class DocumentPermissionPolicy {
 
   assertCanCreateWorldDocument(actor: DocumentActor, definition: DocumentTypeDefinition): void {
     if (!this.hasCreatePermission(actor, definition)) throw HttpError.forbidden(`Sem permissão para criar ${definition.name}`);
+  }
+
+  /** A player may only drag (never edit) a token they do not control when the GM's movement rules allow it. */
+  mayMoveWithoutOwnership(actor: DocumentActor, definition: DocumentTypeDefinition, token: DocumentSource, changes: Record<string, unknown>): boolean {
+    if (this.isGameMaster(actor) || definition.name !== "Token" || !isMoveOnlyChange(changes)) return false;
+    const actorId = token.actorId;
+    const linkedActor = (typeof actorId === "string" ? this.findActor(actorId) : undefined) ?? null;
+    return mayMoveUnownedToken({ rule: this.readTokenMoveRule(), token, linkedActor });
+  }
+
+  assertOwnerOrMayMove(actor: DocumentActor, definition: DocumentTypeDefinition, source: DocumentSource, changes: Record<string, unknown>, ancestors: readonly DocumentNode[] = []): void {
+    if (this.mayMoveWithoutOwnership(actor, definition, source, changes)) return;
+    this.assertOwner(actor, definition, source, ancestors);
   }
 
   assertOwner(actor: DocumentActor, definition: DocumentTypeDefinition, source: DocumentSource, ancestors: readonly DocumentNode[] = []): void {

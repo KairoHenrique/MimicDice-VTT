@@ -4,6 +4,7 @@ import "./styles/applications.css";
 import "./styles/dice.css";
 import "./styles/combat.css";
 import "./styles/canvas.css";
+import "./styles/tableTools.css";
 import "./styles/editors.css";
 import "./styles/sheets.css";
 import "./styles/sheetBoard.css";

@@ -1,8 +1,8 @@
 # MimicDice VTT
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.0.0-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.1.0-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-> **Versão atual: 1.0.0.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
+> **Versão atual: 1.1.0.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
 
 Mesa virtual (VTT) para jogar RPG com os amigos. Você hospeda a mesa no seu próprio computador, envia o link de convite e os jogadores entram pelo navegador, sem precisar de assinatura nem de servidor na nuvem.
 
@@ -26,7 +26,10 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 - **Limite de visão:** o mestre define até quantos metros os jogadores enxergam a partir dos seus tokens.
 - **Tradução automática:** textos em inglês de sistemas e módulos aparecem em português, sem internet.
 - **Pings no mapa:** aperte P para destacar um ponto para todos; o mestre, com Shift + P, leva a câmera de todos até lá.
-- **Rastreador de iniciativa:** aba Combate com a ordem dos turnos, iniciativa definida pelo mestre e aviso de "É o seu turno".
+- **Rastreador de iniciativa:** aba Combate com rodada, de quem é a vez (também num aviso no topo, para todos) e quanto o personagem da vez já andou. O mestre reordena arrastando ou com as setas e manda alguém para o fim da fila (ficou tonto, atrasou a ação).
+- **Painel de status:** janela arrastável com vida, PE e sanidade. O mestre escolhe quem aparece (jogadores, combate, cena ou um por um); cada jogador vê só os próprios personagens.
+- **Controle do mestre:** aba nas Configurações para escolher quais barras existem (e com quais nomes da ficha), o que os jogadores veem e quem pode arrastar tokens de outros.
+- **Barra lateral recolhível:** esconda chat, combate e atores para ver o mapa inteiro.
 - **Chat com sussurros:** mensagens públicas ou privadas para um jogador, com o mestre vendo todas as conversas, além de rolagens secretas.
 - **Configurações e atalhos:** preferências por usuário e teclas trocáveis, salvas na conta.
 - **Salas no launcher:** crie, abra, entre e exclua suas mesas direto pelo app desktop.
