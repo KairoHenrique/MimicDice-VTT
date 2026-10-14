@@ -117,12 +117,23 @@
     ${NSD_GetState} $desktopShortcutCheckbox $createDesktopShortcut
   FunctionEnd
 
+  !macro createDesktopLink
+    CreateShortCut "$DESKTOP\${SHORTCUT_NAME}.lnk" "$appExe" "" "$appExe" 0 "" "" "${APP_DESCRIPTION}"
+    ClearErrors
+    WinShell::SetLnkAUMI "$DESKTOP\${SHORTCUT_NAME}.lnk" "${APP_ID}"
+  !macroend
+
+  # Silent updates skip the shortcut page, so only an existing desktop link is refreshed. The exe is replaced
+  # during the update and Explorer caches a blank icon meanwhile; SHCNE_ASSOCCHANGED makes it reload the icons.
   !macro customInstall
-    ${If} $createDesktopShortcut != ${BST_UNCHECKED}
-      CreateShortCut "$DESKTOP\${SHORTCUT_NAME}.lnk" "$appExe" "" "$appExe" 0 "" "" "${APP_DESCRIPTION}"
-      ClearErrors
-      WinShell::SetLnkAUMI "$DESKTOP\${SHORTCUT_NAME}.lnk" "${APP_ID}"
+    ${If} ${isUpdated}
+      ${If} ${FileExists} "$DESKTOP\${SHORTCUT_NAME}.lnk"
+        !insertmacro createDesktopLink
+      ${EndIf}
+    ${ElseIf} $createDesktopShortcut != ${BST_UNCHECKED}
+      !insertmacro createDesktopLink
     ${EndIf}
+    System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
   !macroend
 !endif
 

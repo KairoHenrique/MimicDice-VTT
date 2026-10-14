@@ -24,6 +24,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -130,7 +134,7 @@ body {
 }
 
 .intro-title span {
-  color: #e8b64a;
+  color: #60a5fa;
 }
 
 .intro-tagline {
@@ -442,13 +446,74 @@ button.link:hover:not(:disabled) {
   font-weight: 600;
 }
 
-.room-create {
-  display: flex;
-  gap: 8px;
+.room-menu {
+  position: relative;
 }
 
+.room-menu-toggle {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.room-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 50%);
+}
+
+.room-menu-list button {
+  border: none;
+  text-align: left;
+}
+
+.room-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 0;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 60%);
+}
+
+.room-dialog::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+
+.room-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+
+.room-dialog h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.field input,
 .room-create input {
-  flex: 1;
   min-height: 36px;
   font: inherit;
   color: var(--text);
@@ -456,6 +521,26 @@ button.link:hover:not(:disabled) {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 10px;
+}
+
+.field input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.room-create {
+  display: flex;
+  gap: 8px;
+}
+
+.room-create input {
+  flex: 1;
 }
 
 .room-create input:focus-visible {

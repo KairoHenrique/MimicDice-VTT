@@ -149,12 +149,37 @@ export class ActiveWorldHolder {
     return this.switchTo(manifest.id);
   }
 
-  /** The open world holds its database lock, so only closed worlds can be deleted. */
-  async deleteWorld(worldId: string): Promise<void> {
-    await this.#exclusive(async () => {
+  /** The open world holds its database lock, so only closed worlds can be deleted. Returns false on a wrong password. */
+  deleteWorld(worldId: string, gameMasterPassword: string): Promise<boolean> {
+    return this.#exclusive(async () => {
       if (worldId === this.#activeWorld?.manifest.id) throw new Error("World is open");
+      if (!(await this.#acceptsGameMasterPassword(worldId, gameMasterPassword))) return false;
       await this.repository.deleteWorld(worldId);
+      return true;
     });
+  }
+
+  /** Returns false on a wrong password. */
+  renameWorld(worldId: string, title: string, gameMasterPassword: string): Promise<boolean> {
+    return this.#exclusive(async () => {
+      if (!(await this.#acceptsGameMasterPassword(worldId, gameMasterPassword))) return false;
+      const manifest = await this.repository.renameWorld(worldId, title);
+      if (worldId === this.#activeWorld?.manifest.id) this.#activeWorld.manifest.title = manifest.title;
+      return true;
+    });
+  }
+
+  /** A closed world only has its users opened, and closed again right after the check. */
+  async #acceptsGameMasterPassword(worldId: string, password: string): Promise<boolean> {
+    if (worldId === this.#activeWorld?.manifest.id) return this.#activeWorld.users.acceptsGameMasterPassword(password);
+    const database = new WorldDatabase(this.repository.worldDataDirectory(worldId));
+    try {
+      const users = new UserService(await database.collection<UserDocument>("users"), this.passwordHasher);
+      await users.load();
+      return await users.acceptsGameMasterPassword(password);
+    } finally {
+      await database.close();
+    }
   }
 
   async #exclusive<T>(task: () => Promise<T>): Promise<T> {

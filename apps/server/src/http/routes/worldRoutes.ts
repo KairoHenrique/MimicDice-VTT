@@ -34,14 +34,27 @@ export async function activateWorld(context: ServerContext, worldId: string): Pr
   context.logger.info("Sala aberta", { worldId });
 }
 
-export async function deleteWorld(context: ServerContext, worldId: string): Promise<void> {
+const WRONG_GAME_MASTER_PASSWORD = "Senha do mestre incorreta.";
+
+export async function deleteWorld(context: ServerContext, worldId: string, gameMasterPassword: string): Promise<void> {
   if (worldId === context.activeWorld.current?.manifest.id) throw HttpError.conflict("Abra outra sala antes de excluir esta.");
   if (!(await context.worlds.worldExists(worldId))) throw HttpError.notFound("Sala não encontrada");
-  await context.activeWorld.deleteWorld(worldId).catch((error: unknown) => {
+  const authorized = await context.activeWorld.deleteWorld(worldId, gameMasterPassword).catch((error: unknown) => {
     context.logger.error("Falha ao excluir sala", error);
     throw HttpError.conflict("Não foi possível excluir a sala agora.");
   });
+  if (!authorized) throw HttpError.unauthorized(WRONG_GAME_MASTER_PASSWORD);
   context.logger.info("Sala excluída", { worldId });
+}
+
+export async function renameWorld(context: ServerContext, worldId: string, title: string, gameMasterPassword: string): Promise<void> {
+  if (!(await context.worlds.worldExists(worldId))) throw HttpError.notFound("Sala não encontrada");
+  const authorized = await context.activeWorld.renameWorld(worldId, title, gameMasterPassword).catch((error: unknown) => {
+    context.logger.error("Falha ao renomear sala", error);
+    throw HttpError.conflict("Não foi possível trocar o nome da sala agora.");
+  });
+  if (!authorized) throw HttpError.unauthorized(WRONG_GAME_MASTER_PASSWORD);
+  context.logger.info("Sala renomeada", { worldId });
 }
 
 /** Game Master only: list the tables (worlds) on this PC, open another one or start a new one. Each has its own GM password. */

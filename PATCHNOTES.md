@@ -1,5 +1,11 @@
 # Notas de versão
 
+## 1.4.2
+
+- **Menu das salas:** cada sala do launcher tem um botão **⋯** com **Trocar nome** e **Excluir**. As duas opções pedem a senha do mestre daquela sala, e o servidor confere a senha antes de mudar qualquer coisa.
+- **Launcher:** a caixa azul vazia que aparecia abaixo do status sumiu, e o "VTT" da abertura agora é azul.
+- **Atalho na atualização:** o ícone do atalho não some mais depois de atualizar, e quem não quis atalho na Área de Trabalho não ganha um a cada atualização.
+
 ## 1.4.1
 
 - **Montar o mapa arrastando:** na ferramenta Tiles, o painel **Imagens do mapa** mostra as pastas enviadas. Arraste as imagens direto para o mapa e monte como um quebra-cabeça: elas encaixam em 1/4 de quadrado (Shift solta livre). O campo **px/quadrado** ajusta peças feitas para outra grade. Arquivos do computador podem ser soltos no painel ou direto no mapa.

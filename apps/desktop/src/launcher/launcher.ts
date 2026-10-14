@@ -1,6 +1,7 @@
 import { detectLanguage, t, translatePage } from "@tabbletop/i18n";
 import type { DesktopBridge, LauncherState, RoomSummary, UpdateStatus } from "../ipcChannels";
 import type { InviteAddress } from "../inviteAddresses";
+import { buildRoomMenu, type RoomActionHandlers } from "./roomActions";
 
 declare global {
   interface Window {
@@ -157,7 +158,7 @@ function buildRoomItem(room: RoomSummary): HTMLLIElement {
     enterButton.textContent = "Entrar";
     enterButton.setAttribute("aria-label", `Entrar na sala ${room.title}`);
     enterButton.addEventListener("click", () => void bridge.openTable());
-    item.append(badge, enterButton);
+    item.append(badge, enterButton, buildRoomMenu(room, roomMenuHandlers));
     return item;
   }
   const openButton = document.createElement("button");
@@ -166,23 +167,15 @@ function buildRoomItem(room: RoomSummary): HTMLLIElement {
   openButton.addEventListener("click", () => {
     if (window.confirm(t(`Abrir a sala "${room.title}"? Quem estiver na mesa será recarregado.`))) void runRoomAction(() => bridge.openRoom(room.id));
   });
-  item.append(openButton, buildDeleteButton(room));
+  item.append(openButton, buildRoomMenu(room, roomMenuHandlers));
   return item;
 }
 
-function buildDeleteButton(room: RoomSummary): HTMLButtonElement {
-  const deleteButton = document.createElement("button");
-  deleteButton.type = "button";
-  deleteButton.className = "danger";
-  deleteButton.textContent = "Excluir";
-  deleteButton.setAttribute("aria-label", `Excluir a sala ${room.title}`);
-  deleteButton.addEventListener("click", () => {
-    const question = t(`Excluir a sala "${room.title}" para sempre?`);
-    const consequence = t("Personagens, cenas, chat e jogadores dessa sala serão apagados e não dá para desfazer. A pasta de arquivos (mapas e imagens) continua em rpgs.");
-    if (window.confirm(`${question}\n\n${consequence}`)) void runRoomAction(() => bridge.deleteRoom(room.id));
-  });
-  return deleteButton;
-}
+const roomMenuHandlers: RoomActionHandlers = {
+  rename: (room, title, password) => bridge.renameRoom(room.id, title, password),
+  remove: (room, password) => bridge.deleteRoom(room.id, password),
+  changed: () => renderRooms(),
+};
 
 async function renderRooms(): Promise<void> {
   const result = await bridge.listRooms();

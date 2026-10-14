@@ -71,6 +71,27 @@
         </span>
       </footer>
     </main>
+
+    <dialog id="room-dialog" class="room-dialog" aria-labelledby="room-dialog-title">
+      <form id="room-dialog-form" class="room-dialog-form" method="dialog">
+        <h2 id="room-dialog-title"></h2>
+        <p id="room-dialog-text" class="hint"></p>
+        <label id="room-dialog-name-field" class="field">
+          <span>Novo nome</span>
+          <input id="room-dialog-name" type="text" maxlength="80" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Senha do mestre desta sala</span>
+          <input id="room-dialog-password" type="password" maxlength="128" autocomplete="current-password" />
+        </label>
+        <p class="hint">Deixe vazio se a sala não tem senha.</p>
+        <p id="room-dialog-error" class="error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button id="room-dialog-cancel" type="button">Cancelar</button>
+          <button id="room-dialog-confirm" type="submit"></button>
+        </div>
+      </form>
+    </dialog>
     <script src="launcher.js"></script>
   </body>
 </html>

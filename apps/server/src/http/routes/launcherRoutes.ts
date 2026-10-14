@@ -1,11 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { Router } from "express";
-import { activateWorldRequestSchema, createWorldRequestSchema, deleteWorldRequestSchema } from "@tabbletop/protocol";
+import { activateWorldRequestSchema, createWorldRequestSchema, deleteWorldRequestSchema, renameWorldRequestSchema } from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
 import type { ServerContext } from "../../ServerContext";
 import { parseRequestBody } from "../requestGuards";
-import { activateWorld, createSwitchLimiter, createWorld, deleteWorld, listWorldSummaries } from "./worldRoutes";
+import { activateWorld, createSwitchLimiter, createWorld, deleteWorld, listWorldSummaries, renameWorld } from "./worldRoutes";
 
 export const LAUNCHER_TOKEN_HEADER = "x-mimicdice-launcher";
 const LOOPBACK_ADDRESSES = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
@@ -49,8 +49,14 @@ export function createLauncherRoutes(context: ServerContext): Router {
   });
 
   router.post("/worlds/delete", switchLimiter, async (request, response) => {
-    const { worldId } = parseRequestBody(deleteWorldRequestSchema, request);
-    await deleteWorld(context, worldId);
+    const { worldId, password } = parseRequestBody(deleteWorldRequestSchema, request);
+    await deleteWorld(context, worldId, password);
+    response.json({ id: worldId });
+  });
+
+  router.post("/worlds/rename", switchLimiter, async (request, response) => {
+    const { worldId, title, password } = parseRequestBody(renameWorldRequestSchema, request);
+    await renameWorld(context, worldId, title, password);
     response.json({ id: worldId });
   });
 

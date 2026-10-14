@@ -164,7 +164,8 @@ class DesktopApplication {
       if (result.ok) this.#windows.openTable();
       return result;
     });
-    handle(IPC_CHANNELS.deleteRoom, (_event, worldId) => (this.#serverState === "running" ? this.#rooms.delete(worldId) : serverDown));
+    handle(IPC_CHANNELS.deleteRoom, (_event, worldId, password) => (this.#serverState === "running" ? this.#rooms.delete(worldId, password) : serverDown));
+    handle(IPC_CHANNELS.renameRoom, (_event, worldId, title, password) => (this.#serverState === "running" ? this.#rooms.rename(worldId, title, password) : serverDown));
   }
 
   #restrictPermissions(): void {

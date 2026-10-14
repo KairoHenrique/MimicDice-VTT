@@ -188,6 +188,16 @@ export class UserService {
     return plainPassword === "" ? Promise.resolve(NO_PASSWORD) : this.passwordHasher.hashPassword(plainPassword);
   }
 
+  /** True when the password opens any Game Master account; a room nobody has set up yet has nothing to protect. */
+  async acceptsGameMasterPassword(plainPassword: string): Promise<boolean> {
+    const gameMasters = this.listGameMasters();
+    if (gameMasters.length === 0) return true;
+    for (const gameMaster of gameMasters) {
+      if (await this.verifyCredentials(gameMaster._id, plainPassword)) return true;
+    }
+    return false;
+  }
+
   async verifyCredentials(userId: string, plainPassword: string): Promise<UserDocument | undefined> {
     const user = this.#usersById.get(userId);
     if (!user) {

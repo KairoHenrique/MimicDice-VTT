@@ -48,15 +48,20 @@ export type PlayerJoinRequest = z.infer<typeof playerJoinRequestSchema>;
 
 export const MAX_PLAYERS_PER_WORLD = 40;
 
-export const createWorldRequestSchema = z.object({
-  title: z.string().trim().min(1).max(80).regex(/^[^<>"'`\\]+$/, "Nome contém caracteres não permitidos"),
-});
+const worldTitleSchema = z.string().trim().min(1).max(80).regex(/^[^<>"'`\\]+$/, "Nome contém caracteres não permitidos");
+
+export const createWorldRequestSchema = z.object({ title: worldTitleSchema });
 export type CreateWorldRequest = z.infer<typeof createWorldRequestSchema>;
 
 export const activateWorldRequestSchema = z.object({ worldId: z.string().regex(/^[a-z0-9-]{1,64}$/) });
 export type ActivateWorldRequest = z.infer<typeof activateWorldRequestSchema>;
 
-export const deleteWorldRequestSchema = activateWorldRequestSchema;
+/** Deleting or renaming a room asks for that room's Game Master password. */
+export const deleteWorldRequestSchema = activateWorldRequestSchema.extend({ password: optionalPasswordSchema });
+export type DeleteWorldRequest = z.infer<typeof deleteWorldRequestSchema>;
+
+export const renameWorldRequestSchema = deleteWorldRequestSchema.extend({ title: worldTitleSchema });
+export type RenameWorldRequest = z.infer<typeof renameWorldRequestSchema>;
 
 /** The table only distinguishes players from Game Masters; intermediate roles are not offered. */
 const assignableRoleSchema = z.union([z.literal(USER_ROLES.PLAYER), z.literal(USER_ROLES.GAMEMASTER)]);

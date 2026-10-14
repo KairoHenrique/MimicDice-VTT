@@ -125,6 +125,13 @@ export class WorldRepository {
     await rm(this.worldDirectory(worldId), { recursive: true, force: true });
   }
 
+  /** Only the display title changes; the id and the `rpgs/` folder stay, so links and files keep working. */
+  async renameWorld(worldId: string, title: string): Promise<WorldManifest> {
+    const manifest: WorldManifest = { ...(await this.readManifest(worldId)), title };
+    await writeFile(this.#manifestPath(worldId), JSON.stringify(manifest, null, 2), "utf8");
+    return manifest;
+  }
+
   async setSystem(worldId: string, systemId: string | null): Promise<WorldManifest> {
     const manifest: WorldManifest = { ...(await this.readManifest(worldId)), system: systemId };
     await writeFile(this.#manifestPath(worldId), JSON.stringify(manifest, null, 2), "utf8");

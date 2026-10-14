@@ -1,4 +1,4 @@
-import { activateWorldRequestSchema, createWorldRequestSchema, deleteWorldRequestSchema, type WorldSummaryRecord } from "@tabbletop/protocol";
+import { activateWorldRequestSchema, createWorldRequestSchema, deleteWorldRequestSchema, renameWorldRequestSchema, type WorldSummaryRecord } from "@tabbletop/protocol";
 import type { RoomsResult } from "./ipcChannels";
 
 const LAUNCHER_TOKEN_HEADER = "x-mimicdice-launcher";
@@ -28,10 +28,16 @@ export class RoomsClient {
     return this.#request("POST", "/worlds/activate", parsed.data);
   }
 
-  delete(worldId: unknown): Promise<RoomsResult<{ id: string }>> {
-    const parsed = deleteWorldRequestSchema.safeParse({ worldId });
-    if (!parsed.success) return Promise.resolve({ ok: false, error: "Sala inválida." });
+  delete(worldId: unknown, password: unknown): Promise<RoomsResult<{ id: string }>> {
+    const parsed = deleteWorldRequestSchema.safeParse({ worldId, password });
+    if (!parsed.success) return Promise.resolve({ ok: false, error: "Sala ou senha inválida." });
     return this.#request("POST", "/worlds/delete", parsed.data);
+  }
+
+  rename(worldId: unknown, title: unknown, password: unknown): Promise<RoomsResult<{ id: string }>> {
+    const parsed = renameWorldRequestSchema.safeParse({ worldId, title, password });
+    if (!parsed.success) return Promise.resolve({ ok: false, error: "Nome de sala inválido (até 80 caracteres, sem < > \" ' ` \\)." });
+    return this.#request("POST", "/worlds/rename", parsed.data);
   }
 
   async #request<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<RoomsResult<T>> {

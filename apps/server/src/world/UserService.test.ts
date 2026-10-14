@@ -85,6 +85,30 @@ describe("roles", () => {
   });
 });
 
+describe("acceptsGameMasterPassword", () => {
+  const checkingHasher = {
+    hashPassword: async (plain: string) => `hash:${plain}`,
+    verifyPassword: async (hash: string, plain: string) => hash === `hash:${plain}`,
+    consumeEquivalentTime: async () => undefined,
+  } as unknown as PasswordHasher;
+
+  it("accepts only a Game Master's password, not a player's", async () => {
+    const service = new UserService(memoryStore(), checkingHasher);
+    await service.createUser({ name: "Mestre", password: "segredo", role: USER_ROLES.GAMEMASTER });
+    await service.createUser({ name: "Lyra", password: "da-lyra", role: USER_ROLES.PLAYER });
+    expect(await service.acceptsGameMasterPassword("segredo")).toBe(true);
+    expect(await service.acceptsGameMasterPassword("da-lyra")).toBe(false);
+    expect(await service.acceptsGameMasterPassword("")).toBe(false);
+  });
+
+  it("lets a room without a Game Master password, or not set up yet, through", async () => {
+    const openRoom = new UserService(memoryStore(), checkingHasher);
+    await openRoom.createUser({ name: "Mestre", password: "", role: USER_ROLES.GAMEMASTER });
+    expect(await openRoom.acceptsGameMasterPassword("")).toBe(true);
+    expect(await new UserService(memoryStore(), checkingHasher).acceptsGameMasterPassword("")).toBe(true);
+  });
+});
+
 describe("importUser", () => {
   it("copies an account from another world unless the id or name is taken", async () => {
     const service = await serviceWithMaster();
