@@ -104,29 +104,24 @@ Se a fórmula estiver errada, a rolagem não acontece e o app avisa: confira os 
 
 ```mermaid
 flowchart TD
-    subgraph Mestre["PC do mestre"]
-        L["Launcher (Electron)<br/>salas, senha do mestre, links de convite"] --> S
-        U["electron-updater<br/>atualização automática"] -.-> L
-        subgraph S["Servidor local (Express + Socket.IO)"]
-            V{"Validação Zod<br/>+ rate limiting<br/>+ permissões"}
-            V -->|ok| R["Regras no servidor<br/>sessão, pausa, baús, DT, portas"]
-            V -->|negado| X["Erro sem detalhes internos"]
-            R --> DB[("LevelDB<br/>mundos, atores, cenas, itens")]
-            R --> F["Arquivos<br/>mapas, tokens, pastas dos jogadores"]
-        end
-    end
+    A["Mestre abre o app desktop"] --> B["Launcher: cria ou abre a sala"]
+    B --> C["Servidor local inicia<br/>Express + Socket.IO"]
+    C --> D["Link de convite<br/>Wi-Fi/LAN ou Radmin VPN"]
+    D --> E["Jogadores abrem o link<br/>no navegador"]
+    E --> F["Mesa no navegador"]
 
-    subgraph Navegador["Mestre e jogadores no navegador"]
-        C["Cliente (Vite)"] --> API["Runtime da mesa<br/>compatível com a API do Foundry"]
-        API --> CV["Canvas PixiJS<br/>camadas, visão, névoa, tokens"]
-        API --> FI["Fichas montáveis<br/>fórmulas @atalho e cálculos"]
-        API --> DA["Dados e chat<br/>bandeja, sussurros, rolagens secretas"]
-        API --> SI["Sistemas e módulos<br/>instalados pelo manifesto"]
-    end
+    F --> G["Mapa PixiJS<br/>camadas, visão e névoa"]
+    F --> H["Fichas com fórmulas"]
+    F --> I["Dados e chat"]
 
-    C <-->|"Socket.IO (tempo real)"| V
-    C -->|"HTTP: login, uploads"| V
-    R -->|"atualizações para todos"| C
+    G --> J{"Servidor valida a ação<br/>Zod, permissões e rate limit"}
+    H --> J
+    I --> J
+
+    J -->|negado| K["Aviso sem detalhes internos"]
+    J -->|ok| L["Regras aplicadas no servidor<br/>sessão, baús, DT e portas"]
+    L --> M[("LevelDB<br/>mundos, cenas e atores")]
+    L --> N["Socket.IO avisa todos<br/>em tempo real"]
 ```
 
 ## Estrutura do projeto
