@@ -1,5 +1,13 @@
 # Notas de versão
 
+## 1.4.4
+
+- **Nova ficha de jogador:** "Agente (jogador)" é o único modelo de jogador que vem com o app, com sanidade, PV e PE lado a lado e o novo arranjo da página de perícias.
+  - O máximo de PV e de PE é calculado direto na barra pela classe, vigor, presença e nível, e muda sozinho. Barra cheia continua cheia quando o máximo sobe.
+  - O nome de cada perícia rola `1d20 + pontos da perícia`.
+- **Modelos de NPC e inimigos:** NPC padrão, Inimigo rápido e Chefe voltaram, até cada um ganhar a sua ficha.
+- **Correção:** barras cujo máximo usava um cálculo que não existe mais na ficha ficavam travadas em 0. Para fichas já criadas, aplique o modelo de novo em **Modelos**.
+
 ## 1.4.3
 
 - **Paredes e segredos:** a ferramenta Paredes mudou de nome e ganhou botões para o que antes ficava escondido no clique direito:

@@ -26,7 +26,10 @@ function derivedFor(overrides: Record<string, unknown> = {}): Record<string, num
   const template = spreadsheetPreset();
   const components = allComponents(template.layout);
   const values = { ...missingSystemData(template.layout, {}), ...overrides };
-  return computeDerivedValues(components, { ...values, ...formulaAliases(components, values) }, evaluate);
+  const data = { ...values, ...formulaAliases(components, values) };
+  const derived = computeDerivedValues(components, data, evaluate);
+  const barMaximum = (key: string) => evaluate(components.find((component) => component.key === key)?.formula ?? "", { ...data, ...derived }) ?? Number.NaN;
+  return { ...derived, pv_maximo: barMaximum("pv"), pe_maximo: barMaximum("pe") };
 }
 
 describe("spreadsheet sheet model", () => {
@@ -34,7 +37,7 @@ describe("spreadsheet sheet model", () => {
     const template = spreadsheetPreset();
     expect(sheetTemplateSchema.safeParse(template).success).toBe(true);
     for (const component of allComponents(template.layout)) {
-      if (component.formula && component.kind === "computed") expect(evaluate(component.formula, {}), component.key).not.toBeNull();
+      if (component.formula && (component.kind === "computed" || component.kind === "resource")) expect(evaluate(component.formula, {}), component.key).not.toBeNull();
     }
   });
 

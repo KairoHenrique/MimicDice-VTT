@@ -56,7 +56,8 @@ describe("presets", () => {
       const keys = new Set([...layoutKeys(preset.layout), ...Object.keys(formulaAliases(allComponents(preset.layout), {}))]);
       for (const component of allComponents(preset.layout)) {
         const references = (rollFormulaFor(component) ?? component.formula ?? "").match(/@([a-z0-9_]+)/g) ?? [];
-        for (const reference of references) expect(keys.has(reference.slice(1)), `${preset.id}: ${reference}`).toBe(true);
+        const ownKeys = component.kind === "skills" ? new Set([...keys, "valor"]) : keys;
+        for (const reference of references) expect(ownKeys.has(reference.slice(1)), `${preset.id}: ${reference}`).toBe(true);
       }
     }
   });
