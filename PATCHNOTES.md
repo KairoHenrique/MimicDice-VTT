@@ -22,9 +22,9 @@
   - Efeitos positivos: **Recupera** em vez de **Perde** cura por turno, e **Bônus nas rolagens** soma um valor ou dado (1d4) nas rolagens da ficha. Novos efeitos prontos: **Regenerando** e **Abençoado**.
 - **Ficha padrão:** a ficha "Agente (planilha)" é agora o único modelo que vem com o app e o padrão de personagens, NPCs e inimigos. Os modelos antigos (d20, d100, 2d6, inimigo, chefe, NPC e em branco) saíram; fichas já criadas não mudam, e os modelos salvos pelo mestre continuam.
 - **Fórmulas na ficha:**
-  - **Barras (PV, PE):** o máximo pode ser uma fórmula (ex.: @pv_maximo) e muda sozinho. Barra cheia continua cheia quando o máximo sobe. Na ficha padrão, PV e PE já vêm ligados ao PV máximo e ao PE máximo.
-  - **Bolinhas:** a quantidade pode ser uma fórmula (ex.: @nivel).
-  - **Perícias:** os pontos máximos podem ser uma fórmula (ex.: (@intelecto + 6) * 5).
+  - **Barras (PV, PE):** o máximo pode ser uma fórmula (ex.: `@pv_maximo`) e muda sozinho. Barra cheia continua cheia quando o máximo sobe. Na ficha padrão, PV e PE já vêm ligados ao PV máximo e ao PE máximo.
+  - **Bolinhas:** a quantidade pode ser uma fórmula (ex.: `@nivel`).
+  - **Perícias:** os pontos máximos podem ser uma fórmula (ex.: `(@intelecto + 6) * 5`).
 
 ## 1.4.2
 
