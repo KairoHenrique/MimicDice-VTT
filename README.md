@@ -104,11 +104,15 @@ Se a fórmula estiver errada, a rolagem não acontece e o app avisa: confira os 
 
 ```mermaid
 flowchart TD
-    A["Mestre abre o app desktop"] --> B["Launcher: cria ou abre a sala"]
-    B --> C["Servidor local inicia<br/>Express + Socket.IO"]
-    C --> D["Link de convite<br/>Wi-Fi/LAN ou Radmin VPN"]
-    D --> E["Jogadores abrem o link<br/>no navegador"]
-    E --> F["Mesa no navegador"]
+    subgraph Abrir["Abrindo a mesa"]
+        direction LR
+        A["Mestre abre<br/>o app desktop"] --> B["Launcher cria<br/>ou abre a sala"]
+        B --> C["Servidor local<br/>Express + Socket.IO"]
+        C --> D["Link de convite<br/>LAN ou Radmin VPN"]
+        D --> E["Jogadores abrem<br/>no navegador"]
+    end
+
+    Abrir --> F["Mesa no navegador"]
 
     F --> G["Mapa PixiJS<br/>camadas, visão e névoa"]
     F --> H["Fichas com fórmulas"]
