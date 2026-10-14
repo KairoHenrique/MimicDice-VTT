@@ -43,7 +43,10 @@ export const serverApi = {
     }
   },
   setup: (body: { worldTitle: string; gameMasterName: string; gameMasterPassword: string }) => sendJson<SessionResponse>("POST", "/api/setup", body),
-  join: (body: { userId: string; password: string }) => sendJson<SessionResponse>("POST", "/api/join", body),
+  join: (body: { userId: string; password: string; remember?: boolean }) => sendJson<SessionResponse>("POST", "/api/join", body),
+  rememberedGameMaster: () => getJson<{ userId: string | null }>("/api/join/remembered"),
+  joinRemembered: () => sendJson<SessionResponse>("POST", "/api/join/remembered"),
+  forgetRemembered: () => sendJson<void>("POST", "/api/join/forget"),
   joinAsPlayer: (body: { name: string }) => sendJson<SessionResponse>("POST", "/api/join/player", body),
   logout: () => sendJson<void>("POST", "/api/logout"),
 };

@@ -20,6 +20,13 @@ export abstract class DocumentDirectory extends DomApplication {
     window: { frame: false, positioned: false, title: "", icon: false, controls: [], minimizable: false, resizable: false, contentTag: "section", contentClasses: [] },
   };
 
+  /** Players only get a tab when they can create something there or have something shared with them to see. */
+  static isAvailableToUser(): boolean {
+    if (game.user.isGM) return true;
+    const collection = game.collections.get(this.documentName);
+    return Boolean(collection?.documentClass?.canUserCreate?.(game.user)) || (collection?.size ?? 0) > 0;
+  }
+
   constructor() {
     const directoryClass = new.target as unknown as typeof DocumentDirectory;
     super({ id: directoryClass.tabName });
@@ -174,6 +181,11 @@ export class SceneDirectory extends DocumentDirectory {
   static override tabName = "scenes";
   static override tabLabel = "Cenas";
   static override tabIcon = "fa-solid fa-map";
+
+  /** Players are moved between scenes by the GM, so the list would only offer actions they cannot take. */
+  static override isAvailableToUser(): boolean {
+    return game.user.isGM;
+  }
 
   protected override onEntryClick(entry: any): void {
     void entry.view();

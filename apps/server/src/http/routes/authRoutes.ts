@@ -5,11 +5,12 @@ import {
   playerJoinRequestSchema,
   setupRequestSchema,
   USER_ROLES,
+  type RememberedJoinResponse,
   type ServerStatusResponse,
   type SessionResponse,
 } from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
-import { clearSessionCookie, readSessionToken, writeSessionCookie } from "../../security/cookies";
+import { clearRememberCookie, clearSessionCookie, readRememberToken, readSessionToken, writeRememberCookie, writeSessionCookie } from "../../security/cookies";
 import { isLoopbackAddress, maskAddress } from "../../security/networkAddress";
 import type { ServerContext } from "../../ServerContext";
 import { authenticatedState, parseRequestBody, requireActiveWorld, requireSession } from "../requestGuards";
@@ -82,7 +83,37 @@ export function createAuthRoutes(context: ServerContext): Router {
     }
     const session = context.sessions.create(user._id);
     writeSessionCookie(response, session.token, context.config.sessionLifetimeMs);
+    if (joinRequest.remember) {
+      const device = await context.rememberedDevices.remember(user._id, world.manifest.id);
+      writeRememberCookie(response, device.token, context.rememberedDevices.lifetimeMs);
+    }
     response.json({ userId: user._id } satisfies SessionResponse);
+  });
+
+  router.get("/join/remembered", (request, response) => {
+    const world = requireActiveWorld(context);
+    const userId = context.rememberedDevices.peek(readRememberToken(request.headers.cookie), world.manifest.id);
+    response.json({ userId: userId && world.users.isGameMaster(userId) ? userId : null } satisfies RememberedJoinResponse);
+  });
+
+  router.post("/join/remembered", credentialRateLimiter, async (request, response) => {
+    const world = requireActiveWorld(context);
+    const rotated = await context.rememberedDevices.rotate(readRememberToken(request.headers.cookie), world.manifest.id);
+    if (!rotated || !world.users.isGameMaster(rotated.userId)) {
+      if (rotated) await context.rememberedDevices.forgetUser(rotated.userId);
+      clearRememberCookie(response);
+      throw HttpError.unauthorized("A senha lembrada expirou. Digite a senha de novo.");
+    }
+    const session = context.sessions.create(rotated.userId);
+    writeSessionCookie(response, session.token, context.config.sessionLifetimeMs);
+    writeRememberCookie(response, rotated.device.token, context.rememberedDevices.lifetimeMs);
+    response.json({ userId: rotated.userId } satisfies SessionResponse);
+  });
+
+  router.post("/join/forget", async (request, response) => {
+    await context.rememberedDevices.forget(readRememberToken(request.headers.cookie));
+    clearRememberCookie(response);
+    response.status(204).end();
   });
 
   router.post("/join/player", playerJoinRateLimiter, async (request, response) => {

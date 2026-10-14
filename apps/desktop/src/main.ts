@@ -1,14 +1,17 @@
 import path from "node:path";
+import { randomBytes } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, renameSync } from "node:fs";
 import { app, clipboard, ipcMain, session, shell, type IpcMainInvokeEvent } from "electron";
 import { DEFAULT_SERVER_PORT } from "@tabbletop/protocol";
 import { addFirewallRule, getFirewallStatus, type FirewallStatus } from "./firewall";
 import { listInviteAddresses } from "./inviteAddresses";
 import { IPC_CHANNELS, type LauncherState, type ServerState } from "./ipcChannels";
+import { RoomsClient } from "./RoomsClient";
 import { ServerProcess } from "./ServerProcess";
 import { WindowManager } from "./WindowManager";
 
 const MAX_CLIPBOARD_LENGTH = 500;
+const LAUNCHER_TOKEN_BYTES = 32;
 const ALLOWED_PERMISSIONS = new Set(["clipboard-sanitized-write", "fullscreen"]);
 
 function resolvePort(): number {
@@ -48,12 +51,15 @@ function resolvePaths() {
 class DesktopApplication {
   readonly #port = resolvePort();
   readonly #paths = resolvePaths();
+  readonly #launcherToken = randomBytes(LAUNCHER_TOKEN_BYTES).toString("base64url");
+  readonly #rooms = new RoomsClient(this.#port, this.#launcherToken);
   readonly #server = new ServerProcess({
     entryPath: this.#paths.serverEntry,
     port: this.#port,
     dataPath: this.#paths.dataPath,
     clientDistPath: this.#paths.clientDist,
     logFilePath: this.#paths.serverLog,
+    launcherToken: this.#launcherToken,
   });
   readonly #windows = new WindowManager({ launcherHtml: this.#paths.launcherHtml, preload: this.#paths.preload, tableUrl: this.#server.localUrl });
   #serverState: ServerState = "starting";
@@ -123,6 +129,25 @@ class DesktopApplication {
     });
     handle(IPC_CHANNELS.openDataFolder, async () => {
       await shell.openPath(this.#paths.dataPath);
+    });
+    this.#registerRoomHandlers(handle);
+  }
+
+  /** Rooms are managed from the launcher; opening one also brings up (or reloads into) the table window. */
+  #registerRoomHandlers(handle: (channel: string, listener: (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown) => void): void {
+    const serverDown = { ok: false, error: "O servidor ainda não está ligado." } as const;
+    handle(IPC_CHANNELS.listRooms, () => (this.#serverState === "running" ? this.#rooms.list() : serverDown));
+    handle(IPC_CHANNELS.createRoom, async (_event, title) => {
+      if (this.#serverState !== "running") return serverDown;
+      const result = await this.#rooms.create(title);
+      if (result.ok) this.#windows.openTable();
+      return result;
+    });
+    handle(IPC_CHANNELS.openRoom, async (_event, worldId) => {
+      if (this.#serverState !== "running") return serverDown;
+      const result = await this.#rooms.activate(worldId);
+      if (result.ok) this.#windows.openTable();
+      return result;
     });
   }
 

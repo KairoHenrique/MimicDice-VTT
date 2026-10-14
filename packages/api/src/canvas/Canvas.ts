@@ -215,6 +215,7 @@ export class Canvas {
     Hooks.callAll("canvasTearDown", this);
     this.ready = false;
     this.hud.closeMenu();
+    this.hud.cancelMoveConfirmation();
     this.activeLayer?.deactivate();
     this.activeLayer = null;
     for (const layer of [...this.layers].reverse()) await layer.tearDown();
@@ -239,22 +240,29 @@ export class Canvas {
   async animatePan({ x, y, scale, duration = PAN_ANIMATION_MS }: { x?: number; y?: number; scale?: number; duration?: number } = {}): Promise<void> {
     const stage = this.stage;
     if (!stage || !this.app) return;
+    this.#stopPanAnimation?.();
     const from = { x: stage.pivot.x, y: stage.pivot.y, scale: stage.scale.x };
     const to = { x: x ?? from.x, y: y ?? from.y, scale: scale ?? from.scale };
     const startedAt = performance.now();
     await new Promise<void>((resolve) => {
+      const stop = () => {
+        this.app?.ticker.remove(step);
+        if (this.#stopPanAnimation === stop) this.#stopPanAnimation = null;
+        resolve();
+      };
       const step = () => {
         const progress = Math.min((performance.now() - startedAt) / Math.max(duration, 1), 1);
         const eased = progress * (2 - progress);
         this.pan({ x: from.x + (to.x - from.x) * eased, y: from.y + (to.y - from.y) * eased, scale: from.scale + (to.scale - from.scale) * eased });
-        if (progress >= 1) {
-          this.app?.ticker.remove(step);
-          resolve();
-        }
+        if (progress >= 1) stop();
       };
+      this.#stopPanAnimation = stop;
       this.app?.ticker.add(step);
     });
   }
+
+  /** A newer pan replaces one still running, so the last requested view always wins. */
+  #stopPanAnimation: (() => void) | null = null;
 
   #panToInitialView(scene: any): void {
     const dimensions = this.dimensions as SceneDimensions;

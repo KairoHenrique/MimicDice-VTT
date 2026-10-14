@@ -13,7 +13,7 @@ import { CompendiumDirectory, DocumentDirectory, ItemDirectory, JournalDirectory
 import { Sidebar } from "../ui/sidebar/Sidebar";
 import { registerCoreSettings, readPreferredLanguage } from "./coreSettings";
 import { registerCoreSheets } from "./coreSheets";
-import { controlOwnTokenOnSceneLoad, listenForPullToScene, registerTableKeybindings } from "./tableControls";
+import { controlOwnTokenOnSceneLoad, listenForPullToScene, registerTableKeybindings, syncClientPreferences } from "./tableControls";
 
 const SNAPSHOT_TIMEOUT_MS = 15_000;
 
@@ -99,6 +99,7 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   registerTableKeybindings();
   listenForPullToScene(socket);
   controlOwnTokenOnSceneLoad();
+  syncClientPreferences();
   game.keybindings.activateListeners();
   await game.initialize();
 }

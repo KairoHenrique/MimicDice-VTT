@@ -23,6 +23,17 @@
         <button id="open-table" class="primary" type="button" disabled>Abrir a mesa (Mestre)</button>
       </section>
 
+      <section class="card rooms-card">
+        <h2>Salas (RPGs)</h2>
+        <p class="hint">Cada sala é uma campanha separada, com cenas, fichas e jogadores próprios. Quem estiver na mesa é recarregado ao trocar.</p>
+        <ul id="room-list" class="room-list"></ul>
+        <p id="room-error" class="error" hidden></p>
+        <form id="room-create" class="room-create">
+          <input id="room-title" type="text" maxlength="80" required placeholder="Nome da nova sala (ex.: Mesa de Terror)" />
+          <button type="submit">Criar e abrir</button>
+        </form>
+      </section>
+
       <section class="card">
         <h2>Convide seus amigos</h2>
         <p class="hint">Envie um destes links. Quem usa Radmin VPN precisa estar na mesma rede Radmin que você.</p>

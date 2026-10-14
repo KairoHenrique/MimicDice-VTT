@@ -6,8 +6,8 @@ import type { Point, Rectangle } from "../geometry";
 import { colorToNumber, loadTexture } from "../textures";
 import { PlaceableObject } from "./PlaceableObject";
 
-const MOVE_PIXELS_PER_SECOND = 900;
-const MAX_MOVE_DURATION_MS = 900;
+const MOVE_SQUARES_PER_SECOND = 6;
+const MAX_MOVE_DURATION_MS = 2_000;
 const DISPOSITION_COLORS: Record<number, number> = { [-2]: 0xa612d4, [-1]: 0xe72124, 0: 0xf1d836, 1: 0x43dfdf };
 
 interface MoveAnimation {
@@ -165,7 +165,8 @@ export class Token extends PlaceableObject {
     const distance = Math.hypot(destination.x - from.x, destination.y - from.y);
     if (distance < 1) return;
     this.#stopAnimation();
-    const duration = Math.min((distance / MOVE_PIXELS_PER_SECOND) * 1000, MAX_MOVE_DURATION_MS);
+    const pixelsPerSecond = MOVE_SQUARES_PER_SECOND * (currentCanvas()?.grid?.size || 100);
+    const duration = Math.min((distance / pixelsPerSecond) * 1000, MAX_MOVE_DURATION_MS);
     this.#animation = { from, to: destination, startedAt: performance.now(), duration };
     currentCanvas()?.app?.ticker?.add(this.#animationTick);
   }

@@ -1,7 +1,7 @@
 import type { ApplicationConfiguration } from "@tabbletop/api";
 import { USER_ROLES, type PublicUserRecord } from "@tabbletop/protocol";
 import { getJson, sendJson } from "../net/apiClient";
-import { formErrorSlot, h } from "../views/dom";
+import { formErrorSlot, h, revealablePassword } from "../views/dom";
 import { assignPlayerOwner } from "./actors/actorAssignment";
 import { actorRole } from "./actors/actorRoles";
 import { DomApplication } from "./DomApplication";
@@ -73,7 +73,7 @@ export class UserManagement extends DomApplication {
   #buildCreateForm(): HTMLElement {
     const errorSlot = formErrorSlot();
     const nameInput = h("input", { placeholder: "Nome", required: true, maxlength: 40 });
-    const passwordInput = h("input", { type: "password", placeholder: "Senha do mestre (mín. 8)", required: true, minlength: 8, maxlength: 128, autocomplete: "new-password" });
+    const passwordInput = h("input", { type: "password", placeholder: "Senha do mestre", required: true, maxlength: 128, autocomplete: "new-password" });
     const createButton = h("button", { type: "button" }, h("i", { class: "fas fa-user-plus" }), " Criar mestre");
     createButton.addEventListener("click", async () => {
       errorSlot.clear();
@@ -93,7 +93,7 @@ export class UserManagement extends DomApplication {
       { class: "create-user" },
       h("h3", {}, "Outro mestre"),
       h("p", { class: "hint" }, "Jogadores não precisam ser cadastrados: eles digitam o nome na tela de entrada."),
-      h("div", { class: "form-group" }, nameInput, passwordInput, createButton),
+      h("div", { class: "form-group" }, nameInput, revealablePassword(passwordInput), createButton),
       errorSlot.element,
     );
   }
@@ -111,14 +111,21 @@ export class UserManagement extends DomApplication {
   }
 
   async #askGameMasterPassword(user: PublicUserRecord): Promise<{ role: number; password: string } | null> {
+    const passwordInput = h("input", { type: "password", name: "password", maxlength: 128, required: true, autocomplete: "new-password" });
+    const content = h(
+      "div",
+      {},
+      h("p", {}, h("strong", {}, user.name), " vai ver e editar tudo. Defina a senha que ele vai usar para entrar:"),
+      revealablePassword(passwordInput),
+    );
     const password = await foundry.applications.api.DialogV2.prompt({
       window: { title: "Tornar mestre" },
-      content: `<p><strong>${foundry.utils.escapeHTML(user.name)}</strong> vai ver e editar tudo. Defina a senha que ele vai usar para entrar:</p><input type="password" name="password" minlength="8" maxlength="128" required autocomplete="new-password">`,
-      ok: { label: "Tornar mestre", callback: (_event: Event, button: HTMLButtonElement) => (button.form?.elements.namedItem("password") as HTMLInputElement | null)?.value ?? "" },
+      content,
+      ok: { label: "Tornar mestre", callback: () => passwordInput.value },
       rejectClose: false,
     });
-    if (typeof password !== "string" || password.length < 8) {
-      if (typeof password === "string") ui.notifications.warn("A senha precisa ter pelo menos 8 caracteres.");
+    if (typeof password !== "string" || password.length === 0) {
+      if (typeof password === "string") ui.notifications.warn("Digite uma senha para o novo mestre.");
       return null;
     }
     return { role: USER_ROLES.GAMEMASTER, password };

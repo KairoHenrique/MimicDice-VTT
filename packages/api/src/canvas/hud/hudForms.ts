@@ -11,6 +11,22 @@ export interface FormFieldSpec {
   step?: number;
   maxLength?: number;
   choices?: Array<{ value: string; label: string }>;
+  /** Text fields only: values offered while typing; anything else may still be entered. */
+  suggestions?: string[];
+}
+
+let datalistSequence = 0;
+
+function suggestionList(input: HTMLInputElement, suggestions: string[]): HTMLDataListElement {
+  const datalist = document.createElement("datalist");
+  datalist.id = `canvas-hud-suggestions-${++datalistSequence}`;
+  for (const suggestion of suggestions) {
+    const option = document.createElement("option");
+    option.value = suggestion;
+    datalist.append(option);
+  }
+  input.setAttribute("list", datalist.id);
+  return datalist;
 }
 
 const DEFAULT_MAX_TEXT = 500;
@@ -66,6 +82,7 @@ export function buildForm(fields: FormFieldSpec[]): HTMLFormElement {
       group.classList.add("image-field");
       group.append(browseButton(input as HTMLInputElement));
     }
+    if (field.type === "text" && field.suggestions?.length) group.append(suggestionList(input as HTMLInputElement, field.suggestions));
     form.append(group);
   }
   return form;

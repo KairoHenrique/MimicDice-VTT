@@ -118,6 +118,8 @@ dialog.application {
   z-index: 50;
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
+  max-width: calc(100vw - 368px);
   gap: 4px;
   align-items: center;
   padding: 6px;
@@ -156,6 +158,107 @@ dialog.application {
   font-weight: 600;
   padding: 0 10px;
   letter-spacing: -0.01em;
+}
+
+.host-toolbar .toolbar-collapse {
+  width: 32px;
+  padding: 0;
+}
+
+.client-configuration .window-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.client-configuration .config-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.client-configuration .config-tabs .item.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.client-configuration .config-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.client-configuration .config-group h3 {
+  margin: 12px 0 4px;
+  font-size: 0.95em;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.client-configuration .config-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.client-configuration .config-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.client-configuration .config-label .hint {
+  margin: 2px 0 0;
+}
+
+.client-configuration .config-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: 60%;
+}
+
+.client-configuration .setting-range {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.client-configuration .key-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+
+.client-configuration .key-chip kbd {
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.client-configuration .key-chip button {
+  min-height: 26px;
+  width: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.client-configuration button.capturing {
+  border-color: var(--ring);
+  box-shadow: var(--focus-ring);
 }
 
 .players-list {
@@ -635,6 +738,17 @@ button.icon {
 .rolls-section legend {
   padding: 0 6px;
   font-weight: 600;
+}
+
+.items-quick-add {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.items-quick-add input {
+  flex: 1;
+  min-width: 0;
 }
 
 .system-field label {

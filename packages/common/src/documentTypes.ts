@@ -166,7 +166,7 @@ export const EMBEDDED_DOCUMENT_TYPES: Readonly<Record<string, DocumentTypeDefini
   Token: scenePlaceable("Token", "tokens", {
     gmOnlyWhenField: "hidden",
     ownershipFromActorField: "actorId",
-    gmOnlyFields: ["actorId", "actorLink", "hidden", "disposition"],
+    gmOnlyFields: ["actorId", "actorLink", "hidden", "disposition", "locked"],
   }),
   Tile: scenePlaceable("Tile", "tiles", { gmOnlyWhenField: "hidden" }),
   Wall: scenePlaceable("Wall", "walls"),

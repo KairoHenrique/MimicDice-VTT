@@ -1,11 +1,25 @@
 import type * as PIXI from "pixi.js";
-import type { PlainObject } from "@tabbletop/common";
+import { DOOR_KEY_FLAG, DOOR_KEY_FLAG_SCOPE, MAX_DOOR_KEY_NAME_LENGTH, type PlainObject } from "@tabbletop/common";
 import { DialogV2 } from "../../applications/DialogV2";
 import { CONST } from "../../constants";
-import { currentGame } from "../../runtime";
+import { currentGame, currentUi } from "../../runtime";
 import type { Token } from "../placeables/Token";
-import type { AmbientLight, Note, Wall } from "../placeables/simplePlaceables";
+import type { AmbientLight, Note, Tile, Wall } from "../placeables/simplePlaceables";
 import { buildForm, readForm, type FormFieldSpec } from "./hudForms";
+
+const MAX_ITEM_SUGGESTIONS = 200;
+
+/** Item names from the Items directory and from every character's inventory, for the door key picker. */
+function knownItemNames(): string[] {
+  const game = currentGame();
+  const names = new Set<string>();
+  const addName = (name: unknown) => {
+    if (typeof name === "string" && name.trim()) names.add(name.trim());
+  };
+  for (const item of game?.items?.contents ?? []) addName(item.name);
+  for (const actor of game?.actors?.contents ?? []) for (const item of actor.items?.values?.() ?? []) addName(item.name);
+  return Array.from(names).sort((left, right) => left.localeCompare(right, "pt-BR")).slice(0, MAX_ITEM_SUGGESTIONS);
+}
 
 interface MenuEntry {
   label: string;
@@ -32,6 +46,58 @@ export class CanvasHud {
   /** Menus are positioned once at the pointer and closed on pan, so there is nothing to realign. */
   align(): void {}
 
+  #moveConfirmation: { element: HTMLElement; settle: (confirmed: boolean) => void } | null = null;
+
+  /** Asks whether to walk the previewed path; Enter confirms, Escape cancels. Resolves false if replaced. */
+  confirmMove(client: { x: number; y: number }, summary: string): Promise<boolean> {
+    this.cancelMoveConfirmation();
+    return new Promise<boolean>((resolve) => {
+      const element = document.createElement("div");
+      element.className = "canvas-move-confirm";
+      element.setAttribute("role", "dialog");
+      const text = document.createElement("span");
+      text.textContent = summary;
+      const confirm = this.#confirmButton("Mover", "fa-solid fa-person-walking", "primary");
+      const cancel = this.#confirmButton("Cancelar", "fa-solid fa-xmark", "");
+      element.append(text, confirm, cancel);
+      element.style.left = `${Math.round(client.x)}px`;
+      element.style.top = `${Math.round(client.y)}px`;
+      const onKey = (event: KeyboardEvent) => {
+        if (event.key === "Enter") settle(true);
+        else if (event.key === "Escape") settle(false);
+        else return;
+        event.preventDefault();
+        event.stopPropagation();
+      };
+      const settle = (confirmed: boolean) => {
+        window.removeEventListener("keydown", onKey, true);
+        element.remove();
+        if (this.#moveConfirmation?.element === element) this.#moveConfirmation = null;
+        resolve(confirmed);
+      };
+      confirm.addEventListener("click", () => settle(true));
+      cancel.addEventListener("click", () => settle(false));
+      window.addEventListener("keydown", onKey, true);
+      document.body.append(element);
+      this.#moveConfirmation = { element, settle };
+      confirm.focus();
+    });
+  }
+
+  cancelMoveConfirmation(): void {
+    this.#moveConfirmation?.settle(false);
+  }
+
+  #confirmButton(label: string, icon: string, className: string): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    if (className) button.className = className;
+    const glyph = document.createElement("i");
+    glyph.className = icon;
+    button.append(glyph, document.createTextNode(` ${label}`));
+    return button;
+  }
+
   showTokenMenu(token: Token, event: PIXI.FederatedPointerEvent): void {
     const user = currentGame()?.user;
     const entries: MenuEntry[] = [];
@@ -39,6 +105,7 @@ export class CanvasHud {
     if (user?.isGM) {
       const hidden = token.document.hidden === true;
       entries.push({ label: hidden ? "Revelar aos jogadores" : "Ocultar dos jogadores", icon: hidden ? "fa-solid fa-eye" : "fa-solid fa-eye-slash", onSelect: () => token.document.update({ hidden: !hidden }) });
+      entries.push(this.#pinEntry(token.document));
       entries.push({ label: "Configurar token", icon: "fa-solid fa-gear", onSelect: () => this.configureToken(token) });
     }
     if (token.document.canUserModify?.(user, "delete") && (user?.isGM || user?.can?.("TOKEN_DELETE"))) {
@@ -47,18 +114,48 @@ export class CanvasHud {
     this.#openMenu(entries, event);
   }
 
+  showTileMenu(tile: Tile, event: PIXI.FederatedPointerEvent): void {
+    if (!currentGame()?.user?.isGM) return;
+    this.#openMenu([this.#pinEntry(tile.document), { label: "Excluir tile", icon: "fa-solid fa-trash", onSelect: () => tile.document.delete() }], event);
+  }
+
   showWallMenu(wall: Wall, event: PIXI.FederatedPointerEvent): void {
     if (!currentGame()?.user?.isGM) return;
     const update = (changes: PlainObject) => wall.document.update(changes);
-    const locked = Number(wall.document.ds) === CONST.WALL_DOOR_STATES.LOCKED;
-    const entries: MenuEntry[] = [
-      { label: "Parede comum", icon: "fa-solid fa-grip-lines-vertical", onSelect: () => update({ door: CONST.WALL_DOOR_TYPES.NONE, ds: 0 }) },
-      { label: "Porta", icon: "fa-solid fa-door-closed", onSelect: () => update({ door: CONST.WALL_DOOR_TYPES.DOOR }) },
-      { label: "Porta secreta", icon: "fa-solid fa-user-secret", onSelect: () => update({ door: CONST.WALL_DOOR_TYPES.SECRET }) },
-    ];
-    if (wall.isDoor) entries.push({ label: locked ? "Destrancar" : "Trancar", icon: locked ? "fa-solid fa-lock-open" : "fa-solid fa-lock", onSelect: () => update({ ds: locked ? CONST.WALL_DOOR_STATES.CLOSED : CONST.WALL_DOOR_STATES.LOCKED }) });
-    entries.push({ label: "Excluir parede", icon: "fa-solid fa-trash", onSelect: () => wall.document.delete() });
+    const entries: MenuEntry[] = wall.isDoor
+      ? [
+          { label: wall.isLocked ? "Destrancar" : "Trancar", icon: wall.isLocked ? "fa-solid fa-lock-open" : "fa-solid fa-lock", onSelect: () => update({ ds: wall.isLocked ? CONST.WALL_DOOR_STATES.CLOSED : CONST.WALL_DOOR_STATES.LOCKED }) },
+          { label: wall.requiredItem ? `Chave: ${wall.requiredItem}` : "Exigir item para abrir", icon: "fa-solid fa-key", onSelect: () => this.configureDoorKey(wall) },
+          { label: "Virar parede comum", icon: "fa-solid fa-grip-lines-vertical", onSelect: () => update({ door: CONST.WALL_DOOR_TYPES.NONE, ds: CONST.WALL_DOOR_STATES.CLOSED }) },
+        ]
+      : [{ label: "Virar porta", icon: "fa-solid fa-door-closed", onSelect: () => update({ door: CONST.WALL_DOOR_TYPES.DOOR, ds: CONST.WALL_DOOR_STATES.CLOSED }) }];
+    entries.push({ label: wall.isDoor ? "Excluir porta" : "Excluir parede", icon: "fa-solid fa-trash", onSelect: () => wall.document.delete() });
     this.#openMenu(entries, event);
+  }
+
+  /** Links a door to an item by name: any character carrying an item with that name may open it. */
+  async configureDoorKey(wall: Wall): Promise<void> {
+    if (!currentGame()?.user?.isGM) return;
+    const values = await this.#formDialog("Item que abre a porta", [
+      { name: "requiredItem", label: "Nome do item (vazio = qualquer um abre)", type: "text", value: wall.requiredItem ?? "", maxLength: MAX_DOOR_KEY_NAME_LENGTH, suggestions: knownItemNames() },
+    ]);
+    if (!values) return;
+    const requiredItem = typeof values.requiredItem === "string" ? values.requiredItem.trim() : "";
+    await wall.document.update({ [`flags.${DOOR_KEY_FLAG_SCOPE}.${DOOR_KEY_FLAG}`]: requiredItem });
+    currentUi()?.notifications?.info(requiredItem ? `Só abre quem carregar "${requiredItem}".` : "Qualquer jogador pode abrir esta porta.");
+  }
+
+  /** GM-only: a pinned object cannot be dragged by anyone until the GM unpins it. */
+  #pinEntry(document: any): MenuEntry {
+    const pinned = document.locked === true;
+    return {
+      label: pinned ? "Destravar posição" : "Travar posição",
+      icon: pinned ? "fa-solid fa-unlock" : "fa-solid fa-thumbtack",
+      onSelect: async () => {
+        await document.update({ locked: !pinned });
+        currentUi()?.notifications?.info(pinned ? "Objeto liberado para mover." : "Objeto travado no lugar.");
+      },
+    };
   }
 
   async configureToken(token: Token): Promise<void> {

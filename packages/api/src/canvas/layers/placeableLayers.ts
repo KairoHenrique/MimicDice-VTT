@@ -44,6 +44,17 @@ export class WallsLayer extends PlaceablesLayer {
   static override documentName = "Wall";
   static override layerOptions = { name: "walls", zIndex: 700 };
 
+  /** Door controls answer clicks from every layer; each wall line only listens while this layer is active. */
+  protected override async _draw(): Promise<void> {
+    await super._draw();
+    this.objects.interactiveChildren = true;
+  }
+
+  protected override _deactivate(): void {
+    super._deactivate();
+    this.objects.interactiveChildren = true;
+  }
+
   checkCollision(ray: { A: Point; B: Point }, { type = "move", mode = "any" }: { type?: "sight" | "light" | "move" | "sound"; mode?: string } = {}): boolean | Point[] {
     return testWallCollision(ray.A, ray.B, { type, mode });
   }

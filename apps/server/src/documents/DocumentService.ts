@@ -9,6 +9,7 @@ import { extractOperationOptions, type DocumentSource, type ModifyDocumentReques
 import { HttpError } from "../errors/HttpError";
 import type { DocumentActor, DocumentPermissionPolicy } from "./DocumentPermissionPolicy";
 import type { DocumentSourceValidator } from "./DocumentSourceValidator";
+import type { DoorAccessPolicy } from "./DoorAccessPolicy";
 import type { DocumentStore } from "./DocumentStore";
 import { embeddedCollection, resolveEmbeddedTarget, resolveParentChain, type DocumentNode } from "./documentTree";
 
@@ -46,6 +47,7 @@ export class DocumentService {
     stores: readonly DocumentStore[],
     private readonly validator: DocumentSourceValidator,
     private readonly permissions: DocumentPermissionPolicy,
+    private readonly doorAccess: DoorAccessPolicy,
   ) {
     this.#storesByCollection = new Map(stores.map((store) => [store.collectionName, store]));
   }
@@ -118,7 +120,9 @@ export class DocumentService {
   #update(target: OperationTarget, updates: PlainObject[], actor: DocumentActor, author: { userId: string; isGameMaster: boolean }): AffectedDocument[] {
     const prepared = updates.map((rawChanges) => {
       const existing = this.#requireExisting(target, rawChanges._id);
-      this.permissions.assertOwner(actor, target.definition, existing, target.ancestors);
+      if (this.doorAccess.isDoorOperation(target.definition, existing, rawChanges)) this.doorAccess.assertMayOperateDoor(actor, existing);
+      else this.permissions.assertOwner(actor, target.definition, existing, target.ancestors);
+      this.permissions.assertNotPinned(actor, existing, rawChanges);
       const result = this.validator.prepareUpdate(target.definition, existing, rawChanges, author);
       this.permissions.assertMayChangeOwnership(actor, result.changes);
       return { before: deepClone(existing), after: result.source, changes: result.changes };

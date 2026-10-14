@@ -1,6 +1,6 @@
 import { PRODUCT_NAME } from "@tabbletop/protocol";
 import { serverApi } from "../net/apiClient";
-import { brandMark, formErrorSlot, h } from "./dom";
+import { brandMark, formErrorSlot, h, revealablePassword } from "./dom";
 
 export function renderSetupView(root: HTMLElement, isLocalRequest: boolean, onConfigured: () => void): void {
   if (!isLocalRequest) {
@@ -13,8 +13,8 @@ export function renderSetupView(root: HTMLElement, isLocalRequest: boolean, onCo
   const errorSlot = formErrorSlot();
   const worldTitle = h("input", { name: "worldTitle", required: true, maxlength: 80, placeholder: "Ex.: Campanha de sexta" });
   const gameMasterName = h("input", { name: "gameMasterName", required: true, maxlength: 40, autocomplete: "username" });
-  const password = h("input", { name: "password", type: "password", required: true, minlength: 8, maxlength: 128, autocomplete: "new-password" });
-  const passwordConfirmation = h("input", { name: "passwordConfirmation", type: "password", required: true, minlength: 8, maxlength: 128, autocomplete: "new-password" });
+  const password = h("input", { name: "password", type: "password", required: true, maxlength: 128, autocomplete: "new-password" });
+  const passwordConfirmation = h("input", { name: "passwordConfirmation", type: "password", required: true, maxlength: 128, autocomplete: "new-password" });
   const submitButton = h("button", { type: "submit" }, "Criar mesa");
 
   const form = h(
@@ -25,8 +25,8 @@ export function renderSetupView(root: HTMLElement, isLocalRequest: boolean, onCo
     h("p", { class: "hint" }, "Isso só aparece no PC que hospeda. Você será o mestre."),
     h("label", {}, "Nome do mundo", worldTitle),
     h("label", {}, "Seu nome (mestre)", gameMasterName),
-    h("label", {}, "Senha (mínimo 8 caracteres)", password),
-    h("label", {}, "Repita a senha", passwordConfirmation),
+    h("label", {}, "Senha do mestre (você escolhe)", revealablePassword(password)),
+    h("label", {}, "Repita a senha", revealablePassword(passwordConfirmation)),
     errorSlot.element,
     submitButton,
   );

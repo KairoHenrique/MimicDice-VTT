@@ -14,6 +14,8 @@ const CLICK_TOLERANCE_PX = 4;
 const FREEHAND_SAMPLE_PX = 8;
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 3;
+const GHOST_ALPHA = 0.6;
+const CONFIRM_OFFSET_PX = 18;
 
 type Session =
   | { kind: "pan"; startClient: Point; startPivot: Point }
@@ -22,12 +24,18 @@ type Session =
   | { kind: "create"; origin: Point; tool: CreationTool; points: number[] }
   | { kind: "move"; origin: Point; objects: PlaceableObject[] };
 
+export type MovePathMode = "modifier" | "always" | "never";
+
 /** Pointer, wheel, keyboard and drop handling for the board. One drag session is active at a time. */
 export class CanvasInteraction {
   readonly overlay = new PIXI.Graphics();
   readonly label = new PIXI.Text("", new PIXI.TextStyle({ fontFamily: "Signika, Arial, sans-serif", fontSize: 28, fill: 0xffffff, stroke: 0x111111, strokeThickness: 5 }));
   #session: Session | null = null;
   #lastWorld: Point = { x: 0, y: 0 };
+  /** When a token drop shows the path and waits for confirmation: only while the path key is held, always, or never. */
+  movePathMode: MovePathMode = "modifier";
+  /** Kept current by the client's rebindable "path key" keybinding. */
+  pathModifierHeld = false;
   #listeners: Array<[EventTarget, string, EventListener]> = [];
 
   constructor(private readonly canvas: any) {}
@@ -46,6 +54,14 @@ export class CanvasInteraction {
     this.#listen(board, "dragover", (event) => event.preventDefault());
     this.#listen(board, "drop", (event) => void this.#onDrop(event as DragEvent));
     this.#listen(window, "keydown", (event) => this.#onKeyDown(event as KeyboardEvent));
+    this.#listen(window, "blur", () => {
+      this.pathModifierHeld = false;
+    });
+  }
+
+  get #pathModeActive(): boolean {
+    if (this.movePathMode === "always") return true;
+    return this.movePathMode === "modifier" && this.pathModifierHeld;
   }
 
   detach(): void {
@@ -85,6 +101,7 @@ export class CanvasInteraction {
       return;
     }
     if (event.button !== 0) return;
+    this.canvas.hud.cancelMoveConfirmation();
     const layerName = this.canvas.activeLayer?.name ?? "";
     const tool = CREATION_TOOLS[layerName]?.[this.#activeTool()];
     if (tool && this.#mayCreate(tool.documentName)) {
@@ -117,6 +134,8 @@ export class CanvasInteraction {
       }
       case "move":
         for (const object of session.objects) object.previewOffset(world.x - session.origin.x, world.y - session.origin.y);
+        if (this.#pathModeActive) this.#previewTokenPath(session.objects[0], world.x - session.origin.x, world.y - session.origin.y, !event.shiftKey);
+        else this.#clearOverlay();
         break;
       case "create":
         this.#previewCreation(session, world, event.shiftKey);
@@ -143,6 +162,34 @@ export class CanvasInteraction {
       else if (session.points.length > 4 && session.tool.build(origin, destination, this.#creationContext(false), session.points)?.shape?.type === "p") graphics.drawPolygon(session.points);
       else graphics.beginFill(0x3b82f6, 0.15).drawRect(Math.min(origin.x, destination.x), Math.min(origin.y, destination.y), Math.abs(destination.x - origin.x), Math.abs(destination.y - origin.y)).endFill();
     });
+  }
+
+  /** Path from the token's current center to where it would land, with the distance it walks. */
+  #previewTokenPath(object: PlaceableObject | undefined, deltaX: number, deltaY: number, snap: boolean): { label: string; end: Point } | null {
+    if (!object || object.document.documentName !== "Token") return null;
+    const token = object as Token;
+    const update = token.getMoveUpdate(deltaX, deltaY, snap);
+    const start = { x: token.document.x + token.w / 2, y: token.document.y + token.h / 2 };
+    const end = { x: Number(update.x) + token.w / 2, y: Number(update.y) + token.h / 2 };
+    const label = this.#pathLabel(start, end);
+    const color = colorToNumber(currentGame()?.user?.color, 0x3b82f6);
+    this.#drawOverlay((graphics) => {
+      graphics.lineStyle(10, 0x000000, 0.45).moveTo(start.x, start.y).lineTo(end.x, end.y);
+      graphics.lineStyle(5, color, 0.95).moveTo(start.x, start.y).lineTo(end.x, end.y);
+      graphics.lineStyle(3, 0x000000, 0.6).beginFill(color, 0.9).drawCircle(start.x, start.y, 7).drawCircle(end.x, end.y, 10).endFill();
+    });
+    this.label.text = label;
+    this.label.position.set(end.x, end.y - token.h / 2);
+    this.label.visible = true;
+    return { label, end };
+  }
+
+  #pathLabel(start: Point, end: Point): string {
+    const grid = this.canvas.grid;
+    const distance = grid.measureDistance(start, end);
+    const squares = grid.distance > 0 ? Math.round(distance / grid.distance) : 0;
+    const units = this.canvas.dimensions?.units ? ` ${this.canvas.dimensions.units}` : "";
+    return `${squares} ${squares === 1 ? "quadrado" : "quadrados"} (${String(distance).replace(".", ",")}${units})`;
   }
 
   #previewRuler(origin: Point, destination: Point): void {
@@ -178,7 +225,7 @@ export class CanvasInteraction {
     const world = this.#toWorld(event);
     switch (session.kind) {
       case "move":
-        void this.#commitMove(session.objects, world.x - session.origin.x, world.y - session.origin.y, !event.shiftKey);
+        void this.#commitMove(session.objects, world.x - session.origin.x, world.y - session.origin.y, !event.shiftKey, this.#pathModeActive);
         break;
       case "create":
         void this.#commitCreation(session, event.shiftKey ? world : this.canvas.grid.getSnappedPoint(world, { mode: session.tool.snapMode }), world);
@@ -202,12 +249,13 @@ export class CanvasInteraction {
     layer.selectObjects({ x: Math.min(origin.x, world.x), y: Math.min(origin.y, world.y), width: Math.abs(world.x - origin.x), height: Math.abs(world.y - origin.y) }, { releaseOthers: !additive });
   }
 
-  async #commitMove(objects: PlaceableObject[], deltaX: number, deltaY: number, snap: boolean): Promise<void> {
+  async #commitMove(objects: PlaceableObject[], deltaX: number, deltaY: number, snap: boolean, confirmPath: boolean): Promise<void> {
     if (Math.hypot(deltaX, deltaY) <= CLICK_TOLERANCE_PX) {
       for (const object of objects) object.refresh();
       return;
     }
     const updates: PlainObject[] = [];
+    const moving: PlaceableObject[] = [];
     for (const object of objects) {
       const update = object.getMoveUpdate(deltaX, deltaY, snap);
       if (object.document.documentName === "Token" && this.#blockedByWall(object as Token, update)) {
@@ -216,12 +264,31 @@ export class CanvasInteraction {
         continue;
       }
       updates.push(update);
+      moving.push(object);
     }
+    if (updates.length === 0) return;
+    if (confirmPath && !(await this.#confirmTokenPath(moving, updates, deltaX, deltaY, snap))) return;
     try {
       await objects[0]?.layer.updateAll(updates);
     } catch {
       for (const object of objects) if (!object.destroyed) object.refresh();
     }
+  }
+
+  /** Tokens wait at their destination as a ghost with the path drawn until the user confirms; then they walk there. */
+  async #confirmTokenPath(objects: PlaceableObject[], updates: PlainObject[], deltaX: number, deltaY: number, snap: boolean): Promise<boolean> {
+    const first = objects[0];
+    if (first?.document.documentName !== "Token") return true;
+    objects.forEach((object, index) => {
+      object.previewOffset(Number(updates[index].x) - object.document.x, Number(updates[index].y) - object.document.y);
+      object.alpha = GHOST_ALPHA;
+    });
+    const path = this.#previewTokenPath(first, deltaX, deltaY, snap);
+    const client = this.canvas.clientCoordinatesFromCanvas(path?.end ?? first.center);
+    const confirmed = await this.canvas.hud.confirmMove({ x: client.x + CONFIRM_OFFSET_PX, y: client.y + CONFIRM_OFFSET_PX }, `Andar ${path?.label ?? ""}?`);
+    this.#clearOverlay();
+    for (const object of objects) if (!object.destroyed) object.refresh();
+    return confirmed && objects.every((object) => !object.destroyed);
   }
 
   /** Players cannot walk through movement-blocking walls; the GM may. */

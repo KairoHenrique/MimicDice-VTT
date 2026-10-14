@@ -30,6 +30,22 @@ export function writeSessionCookie(response: Response, token: string, lifetimeMs
   });
 }
 
+export const REMEMBER_COOKIE_NAME = "mimicdice_remember";
+/** The remember cookie only travels to the join endpoints, never to the rest of the API. */
+const REMEMBER_COOKIE_PATH = "/api/join";
+
+export function readRememberToken(cookieHeader: string | undefined): string | undefined {
+  return readCookie(cookieHeader, REMEMBER_COOKIE_NAME);
+}
+
+export function writeRememberCookie(response: Response, token: string, lifetimeMs: number): void {
+  response.cookie(REMEMBER_COOKIE_NAME, token, { httpOnly: true, sameSite: "strict", secure: false, path: REMEMBER_COOKIE_PATH, maxAge: lifetimeMs });
+}
+
+export function clearRememberCookie(response: Response): void {
+  response.clearCookie(REMEMBER_COOKIE_NAME, { httpOnly: true, sameSite: "strict", path: REMEMBER_COOKIE_PATH });
+}
+
 export function clearSessionCookie(response: Response): void {
   response.clearCookie(SESSION_COOKIE_NAME, { httpOnly: true, sameSite: "strict", path: "/" });
 }

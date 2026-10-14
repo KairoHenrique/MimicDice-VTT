@@ -74,6 +74,10 @@ export class UserService {
     return role >= USER_ROLES.ASSISTANT;
   }
 
+  listGameMasters(): UserDocument[] {
+    return Array.from(this.#usersById.values()).filter((user) => user.role >= USER_ROLES.ASSISTANT);
+  }
+
   listJoinableUsers(characterNameOf: (actorId: string) => string | null = () => null): JoinableUserRecord[] {
     return Array.from(this.#usersById.values(), ({ _id, name, role, character }) => {
       const isGameMaster = role >= USER_ROLES.ASSISTANT;

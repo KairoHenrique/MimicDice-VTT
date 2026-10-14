@@ -223,6 +223,63 @@ button.link:hover:not(:disabled) {
   grid-column: 2;
 }
 
+.room-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.room {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.room.active {
+  border-color: rgb(59 130 246 / 60%);
+  background: rgb(59 130 246 / 8%);
+}
+
+.room-name {
+  flex: 1;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.room-active {
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.room-create {
+  display: flex;
+  gap: 8px;
+}
+
+.room-create input {
+  flex: 1;
+  min-height: 36px;
+  font: inherit;
+  color: var(--text);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.room-create input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
 .footer {
   display: flex;
   justify-content: space-between;

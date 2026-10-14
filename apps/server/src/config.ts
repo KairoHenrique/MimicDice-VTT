@@ -12,6 +12,7 @@ const environmentSchema = z.object({
   TABBLETOP_DATA_PATH: z.string().min(1).default(path.join(repositoryRoot, "data")),
   TABBLETOP_CLIENT_DIST: z.string().min(1).default(path.join(repositoryRoot, "apps", "client", "dist")),
   TABBLETOP_SESSION_HOURS: z.coerce.number().min(1).max(168).default(12),
+  TABBLETOP_LAUNCHER_TOKEN: z.string().regex(/^[A-Za-z0-9_-]{32,128}$/).optional(),
 });
 
 export interface ServerConfig {
@@ -26,6 +27,8 @@ export interface ServerConfig {
   rpgsPath: string;
   temporaryPath: string;
   sessionLifetimeMs: number;
+  /** Random per-run secret shared with the desktop launcher; null when the server runs on its own. */
+  launcherToken: string | null;
 }
 
 export function loadServerConfig(environment: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -43,5 +46,6 @@ export function loadServerConfig(environment: NodeJS.ProcessEnv = process.env): 
     rpgsPath: path.join(dataPath, "rpgs"),
     temporaryPath: path.join(dataPath, ".tmp"),
     sessionLifetimeMs: parsed.TABBLETOP_SESSION_HOURS * 60 * 60 * 1000,
+    launcherToken: parsed.TABBLETOP_LAUNCHER_TOKEN ?? null,
   };
 }

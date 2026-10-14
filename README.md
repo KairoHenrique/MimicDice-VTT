@@ -1,8 +1,8 @@
 # MimicDice VTT
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.0-blue) ![Status](https://img.shields.io/badge/status-alpha-orange) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.1-blue) ![Status](https://img.shields.io/badge/status-alpha-orange) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-> **Versão atual: 0.1.0 (alpha).** O projeto está em desenvolvimento ativo, e funcionalidades podem mudar entre versões.
+> **Versão atual: 0.1.1 (alpha).** O projeto está em desenvolvimento ativo, e funcionalidades podem mudar entre versões. Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
 
 Mesa virtual (VTT) para jogar RPG com os amigos. Você hospeda a mesa no seu próprio computador, envia o link de convite e os jogadores entram pelo navegador, sem precisar de assinatura nem de servidor na nuvem.
 
@@ -15,11 +15,17 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 - **Mundos:** crie e alterne entre campanhas, cada uma com seus próprios dados.
 - **Sistemas e módulos:** instale pelo link do manifesto, com download e extração em ambiente controlado.
 - **Mesa:** canvas com mapas e tokens (PixiJS), rolagem de dados, fichas, chat e sidebar de documentos.
-- **Usuários e permissões:** conta do mestre, papéis por jogador e presença em tempo real via Socket.IO.
+- **Movimento com caminho:** segure Ctrl ao arrastar um token para ver a distância e confirmar antes de andar.
+- **Portas com chave:** portas animadas, que podem ser trancadas ou exigir um item carregado pelo personagem.
+- **Ferramentas do mestre:** modo jogo e modo edição, objetos travados no lugar, "Puxar todos" e "Mostrar minha visão" (mesma cena, posição e zoom para todos).
+- **Configurações e atalhos:** preferências por usuário e teclas trocáveis, salvas na conta.
+- **Salas no launcher:** crie e abra suas mesas direto pelo app desktop.
+- **Usuários e permissões:** conta do mestre (com "lembrar minha senha"), papéis por jogador e presença em tempo real via Socket.IO.
 
 ## Segurança
 
 - Senhas com hash Argon2 e sessões com expiração configurável.
+- "Lembrar minha senha" sem guardar a senha: token aleatório em cookie httpOnly, apenas o hash no disco, rotacionado a cada uso.
 - Rate limiting no login, nos uploads, nas instalações de pacotes e nos eventos de socket.
 - Validação de todas as entradas com Zod, sanitização de HTML e cabeçalhos de segurança com Helmet.
 - Extração de ZIP protegida contra path traversal, com tipos de arquivo de upload restritos.
@@ -92,6 +98,7 @@ O servidor lê estas variáveis de ambiente (todas opcionais):
 | `TABBLETOP_CLIENT_DIST` | `./apps/client/dist` | Build do cliente servido pelo servidor |
 | `TABBLETOP_SESSION_HOURS` | `12` | Duração da sessão de login (1 a 168 horas) |
 | `TABBLETOP_LOG_LEVEL` | — | Nível de log do servidor |
+| `TABBLETOP_LAUNCHER_TOKEN` | — | Chave interna do launcher (o app desktop gera uma aleatória a cada execução; não defina manualmente) |
 
 ## Jogando com amigos fora da sua rede
 

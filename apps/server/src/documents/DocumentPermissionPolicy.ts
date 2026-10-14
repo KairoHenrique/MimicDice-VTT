@@ -12,6 +12,8 @@ import type { DocumentSource } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
 import type { DocumentNode } from "./documentTree";
 
+const PLACEMENT_KEYS = new Set(["x", "y", "c", "rotation", "width", "height", "elevation"]);
+
 export interface DocumentActor {
   userId: string;
   role: number;
@@ -32,6 +34,12 @@ export class DocumentPermissionPolicy {
   assertMapUnlocked(actor: DocumentActor, ancestors: readonly DocumentNode[]): void {
     if (ancestors[0]?.definition.name !== "Scene" || this.isGameMaster(actor) || !this.isMapLocked()) return;
     throw HttpError.forbidden("O mestre travou o mapa");
+  }
+
+  /** Objects the GM pinned in place (`locked`) stay put for players, even on tokens they own. */
+  assertNotPinned(actor: DocumentActor, existing: DocumentSource, changes: Record<string, unknown>): void {
+    if (existing.locked !== true || this.isGameMaster(actor)) return;
+    if (Object.keys(changes).some((key) => PLACEMENT_KEYS.has(key))) throw HttpError.forbidden("O mestre travou este objeto no lugar");
   }
 
   /** Ownership level the actor holds over a document, resolving INHERIT through its ancestors. */

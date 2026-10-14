@@ -1,7 +1,7 @@
 /* Scene controls (left toolbar) */
 .scene-controls {
   position: fixed;
-  top: 64px;
+  top: calc(var(--host-toolbar-bottom, 52px) + 12px);
   left: 10px;
   z-index: 45;
   display: flex;
@@ -68,11 +68,11 @@
 /* Scene navigation (top bar) */
 .scene-navigation {
   position: fixed;
-  top: 10px;
+  top: calc(var(--host-toolbar-bottom, 52px) + 8px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 44;
-  max-width: calc(100vw - 760px);
+  max-width: calc(100vw - 720px);
 }
 
 .scene-navigation .scene-list {
@@ -157,6 +157,27 @@
 
 .canvas-context-menu button:hover {
   background: var(--muted-strong);
+}
+
+.canvas-move-confirm {
+  position: fixed;
+  z-index: 9500;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 6px 6px 12px;
+  color: var(--color-text);
+  background: var(--popover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.canvas-move-confirm button {
+  min-height: 30px;
+  padding: 4px 10px;
 }
 
 /* Package context menus (foundry.applications.ux.ContextMenu) */

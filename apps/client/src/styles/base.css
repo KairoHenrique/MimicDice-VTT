@@ -184,6 +184,73 @@ button.danger,
   margin: 0;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+.entry-card .checkbox-field:not([hidden]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.remembered-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+
+.link-button {
+  min-height: 0;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted-foreground);
+  text-decoration: underline;
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.password-field input {
+  flex: 1;
+  width: 100%;
+  padding-right: 40px;
+}
+
+.password-field .password-reveal {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  min-height: 28px;
+  width: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted-foreground);
+}
+
+.password-field .password-reveal:hover:not(:disabled) {
+  background: var(--muted-strong);
+  color: inherit;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;

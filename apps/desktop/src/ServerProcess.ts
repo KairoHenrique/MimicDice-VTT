@@ -7,6 +7,7 @@ export interface ServerProcessOptions {
   dataPath: string;
   clientDistPath: string;
   logFilePath: string;
+  launcherToken: string;
 }
 
 const READY_POLL_INTERVAL_MS = 250;
@@ -41,6 +42,7 @@ export class ServerProcess {
         TABBLETOP_PORT: String(this.options.port),
         TABBLETOP_DATA_PATH: this.options.dataPath,
         TABBLETOP_CLIENT_DIST: this.options.clientDistPath,
+        TABBLETOP_LAUNCHER_TOKEN: this.options.launcherToken,
       },
     });
     child.stdout?.pipe(this.#logStream, { end: false });

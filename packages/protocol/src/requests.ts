@@ -10,7 +10,8 @@ const displayNameSchema = z
   .max(40)
   .regex(/^[^<>"'`\\]+$/, "Nome contém caracteres não permitidos");
 
-const passwordSchema = z.string().min(8).max(128);
+/** The Game Master picks any password; the upper bound only caps hashing cost. */
+const passwordSchema = z.string().min(1).max(128);
 
 export const setupRequestSchema = z.object({
   worldTitle: z.string().trim().min(1).max(80),
@@ -22,7 +23,12 @@ export type SetupRequest = z.infer<typeof setupRequestSchema>;
 export const joinRequestSchema = z.object({
   userId: documentIdSchema,
   password: z.string().min(1).max(128),
+  /** Keeps this browser signed in for the Game Master without storing the password anywhere. */
+  remember: z.boolean().optional(),
 });
+
+export const rememberedJoinResponseSchema = z.object({ userId: documentIdSchema.nullable() });
+export type RememberedJoinResponse = z.infer<typeof rememberedJoinResponseSchema>;
 export type JoinRequest = z.infer<typeof joinRequestSchema>;
 
 /** Players join by name alone; only Game Master accounts are password-protected. */
@@ -58,7 +64,16 @@ export type ChangeUserRoleRequest = z.infer<typeof changeUserRoleRequestSchema>;
 
 export const userIdParamSchema = documentIdSchema;
 
-export const pullToSceneRequestSchema = z.object({ sceneId: documentIdSchema });
+const COORDINATE_LIMIT = 1_000_000;
+export const sceneViewSchema = z.object({
+  x: z.number().finite().min(-COORDINATE_LIMIT).max(COORDINATE_LIMIT),
+  y: z.number().finite().min(-COORDINATE_LIMIT).max(COORDINATE_LIMIT),
+  scale: z.number().finite().min(0.1).max(3),
+});
+export type SceneView = z.infer<typeof sceneViewSchema>;
+
+/** With `view`, players also get the GM's exact camera position and zoom. */
+export const pullToSceneRequestSchema = z.object({ sceneId: documentIdSchema, view: sceneViewSchema.optional() });
 export type PullToSceneRequest = z.infer<typeof pullToSceneRequestSchema>;
 
 export const installPackageRequestSchema = z.object({

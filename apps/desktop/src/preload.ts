@@ -7,6 +7,9 @@ const bridge: DesktopBridge = {
   copyText: (text: string) => ipcRenderer.invoke(IPC_CHANNELS.copyText, text),
   allowFirewall: () => ipcRenderer.invoke(IPC_CHANNELS.allowFirewall),
   openDataFolder: () => ipcRenderer.invoke(IPC_CHANNELS.openDataFolder),
+  listRooms: () => ipcRenderer.invoke(IPC_CHANNELS.listRooms),
+  createRoom: (title: string) => ipcRenderer.invoke(IPC_CHANNELS.createRoom, title),
+  openRoom: (worldId: string) => ipcRenderer.invoke(IPC_CHANNELS.openRoom, worldId),
   onStateChanged: (listener: () => void) => {
     ipcRenderer.on(IPC_CHANNELS.stateChanged, () => listener());
   },

@@ -14,6 +14,7 @@ import { createFileRoutes } from "./routes/fileRoutes";
 import { createPackageRoutes } from "./routes/packageRoutes";
 import { createRpgRoutes } from "./routes/rpgRoutes";
 import { createUserRoutes } from "./routes/userRoutes";
+import { createLauncherRoutes } from "./routes/launcherRoutes";
 import { createWorldRoutes } from "./routes/worldRoutes";
 
 function createSecurityHeaders() {
@@ -105,6 +106,7 @@ export function createHttpApp(context: ServerContext): express.Express {
   apiRouter.use(createAuthRoutes(context));
   apiRouter.use("/users", createUserRoutes(context));
   apiRouter.use("/worlds", createWorldRoutes(context));
+  apiRouter.use("/launcher", createLauncherRoutes(context));
   apiRouter.use("/packages", createPackageRoutes(context));
   apiRouter.use("/files", createFileRoutes(context, fileStorage));
   apiRouter.use(() => {

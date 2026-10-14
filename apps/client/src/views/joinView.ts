@@ -1,6 +1,6 @@
 import { PRODUCT_NAME, type JoinableUserRecord, type ServerStatusResponse } from "@tabbletop/protocol";
 import { serverApi } from "../net/apiClient";
-import { brandMark, formErrorSlot, h } from "./dom";
+import { brandMark, formErrorSlot, h, revealablePassword } from "./dom";
 
 type JoinMode = "player" | "gm";
 
@@ -41,17 +41,54 @@ function playerForm(players: readonly JoinableUserRecord[]): JoinForm {
   };
 }
 
-function gameMasterForm(gameMasters: readonly JoinableUserRecord[]): JoinForm {
-  const select = h("select", { name: "userId", required: true }, ...gameMasters.map((user) => h("option", { value: user._id }, user.name)));
+function gameMasterForm(gameMasters: readonly JoinableUserRecord[], rememberedState: { userId: string | null }): JoinForm {
+  const rememberedUserId = rememberedState.userId;
+  const select = h("select", { name: "userId", required: true }, ...gameMasters.map((user) => h("option", { value: user._id, selected: user._id === rememberedUserId }, user.name)));
   const password = h("input", { name: "password", type: "password", required: true, maxlength: 128, autocomplete: "current-password" });
+  const rememberBox = h("input", { type: "checkbox", name: "remember", checked: rememberedUserId !== null });
   const nameField = gameMasters.length > 1 ? h("label", {}, "Mestre", select) : h("input", { type: "hidden", name: "userId", value: gameMasters[0]?._id ?? "" });
+  const passwordField = h("label", {}, "Senha do mestre", revealablePassword(password));
+  const rememberField = h("label", { class: "checkbox-field" }, rememberBox, " Lembrar minha senha neste computador");
+  const forgetButton = h("button", { type: "button", class: "link-button" }, "Esquecer");
+  const rememberedNotice = h("p", { class: "remembered-notice" }, h("i", { class: "fa-solid fa-key" }), " Senha lembrada neste computador. ", forgetButton);
+  const selectedUserId = () => (gameMasters.length > 1 ? select.value : (gameMasters[0]?._id ?? ""));
+  let remembered = rememberedUserId;
+  const usesRememberedPassword = () => remembered !== null && remembered === selectedUserId();
+  const refresh = () => {
+    const usingRemembered = usesRememberedPassword();
+    rememberedNotice.hidden = !usingRemembered;
+    passwordField.hidden = usingRemembered;
+    rememberField.hidden = usingRemembered;
+    password.required = !usingRemembered;
+  };
+  const forget = () => {
+    remembered = null;
+    rememberedState.userId = null;
+    rememberBox.checked = false;
+    refresh();
+    password.focus();
+  };
+  forgetButton.addEventListener("click", () => {
+    void serverApi.forgetRemembered().catch(() => undefined);
+    forget();
+  });
+  select.addEventListener("change", refresh);
+  refresh();
   return {
-    fields: [nameField, h("label", {}, "Senha do mestre", password)],
-    focus: password,
+    fields: [nameField, rememberedNotice, passwordField, rememberField],
+    focus: usesRememberedPassword() ? select : password,
     submit: async () => {
-      const userId = gameMasters.length > 1 ? select.value : (gameMasters[0]?._id ?? "");
+      if (usesRememberedPassword()) {
+        try {
+          await serverApi.joinRemembered();
+          return;
+        } catch (error) {
+          forget();
+          throw error;
+        }
+      }
       try {
-        await serverApi.join({ userId, password: password.value });
+        await serverApi.join({ userId: selectedUserId(), password: password.value, remember: rememberBox.checked });
       } catch (error) {
         password.value = "";
         throw error;
@@ -71,13 +108,15 @@ function modeSwitcher(mode: JoinMode, onChange: (mode: JoinMode) => void): HTMLE
 }
 
 export async function renderJoinView(root: HTMLElement, status: ServerStatusResponse, onJoined: () => void): Promise<void> {
-  const users = await serverApi.joinableUsers();
+  const [users, remembered] = await Promise.all([serverApi.joinableUsers(), serverApi.rememberedGameMaster().catch(() => ({ userId: null }))]);
   const players = users.filter((user) => !user.isGameMaster);
   const gameMasters = users.filter((user) => user.isGameMaster);
+  const rememberedState = { userId: gameMasters.some((user) => user._id === remembered.userId) ? remembered.userId : null };
+  const rememberedUserId = rememberedState.userId;
 
   const show = (mode: JoinMode) => {
     const errorSlot = formErrorSlot();
-    const join = mode === "player" ? playerForm(players) : gameMasterForm(gameMasters);
+    const join = mode === "player" ? playerForm(players) : gameMasterForm(gameMasters, rememberedState);
     const submitButton = h("button", { type: "submit" }, "Entrar");
     const form = h("form", { class: "entry-card" }, brandMark(), h("h1", {}, status.world?.title ?? PRODUCT_NAME), modeSwitcher(mode, show), ...join.fields, errorSlot.element, submitButton);
     form.addEventListener("submit", async (event) => {
@@ -96,5 +135,5 @@ export async function renderJoinView(root: HTMLElement, status: ServerStatusResp
     join.focus.focus();
   };
 
-  show(status.isLocalRequest && gameMasters.length > 0 ? "gm" : "player");
+  show((status.isLocalRequest || rememberedUserId !== null) && gameMasters.length > 0 ? "gm" : "player");
 }

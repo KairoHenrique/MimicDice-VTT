@@ -1,4 +1,4 @@
-import { isMapLocked } from "../../game/tableControls";
+import { isGmEditMode, isMapLocked } from "../../game/tableControls";
 
 export interface SceneControlTool {
   name: string;
@@ -68,6 +68,7 @@ function selectTool(): SceneControlTool {
 /** Controls in the v13 shape (records keyed by name), before `getSceneControlButtons` lets packages edit them. */
 export function buildDefaultSceneControls(): Record<string, SceneControl> {
   const isGM = game.user.isGM;
+  const editing = isGmEditMode();
   const can = (permission: string) => isGM || (!isMapLocked() && game.user.can?.(permission) === true);
   return {
     tokens: {
@@ -85,7 +86,7 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
       },
     },
     tiles: {
-      name: "tiles", order: 3, title: "Tiles", icon: "fa-solid fa-cubes", layer: "tiles", activeTool: "select", visible: isGM,
+      name: "tiles", order: 3, title: "Tiles", icon: "fa-solid fa-cubes", layer: "tiles", activeTool: "select", visible: editing,
       tools: { select: selectTool(), tile: tool("tile", 2, "Colocar tile (imagem)", "fa-solid fa-image"), clear: clearTool("tiles", "tiles") },
     },
     drawings: {
@@ -100,21 +101,20 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
       },
     },
     walls: {
-      name: "walls", order: 5, title: "Paredes", icon: "fa-solid fa-dungeon", layer: "walls", activeTool: "walls", visible: isGM,
+      name: "walls", order: 5, title: "Paredes", icon: "fa-solid fa-dungeon", layer: "walls", activeTool: "walls", visible: editing,
       tools: {
         select: selectTool(),
         walls: tool("walls", 2, "Parede", "fa-solid fa-bars"),
         door: tool("door", 3, "Porta", "fa-solid fa-door-open"),
-        secret: tool("secret", 4, "Porta secreta", "fa-solid fa-user-secret"),
         clear: clearTool("walls", "paredes"),
       },
     },
     lighting: {
-      name: "lighting", order: 6, title: "Luzes", icon: "fa-regular fa-lightbulb", layer: "lighting", activeTool: "light", visible: isGM,
+      name: "lighting", order: 6, title: "Luzes", icon: "fa-regular fa-lightbulb", layer: "lighting", activeTool: "light", visible: editing,
       tools: { select: selectTool(), light: tool("light", 2, "Colocar luz", "fa-solid fa-lightbulb"), clear: clearTool("lighting", "luzes") },
     },
     notes: {
-      name: "notes", order: 7, title: "Notas", icon: "fa-solid fa-bookmark", layer: "notes", activeTool: "select", visible: true,
+      name: "notes", order: 7, title: "Notas", icon: "fa-solid fa-bookmark", layer: "notes", activeTool: "select", visible: can("NOTE_CREATE"),
       tools: { select: selectTool(), journal: tool("journal", 2, "Nova nota", "fa-solid fa-book-medical", { visible: can("NOTE_CREATE") }), clear: clearTool("notes", "notas") },
     },
   };

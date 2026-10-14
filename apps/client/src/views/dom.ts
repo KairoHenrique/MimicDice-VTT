@@ -22,6 +22,22 @@ export function brandMark(): HTMLElement {
   return h("span", { class: "brand-mark" }, h("i", { class: "fa-solid fa-dice-d20" }), "MimicDice VTT");
 }
 
+/** Wraps a password input with an eye button that shows or hides what was typed. */
+export function revealablePassword(input: HTMLInputElement): HTMLElement {
+  const icon = h("i", { class: "fa-solid fa-eye" });
+  const toggle = h("button", { type: "button", class: "password-reveal", title: "Mostrar senha", "aria-label": "Mostrar senha" }, icon);
+  toggle.addEventListener("click", () => {
+    const reveal = input.type === "password";
+    input.type = reveal ? "text" : "password";
+    icon.className = reveal ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+    const label = reveal ? "Esconder senha" : "Mostrar senha";
+    toggle.title = label;
+    toggle.setAttribute("aria-label", label);
+    input.focus();
+  });
+  return h("span", { class: "password-field" }, input, toggle);
+}
+
 export function formErrorSlot(): { element: HTMLParagraphElement; show(message: string): void; clear(): void } {
   const element = h("p", { class: "form-error", role: "alert" });
   return {

@@ -1,10 +1,17 @@
 import * as PIXI from "pixi.js";
-import type { PlainObject } from "@tabbletop/common";
+import { itemNamesMatch, requiredDoorItem, type PlainObject } from "@tabbletop/common";
 import { CONST } from "../../constants";
-import { currentCanvas, currentGame } from "../../runtime";
+import { currentCanvas, currentGame, currentUi } from "../../runtime";
 import type { Point, Rectangle, Segment } from "../geometry";
 import { colorToNumber, loadTexture } from "../textures";
+import { DoorControl } from "./DoorControl";
 import { PlaceableObject } from "./PlaceableObject";
+
+/** Whether any character the current user owns carries an item with this name. */
+function userCarriesItem(itemName: string): boolean {
+  const actors: any[] = currentGame()?.actors?.contents ?? [];
+  return actors.some((actor) => actor.isOwner && Array.from((actor.items?.values?.() ?? []) as Iterable<any>).some((item) => itemNamesMatch(item.name, itemName)));
+}
 
 const labelStyle = (fontSize: number, fill = 0xffffff) =>
   new PIXI.TextStyle({ fontFamily: "Signika, Arial, sans-serif", fontSize, fill, stroke: 0x111111, strokeThickness: 4, align: "center" });
@@ -42,12 +49,18 @@ export class Tile extends PlaceableObject {
     if (this.controlled || (this.hover && this.layer?.active)) this.frame.lineStyle(3, this.controlled ? 0x3b82f6 : 0xffffff, 0.9).drawRect(0, 0, width, height);
     this.hitArea = new PIXI.Rectangle(0, 0, width, height);
   }
+
+  override _onClickRight(event: PIXI.FederatedPointerEvent): void {
+    currentCanvas()?.hud?.showTileMenu?.(this, event);
+  }
 }
+
+const INACTIVE_WALL_ALPHA = 0.45;
 
 export class Wall extends PlaceableObject {
   static override embeddedName = "Wall";
   line = new PIXI.Graphics();
-  door: PIXI.Graphics | null = null;
+  door: DoorControl | null = null;
 
   get coords(): [number, number, number, number] {
     const [ax = 0, ay = 0, bx = 0, by = 0] = (this.document.c ?? []) as number[];
@@ -77,33 +90,69 @@ export class Wall extends PlaceableObject {
     return Number(this.document[sense]) !== CONST.WALL_SENSE_TYPES.NONE;
   }
 
+  get isLocked(): boolean {
+    return this.isDoor && Number(this.document.ds) === CONST.WALL_DOOR_STATES.LOCKED;
+  }
+
+  /** Item a character must carry to open this door, as the GM typed it. */
+  get requiredItem(): string | null {
+    return requiredDoorItem(this.document);
+  }
+
+  /** The GM always sees walls (faded outside the walls layer); players only see doors. */
   override get isVisible(): boolean {
-    if (!currentGame()?.user?.isGM) return false;
-    return Boolean(this.layer?.active) || this.isDoor;
+    return Boolean(currentGame()?.user?.isGM) || this.isDoor;
   }
 
   protected override async _draw(): Promise<void> {
     this.line = new PIXI.Graphics();
     this.addChild(this.line);
+    this.door = null;
+    if (!this.isDoor) return;
+    this.door = new DoorControl(currentCanvas()?.app?.ticker ?? null, (event) => this.#onDoorPointerDown(event));
+    this.addChild(this.door);
   }
 
   protected override _refresh(): void {
+    const editing = Boolean(this.layer?.active);
+    this.#drawLine(editing);
+    this.door?.update(this.#doorSegment(), { open: this.isOpen, locked: this.isLocked, keyed: this.requiredItem !== null }, this.#swingNext);
+    this.#swingNext = false;
+    this.hitArea = null;
+    this.line.eventMode = editing ? "static" : "none";
+    this.line.hitArea = editing ? this.#lineHitArea() : null;
+    this.line.cursor = "pointer";
+  }
+
+  #swingNext = false;
+
+  #doorSegment() {
     const [ax, ay, bx, by] = this.coords;
-    const color = this.isDoor ? (this.isOpen ? 0x5fd35f : 0xd38f2c) : this.controlled ? 0x3b82f6 : 0xf0f0f0;
+    return { hinge: { x: ax, y: ay }, latch: { x: bx, y: by } };
+  }
+
+  #drawLine(editing: boolean): void {
+    const [ax, ay, bx, by] = this.coords;
     this.line.clear();
+    if (!currentGame()?.user?.isGM || (this.isDoor && !editing)) return;
+    const color = this.isDoor ? (this.isOpen ? 0x5fd35f : 0xd38f2c) : this.controlled ? 0x3b82f6 : 0xf0f0f0;
+    this.line.alpha = editing ? 1 : INACTIVE_WALL_ALPHA;
     this.line.lineStyle(9, 0x000000, 0.6).moveTo(ax, ay).lineTo(bx, by);
     this.line.lineStyle(4, color, 1).moveTo(ax, ay).lineTo(bx, by);
     this.line.lineStyle(0).beginFill(color).drawCircle(ax, ay, 6).drawCircle(bx, by, 6).endFill();
+  }
+
+  #lineHitArea(): PIXI.Polygon {
+    const [ax, ay, bx, by] = this.coords;
     const angle = Math.atan2(by - ay, bx - ax);
     const thickness = 14;
     const offsetX = Math.sin(angle) * thickness;
     const offsetY = -Math.cos(angle) * thickness;
-    this.hitArea = new PIXI.Polygon([ax + offsetX, ay + offsetY, bx + offsetX, by + offsetY, bx - offsetX, by - offsetY, ax - offsetX, ay - offsetY]);
-    this.cursor = this.layer?.active ? "pointer" : "default";
+    return new PIXI.Polygon([ax + offsetX, ay + offsetY, bx + offsetX, by + offsetY, bx - offsetX, by - offsetY, ax - offsetX, ay - offsetY]);
   }
 
   protected override redrawKeys(): string[] {
-    return [];
+    return ["door"];
   }
 
   override getMoveUpdate(deltaX: number, deltaY: number, snap: boolean): PlainObject {
@@ -119,19 +168,46 @@ export class Wall extends PlaceableObject {
     this.position.set(deltaX, deltaY);
   }
 
-  /** Doors toggle open/closed on double click (locked doors stay shut). */
   override _onClickLeft2(): void {
-    if (!this.isDoor || Number(this.document.ds) === CONST.WALL_DOOR_STATES.LOCKED) return;
-    const nextState = this.isOpen ? CONST.WALL_DOOR_STATES.CLOSED : CONST.WALL_DOOR_STATES.OPEN;
-    void this.document.update({ ds: nextState });
+    void this.toggleDoor();
   }
 
   override _onClickRight(event: PIXI.FederatedPointerEvent): void {
     currentCanvas()?.hud?.showWallMenu?.(this, event);
   }
 
+  #onDoorPointerDown(event: PIXI.FederatedPointerEvent): void {
+    if (event.button === 2) {
+      if (currentGame()?.user?.isGM) this._onClickRight(event);
+      return;
+    }
+    if (event.button === 0) void this.toggleDoor();
+  }
+
+  /** Opens or closes the door; the server repeats the lock and key checks, these only explain a refusal early. */
+  async toggleDoor(): Promise<void> {
+    if (!this.isDoor) return;
+    const notifications = currentUi()?.notifications;
+    if (this.isLocked) {
+      notifications?.warn(currentGame()?.user?.isGM ? "Porta trancada. Use o botão direito para destrancar." : "A porta está trancada.");
+      return;
+    }
+    const requiredItem = this.requiredItem;
+    if (requiredItem && !currentGame()?.user?.isGM && !userCarriesItem(requiredItem)) {
+      notifications?.warn(`Você precisa de "${requiredItem}" para abrir esta porta.`);
+      return;
+    }
+    const nextState = this.isOpen ? CONST.WALL_DOOR_STATES.CLOSED : CONST.WALL_DOOR_STATES.OPEN;
+    try {
+      await this.document.update({ ds: nextState });
+    } catch {
+      this.refresh();
+    }
+  }
+
   override _onUpdate(changed: PlainObject, options: PlainObject, userId: string): void {
     this.position.set(0, 0);
+    if ("ds" in changed) this.#swingNext = true;
     super._onUpdate(changed, options, userId);
   }
 }

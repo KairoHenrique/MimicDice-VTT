@@ -106,7 +106,7 @@ const noteTool: CreationTool = {
 
 /** Tool name (as in the v13 scene controls) to creation behaviour, scoped by layer name. */
 export const CREATION_TOOLS: Record<string, Record<string, CreationTool>> = {
-  walls: { walls: wallTool(CONST.WALL_DOOR_TYPES.NONE), door: wallTool(CONST.WALL_DOOR_TYPES.DOOR), secret: wallTool(CONST.WALL_DOOR_TYPES.SECRET) },
+  walls: { walls: wallTool(CONST.WALL_DOOR_TYPES.NONE), door: wallTool(CONST.WALL_DOOR_TYPES.DOOR) },
   drawings: {
     rect: drawingTool(CONST.DRAWING_TYPES.RECTANGLE),
     ellipse: drawingTool(CONST.DRAWING_TYPES.ELLIPSE),

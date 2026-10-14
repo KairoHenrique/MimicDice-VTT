@@ -6,6 +6,7 @@ import { logger } from "./logging/logger";
 import { PackageInstaller } from "./packages/PackageInstaller";
 import { PackageRegistry } from "./packages/PackageRegistry";
 import { PasswordHasher } from "./security/PasswordHasher";
+import { RememberedDeviceStore } from "./security/RememberedDeviceStore";
 import { SessionStore } from "./security/SessionStore";
 import type { ServerContext } from "./ServerContext";
 import { createSocketServer } from "./socket/createSocketServer";
@@ -28,12 +29,14 @@ async function startServer(): Promise<void> {
     config,
     logger,
     sessions: new SessionStore(config.sessionLifetimeMs),
+    rememberedDevices: RememberedDeviceStore.inConfigDirectory(config.configPath),
     worlds,
     activeWorld,
     packageRegistry,
     packageInstaller: new PackageInstaller(config, packageRegistry, logger),
   };
 
+  await context.rememberedDevices.load();
   await packageRegistry.refresh();
   await activeWorld.openConfiguredWorld();
 

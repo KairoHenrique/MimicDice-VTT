@@ -5,6 +5,7 @@ import { DocumentPermissionPolicy } from "../documents/DocumentPermissionPolicy"
 import { DocumentService } from "../documents/DocumentService";
 import { DocumentSourceValidator } from "../documents/DocumentSourceValidator";
 import { DocumentStore } from "../documents/DocumentStore";
+import { DoorAccessPolicy } from "../documents/DoorAccessPolicy";
 import { SystemDocumentModel } from "../documents/SystemDocumentModel";
 import type { Logger } from "../logging/logger";
 import type { PackageRegistry } from "../packages/PackageRegistry";
@@ -51,12 +52,14 @@ export class ActiveWorld {
     const system = manifest.system ? dependencies.packageRegistry.find("system", manifest.system) : undefined;
     const systemModel = await SystemDocumentModel.load(system, dependencies.logger);
     const actorStore = stores.find((store) => store.collectionName === "actors");
+    const readConfiguredPermissions = () => settings.readWorldValue<ConfiguredPermissions>("core.permissions") ?? {};
     const permissions = new DocumentPermissionPolicy(
-      () => settings.readWorldValue<ConfiguredPermissions>("core.permissions") ?? {},
+      readConfiguredPermissions,
       (actorId) => actorStore?.get(actorId),
       () => settings.readWorldValue<boolean>(MAP_LOCKED_SETTING_KEY) === true,
     );
-    const documents = new DocumentService(stores, new DocumentSourceValidator(systemModel, manifest.system), permissions);
+    const doorAccess = new DoorAccessPolicy(permissions, readConfiguredPermissions, () => actorStore?.values() ?? []);
+    const documents = new DocumentService(stores, new DocumentSourceValidator(systemModel, manifest.system), permissions, doorAccess);
     return new ActiveWorld(manifest, users, settings, documents, systemModel, rpgDirectory, database);
   }
 
@@ -116,20 +119,21 @@ export class ActiveWorldHolder {
    * Opens another world, remembers it for the next start and reloads every client. The Game Master who asked is
    * copied in when missing, so the host keeps his session; anyone else lands on the join screen.
    */
-  async switchTo(worldId: string, gameMaster: UserDocument): Promise<ActiveWorld> {
+  /** Opens another world, bringing the given Game Masters along so their logins keep working there. */
+  async switchTo(worldId: string, gameMasters: readonly UserDocument[]): Promise<ActiveWorld> {
     if (!(await this.repository.worldExists(worldId))) throw new Error("Unknown world");
     return this.#exclusive(async () => {
       const world = await this.activate(worldId);
-      await world.users.importUser(gameMaster);
+      for (const gameMaster of gameMasters) await world.users.importUser(gameMaster);
       await this.repository.rememberActiveWorld(worldId);
       for (const listener of this.#reloadListeners) listener();
       return world;
     });
   }
 
-  async createAndSwitch(title: string, gameMaster: UserDocument): Promise<ActiveWorld> {
+  async createAndSwitch(title: string, gameMasters: readonly UserDocument[]): Promise<ActiveWorld> {
     const manifest = await this.repository.createWorld(title);
-    return this.switchTo(manifest.id, gameMaster);
+    return this.switchTo(manifest.id, gameMasters);
   }
 
   async #exclusive<T>(task: () => Promise<T>): Promise<T> {

@@ -16,7 +16,13 @@ interface SidebarTabClass {
   tabName: string;
   tabLabel: string;
   tabIcon: string;
+  documentName?: string;
+  isAvailableToUser?(): boolean;
   new (): SidebarTab;
+}
+
+function isTabAvailable(tabClass: SidebarTabClass): boolean {
+  return tabClass.isAvailableToUser?.() ?? true;
 }
 
 const SIDEBAR_TABS: readonly SidebarTabClass[] = [ChatLog as unknown as SidebarTabClass, ...(DIRECTORY_CLASSES as unknown as SidebarTabClass[])];
@@ -51,7 +57,7 @@ export class Sidebar extends DomApplication {
     for (const tabClass of SIDEBAR_TABS) {
       const button = h(
         "button",
-        { type: "button", class: `item${tabClass.tabName === this.activeTab ? " active" : ""}`, "data-tab": tabClass.tabName, title: tabClass.tabLabel, role: "tab" },
+        { type: "button", class: `item${tabClass.tabName === this.activeTab ? " active" : ""}`, "data-tab": tabClass.tabName, title: tabClass.tabLabel, role: "tab", hidden: !isTabAvailable(tabClass) },
         h("i", { class: tabClass.tabIcon }),
         ` ${tabClass.tabLabel}`,
       );
@@ -69,9 +75,30 @@ export class Sidebar extends DomApplication {
       await tab.render({ force: true });
     }
     this.changeTab(this.activeTab);
+    if (!game.user.isGM) this.#watchTabAvailability();
+  }
+
+  /** Hides tabs whose actions the user cannot take; a tab reappears once something is shared there. */
+  refreshTabAvailability(): void {
+    for (const tabClass of SIDEBAR_TABS) {
+      const button = this.element?.querySelector<HTMLElement>(`.sidebar-tabs [data-tab="${tabClass.tabName}"]`);
+      button?.toggleAttribute("hidden", !isTabAvailable(tabClass));
+    }
+    const active = SIDEBAR_TABS.find((tabClass) => tabClass.tabName === this.activeTab);
+    if (active && !isTabAvailable(active)) this.changeTab(ChatLog.tabName);
+  }
+
+  #watchTabAvailability(): void {
+    const documentNames = new Set(SIDEBAR_TABS.map((tabClass) => tabClass.documentName).filter((name): name is string => Boolean(name)));
+    const refresh = () => this.refreshTabAvailability();
+    for (const documentName of documentNames) {
+      for (const action of ["create", "update", "delete"]) Hooks.on(`${action}${documentName}`, refresh);
+    }
   }
 
   changeTab(tabName: string): void {
+    const requested = SIDEBAR_TABS.find((tabClass) => tabClass.tabName === tabName);
+    if (requested && !isTabAvailable(requested)) tabName = ChatLog.tabName;
     this.activeTab = tabName;
     for (const button of Array.from(this.element.querySelectorAll<HTMLElement>(".sidebar-tabs [data-tab]"))) {
       button.classList.toggle("active", button.dataset.tab === tabName);

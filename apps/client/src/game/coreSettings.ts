@@ -65,7 +65,7 @@ export function registerCoreSettings(settings: ClientSettings): void {
     requiresReload: true,
   });
   settings.register("core", "language", {
-    name: "SETTINGS.LangN",
+    name: "Idioma",
     scope: "client",
     config: true,
     type: String,
