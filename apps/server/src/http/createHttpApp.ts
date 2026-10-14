@@ -65,15 +65,19 @@ function handleErrors(error: unknown, _request: Request, response: Response, nex
   response.status(500).json({ error: "Erro interno do servidor" } satisfies ApiErrorResponse);
 }
 
+const UPLOAD_CSP = "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox";
+/** Browsers refuse to render a PDF inside a sandboxed document, so PDFs get the same lockdown minus `sandbox`. */
+const PDF_UPLOAD_CSP = "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; object-src 'self'";
+
 function createUploadsHandler(context: ServerContext, storage: FileStorage) {
   const sessionGuard = requireSession(context);
   const serveUploads = express.static(storage.uploadsDirectory, {
     dotfiles: "deny",
     fallthrough: false,
     index: false,
-    setHeaders: (response) => {
+    setHeaders: (response, filePath) => {
       response.setHeader("X-Content-Type-Options", "nosniff");
-      response.setHeader("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+      response.setHeader("Content-Security-Policy", filePath.toLowerCase().endsWith(".pdf") ? PDF_UPLOAD_CSP : UPLOAD_CSP);
     },
   });
   return (request: Request, response: Response, next: NextFunction): void => sessionGuard(request, response, () => serveUploads(request, response, next));

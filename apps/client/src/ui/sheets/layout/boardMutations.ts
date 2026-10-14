@@ -1,6 +1,7 @@
 import { MAX_COMPONENT_ROWS, MAX_COMPONENTS_PER_PAGE, MAX_SHEET_PAGES, MAX_SHEET_ROWS, SHEET_GRID_COLUMNS, type SheetComponent, type SheetComponentKind, type SheetLayout, type SheetPage } from "@tabbletop/protocol";
 import { kindInfo, needsKey } from "./componentCatalog";
 import { clampNumber, keyFromLabel, layoutKeys, newLocalId } from "./sheetLayoutRules";
+import { DEFAULT_SKILL_LABELS, skillsFromLabels } from "./skillList";
 
 export interface GridRect {
   x: number;
@@ -57,6 +58,7 @@ export function createComponent(layout: SheetLayout, page: SheetPage, kind: Shee
   if (kind === "roll") component.formula = "1d20";
   if (kind === "computed") component.formula = "1 + 1";
   if (kind === "list") component.columns = [{ key: "nome", label: "Nome", type: "text" }, { key: "qtd", label: "Qtd", type: "number" }];
+  if (kind === "skills") component.skills = skillsFromLabels(DEFAULT_SKILL_LABELS);
   return component;
 }
 
@@ -76,6 +78,33 @@ export function placeComponent(layout: SheetLayout, pageId: string, componentId:
 
 export function removeComponent(layout: SheetLayout, pageId: string, componentId: string): SheetLayout {
   return mapComponents(layout, pageId, (components) => components.filter((component) => component.id !== componentId));
+}
+
+export function removeComponents(layout: SheetLayout, pageId: string, componentIds: ReadonlySet<string>): SheetLayout {
+  return mapComponents(layout, pageId, (components) => components.filter((component) => !componentIds.has(component.id)));
+}
+
+/** The largest step toward (dx, dy) that keeps every rect of the group inside the grid, so the group keeps its shape. */
+export function clampGroupDelta(rects: readonly GridRect[], dx: number, dy: number): { dx: number; dy: number } {
+  if (rects.length === 0) return { dx: 0, dy: 0 };
+  const left = Math.min(...rects.map((rect) => rect.x));
+  const top = Math.min(...rects.map((rect) => rect.y));
+  const right = Math.max(...rects.map((rect) => rect.x + rect.w));
+  const bottom = Math.max(...rects.map((rect) => rect.y + rect.h));
+  return { dx: clampNumber(Math.round(dx), 0 - left, SHEET_GRID_COLUMNS - right) + 0, dy: clampNumber(Math.round(dy), 0 - top, MAX_SHEET_ROWS - bottom) + 0 };
+}
+
+export function moveComponents(layout: SheetLayout, pageId: string, componentIds: ReadonlySet<string>, dx: number, dy: number): SheetLayout {
+  return mapComponents(layout, pageId, (components) => {
+    const delta = clampGroupDelta(components.filter((component) => componentIds.has(component.id)), dx, dy);
+    if (delta.dx === 0 && delta.dy === 0) return components;
+    return components.map((component) => (componentIds.has(component.id) ? { ...component, x: component.x + delta.dx, y: component.y + delta.dy } : component));
+  });
+}
+
+/** Ids of the components a selection box touches. */
+export function componentsInArea(components: readonly SheetComponent[], area: GridRect): string[] {
+  return components.filter((component) => overlaps(component, area)).map((component) => component.id);
 }
 
 /** Copy placed right below the original with a fresh id and key, so both keep separate values. */

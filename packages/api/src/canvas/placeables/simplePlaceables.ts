@@ -86,6 +86,7 @@ export class Tile extends PlaceableObject {
 }
 
 const INACTIVE_WALL_ALPHA = 0.45;
+const DOOR_DOUBLE_CLICK_MS = 360;
 
 export class Wall extends PlaceableObject {
   static override embeddedName = "Wall";
@@ -165,7 +166,7 @@ export class Wall extends PlaceableObject {
     const [ax, ay, bx, by] = this.coords;
     this.line.clear();
     if (!seesEverything() || (this.isDoor && !editing)) return;
-    const color = this.isDoor ? (this.isOpen ? 0x5fd35f : 0xd38f2c) : this.controlled ? 0x3b82f6 : 0xf0f0f0;
+    const color = this.controlled ? 0x3b82f6 : this.isDoor ? (this.isOpen ? 0x5fd35f : 0xd38f2c) : 0xf0f0f0;
     this.line.alpha = editing ? 1 : INACTIVE_WALL_ALPHA;
     this.line.lineStyle(9, 0x000000, 0.6).moveTo(ax, ay).lineTo(bx, by);
     this.line.lineStyle(4, color, 1).moveTo(ax, ay).lineTo(bx, by);
@@ -214,7 +215,35 @@ export class Wall extends PlaceableObject {
       if (currentGame()?.user?.isGM) this._onClickRight(event);
       return;
     }
-    if (event.button === 0) void this.toggleDoor();
+    if (event.button !== 0) return;
+    if (this.#isBeingEdited()) {
+      this.#selectDoor(event);
+      return;
+    }
+    void this.toggleDoor();
+  }
+
+  #isBeingEdited(): boolean {
+    return Boolean(this.layer?.active) && currentUi()?.controls?.tool?.name === "select";
+  }
+
+  #lastDoorClick = 0;
+
+  /** While editing walls the door icon selects and drags the door like any wall; a double click still swings it. */
+  #selectDoor(event: PIXI.FederatedPointerEvent): void {
+    const now = performance.now();
+    const isDoubleClick = now - this.#lastDoorClick < DOOR_DOUBLE_CLICK_MS;
+    this.#lastDoorClick = now;
+    if (isDoubleClick) {
+      void this.toggleDoor();
+      return;
+    }
+    if (!this.controlled) this.control({ releaseOthers: !event.shiftKey });
+    else if (event.shiftKey) {
+      this.release();
+      return;
+    }
+    if (this.canDrag()) currentCanvas()?.interaction?.beginObjectDrag(this, event);
   }
 
   /** Opens or closes the door; the server repeats the lock and key checks, these only explain a refusal early. */
@@ -400,6 +429,6 @@ export class Note extends PlaceableObject {
   }
 
   override _onClickRight(event: PIXI.FederatedPointerEvent): void {
-    if (this.#canEdit) void currentCanvas()?.hud?.configureNote?.(this, event);
+    if (this.#canEdit) currentCanvas()?.hud?.showNoteMenu?.(this, event);
   }
 }

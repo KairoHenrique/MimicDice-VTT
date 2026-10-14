@@ -50,6 +50,22 @@ export class PlayerFileArea {
     return (startsWith(segments, root) ? segments : root).join("/");
   }
 
+  /** A player reads notes in their own folder (and may edit them) or in folders the group shared (read-only). */
+  async noteAccess(userId: string, target: string): Promise<{ segments: string[]; writable: boolean }> {
+    const segments = parseTarget(target);
+    if (startsWith(segments, ownRoot(userId)) && segments.length > ownRoot(userId).length) return { segments, writable: true };
+    if (await this.#isSharedWithGroup(segments, userId)) return { segments, writable: false };
+    throw HttpError.forbidden("Sem acesso a esta nota");
+  }
+
+  /** Notes a player saves must stay inside their own folder. */
+  noteWriteTarget(userId: string, target: string): string {
+    const segments = parseTarget(target);
+    const root = ownRoot(userId);
+    if (!startsWith(segments, root) || segments.length <= root.length) throw HttpError.forbidden("Salve a nota dentro da sua pasta");
+    return segments.join("/");
+  }
+
   newFolderTarget(userId: string, target: string): string {
     const segments = parseTarget(target);
     if (!startsWith(segments, ownRoot(userId)) || segments.length === ownRoot(userId).length) throw HttpError.badRequest("Crie a pasta dentro da sua pasta");

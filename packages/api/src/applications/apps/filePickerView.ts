@@ -5,6 +5,8 @@ export interface FilePickerViewModel {
   selectedPath: string;
   type: FilePickerType;
   canUpload: boolean;
+  /** Folder browser with no "Selecionar" step: double click opens the file instead. */
+  browseOnly: boolean;
   toUrl: (path: string) => string;
 }
 
@@ -15,11 +17,14 @@ export interface FilePickerViewHandlers {
   upload(files: readonly File[]): void;
   createFolder(name: string): void;
   share(path: string, shared: boolean): void;
+  createNote(): void;
 }
 
 const IMAGE_PATTERN = /\.(png|jpe?g|webp|gif|avif|svg)$/i;
 const VIDEO_PATTERN = /\.(webm|mp4|m4v)$/i;
 const AUDIO_PATTERN = /\.(mp3|ogg|oga|wav|flac|m4a)$/i;
+const PDF_PATTERN = /\.pdf$/i;
+const NOTE_PATTERN = /\.(md|txt)$/i;
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string): HTMLElementTagNameMap[K] {
   const created = document.createElement(tag);
@@ -88,7 +93,15 @@ function buildFilePreview(path: string, model: FilePickerViewModel): HTMLElement
     image.src = model.toUrl(path);
     return image;
   }
-  const icon = VIDEO_PATTERN.test(path) ? "fa-solid fa-film" : AUDIO_PATTERN.test(path) ? "fa-solid fa-music" : "fa-solid fa-file";
+  const icon = VIDEO_PATTERN.test(path)
+    ? "fa-solid fa-film"
+    : AUDIO_PATTERN.test(path)
+      ? "fa-solid fa-music"
+      : PDF_PATTERN.test(path)
+        ? "fa-solid fa-file-pdf"
+        : NOTE_PATTERN.test(path)
+          ? "fa-solid fa-file-lines"
+          : "fa-solid fa-file";
   return element("i", `${icon} file-picker-thumb-icon`);
 }
 
@@ -100,6 +113,13 @@ function buildFileEntry(path: string, model: FilePickerViewModel, handlers: File
   entry.append(buildFilePreview(path, model), element("span", "file-picker-name", baseName(path)));
   entry.addEventListener("click", () => handlers.select(path));
   entry.addEventListener("dblclick", () => handlers.confirm(path));
+  if (model.browseOnly) {
+    entry.tabIndex = 0;
+    entry.setAttribute("aria-label", `Abrir ${baseName(path)}`);
+    entry.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") handlers.confirm(path);
+    });
+  }
   return entry;
 }
 
@@ -127,6 +147,7 @@ function buildUploadControls(handlers: FilePickerViewHandlers): HTMLElement {
   controls.append(
     fileInput,
     iconButton("fa-solid fa-upload", "Enviar arquivo", () => fileInput.click()),
+    iconButton("fa-solid fa-file-pen", "Nova nota", () => handlers.createNote()),
     folderInput,
     iconButton("fa-solid fa-folder-plus", "Criar", () => handlers.createFolder(folderInput.value)),
   );
@@ -172,6 +193,7 @@ export function createFilePickerView(model: FilePickerViewModel, handlers: FileP
     root.append(buildUploadControls(handlers));
     enableDropUpload(root, handlers);
   }
-  root.append(buildFooter(model, handlers));
+  if (model.browseOnly) root.append(element("p", "file-picker-hint hint", "Clique duas vezes num arquivo para abrir: notas abrem para editar, PDFs e imagens em outra janela."));
+  else root.append(buildFooter(model, handlers));
   return root;
 }

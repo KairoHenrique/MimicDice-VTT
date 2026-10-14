@@ -1,9 +1,18 @@
 import express, { Router, type Request, type Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import { roleHasPermission, type ConfiguredPermissions, type UserPermissionName } from "@tabbletop/common";
-import { browseFilesQuerySchema, createDirectoryRequestSchema, shareFolderRequestSchema, uploadFileQuerySchema, type FileUploadResult } from "@tabbletop/protocol";
+import {
+  browseFilesQuerySchema,
+  createDirectoryRequestSchema,
+  readNoteFileQuerySchema,
+  shareFolderRequestSchema,
+  uploadFileQuerySchema,
+  writeNoteFileRequestSchema,
+  type FileUploadResult,
+  type NoteFileResult,
+} from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
-import type { FileStorage } from "../../files/FileStorage";
+import { parseTarget, type FileStorage } from "../../files/FileStorage";
 import { PlayerFileArea } from "../../files/PlayerFileArea";
 import { PlayerFolderSharing } from "../../files/PlayerFolderSharing";
 import type { ServerContext } from "../../ServerContext";
@@ -70,6 +79,22 @@ export function createFileRoutes(context: ServerContext, storage: FileStorage): 
     const { target } = parseRequestBody(createDirectoryRequestSchema, request);
     const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
     response.status(201).json({ path: await storage.createDirectory(isGameMaster ? target : area.newFolderTarget(userId, target)) });
+  });
+
+  router.get("/note", async (request, response) => {
+    assertPermission(response, "FILES_BROWSE");
+    const { path } = parseQuery(readNoteFileQuerySchema, request);
+    const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
+    const access = isGameMaster ? { segments: parseTarget(path), writable: true } : await area.noteAccess(userId, path);
+    response.setHeader("Cache-Control", "private, no-store");
+    response.json({ path: access.segments.join("/"), content: await storage.readNote(access.segments), writable: access.writable } satisfies NoteFileResult);
+  });
+
+  router.put("/note", uploadRateLimiter, async (request, response) => {
+    assertPermission(response, "FILES_UPLOAD");
+    const { path, content } = parseRequestBody(writeNoteFileRequestSchema, request);
+    const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
+    response.json({ path: await storage.writeNote(isGameMaster ? path : area.noteWriteTarget(userId, path), content) } satisfies FileUploadResult);
   });
 
   router.post("/share", uploadRateLimiter, async (request, response) => {

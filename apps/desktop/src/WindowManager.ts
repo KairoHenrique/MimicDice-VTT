@@ -104,7 +104,7 @@ export class WindowManager {
     });
     contents.setWindowOpenHandler(({ url }) => {
       if (this.#isTableUrl(url)) {
-        return { action: "allow", overrideBrowserWindowOptions: { autoHideMenuBar: true, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false } } };
+        return { action: "allow", overrideBrowserWindowOptions: { autoHideMenuBar: true, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, plugins: true } } };
       }
       if (isExternalWebUrl(url)) void shell.openExternal(url);
       return { action: "deny" };

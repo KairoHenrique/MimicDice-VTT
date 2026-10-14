@@ -1,15 +1,16 @@
 import { randomBytes } from "node:crypto";
-import { mkdir, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { FileBrowseResult } from "@tabbletop/protocol";
+import { MAX_NOTE_FILE_CHARACTERS, type FileBrowseResult } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
-import { contentMatchesExtension, isAllowedUploadExtension, uploadExtension } from "./uploadFileTypes";
+import { contentMatchesExtension, isAllowedUploadExtension, isPlainText, NOTE_FILE_EXTENSIONS, uploadExtension } from "./uploadFileTypes";
 
 export const UPLOADS_ROOT = "uploads";
 const BROWSABLE_ROOTS: readonly string[] = [UPLOADS_ROOT, "modules", "systems"];
 const MAX_LISTED_ENTRIES = 2000;
 const MAX_PATH_DEPTH = 12;
 const SEGMENT_PATTERN = /^[^\\/:*?"<>|\u0000-\u001f]{1,120}$/;
+const MAX_NOTE_FILE_BYTES = MAX_NOTE_FILE_CHARACTERS * 4;
 
 /**
  * The FilePicker's view of the data directory: user uploads (read-write) plus installed package folders
@@ -83,6 +84,42 @@ export class FileStorage {
     return [...segments, fileName].join("/");
   }
 
+  /** Reads a `.md`/`.txt` note; `segments` must come from `parseTarget`. */
+  async readNote(segments: readonly string[]): Promise<string> {
+    assertNoteFile(segments);
+    const filePath = this.#resolve(segments);
+    try {
+      const info = await stat(filePath);
+      if (!info.isFile() || info.size > MAX_NOTE_FILE_BYTES) throw HttpError.badRequest("Nota grande demais ou inválida");
+      return await readFile(filePath, "utf8");
+    } catch (error) {
+      if (error instanceof HttpError) throw error;
+      throw HttpError.notFound("Nota não encontrada");
+    }
+  }
+
+  /** Creates or replaces a `.md`/`.txt` note inside uploads; the file name is sanitized like any upload. */
+  async writeNote(target: string, content: string): Promise<string> {
+    const segments = writableSegments(target);
+    const fileName = sanitizeFileName(segments.pop() ?? "");
+    const finalSegments = [...segments, fileName];
+    assertNoteFile(finalSegments);
+    const bytes = Buffer.from(content, "utf8");
+    if (bytes.byteLength > MAX_NOTE_FILE_BYTES || !isPlainText(bytes)) throw HttpError.badRequest("Texto inválido para uma nota");
+    const directory = this.#resolve(segments);
+    await mkdir(directory, { recursive: true });
+    const finalPath = path.join(directory, fileName);
+    const partialPath = `${finalPath}.${randomBytes(6).toString("hex")}.part`;
+    try {
+      await writeFile(partialPath, bytes, { flag: "wx" });
+      await rename(partialPath, finalPath);
+    } catch (error) {
+      await rm(partialPath, { force: true });
+      throw error;
+    }
+    return finalSegments.join("/");
+  }
+
   async createDirectory(target: string): Promise<string> {
     const segments = writableSegments(target);
     if (segments.length < 2) throw HttpError.badRequest("Informe o nome da nova pasta");
@@ -96,6 +133,10 @@ export class FileStorage {
     if (resolved !== rootDirectory && !resolved.startsWith(rootDirectory + path.sep)) throw HttpError.badRequest("Caminho inválido");
     return resolved;
   }
+}
+
+function assertNoteFile(segments: readonly string[]): void {
+  if (segments[0] !== UPLOADS_ROOT || !NOTE_FILE_EXTENSIONS.has(uploadExtension(segments[segments.length - 1] ?? ""))) throw HttpError.badRequest("Só notas .md ou .txt");
 }
 
 function writableSegments(target: string): string[] {

@@ -437,6 +437,130 @@
   opacity: 1;
 }
 
+.md-skills {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.md-skills-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--md-accent, #1d4f91);
+  color: #fff;
+  font-size: 1.25em;
+  font-weight: 700;
+}
+
+.md-skills-header.over {
+  background: #b42318;
+}
+
+.md-skills-limit {
+  font-size: 0.8em;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.md-skills-list {
+  display: grid;
+  grid-template-columns: repeat(var(--md-skill-columns, 1), minmax(0, 1fr));
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.md-skill {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: center;
+  min-height: 28px;
+  border-right: 1px solid var(--muted-strong);
+  border-bottom: 1px solid var(--muted-strong);
+}
+
+.md-skill-name {
+  overflow: hidden;
+  padding: 0 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.md-skill-roll {
+  min-height: 28px;
+  justify-content: flex-start;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+button.md-skill-roll:hover:not(:disabled) {
+  background: rgb(59 130 246 / 12%);
+}
+
+.md-skill-value {
+  height: 100%;
+  border-left: 1px solid var(--muted-strong);
+}
+
+.md-skill:has(> .md-pips) {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+input.md-skill-value {
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 4px;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0;
+  text-align: center;
+}
+
+.md-pips.md-skill-value {
+  justify-content: center;
+  padding: 2px 4px;
+}
+
+.md-marquee {
+  z-index: 5;
+  border: 1px dashed var(--brand);
+  border-radius: 4px;
+  background: rgb(59 130 246 / 12%);
+  pointer-events: none;
+}
+
+.md-group-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.md-group-inspector h3 {
+  margin: 0;
+  font-size: 1em;
+}
+
+.md-group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* Inspector */
 .md-insp-header {
   display: flex;

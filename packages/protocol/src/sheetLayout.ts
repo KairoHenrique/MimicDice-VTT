@@ -16,7 +16,7 @@ export const MAX_COMPONENTS_PER_PAGE = 150;
 export const MAX_LIST_COLUMNS = 8;
 
 /** Components that store a value in the actor under their `key`. */
-export const SHEET_VALUE_KINDS = ["number", "resource", "pips", "text", "longtext", "checkbox", "select", "list"] as const;
+export const SHEET_VALUE_KINDS = ["number", "resource", "pips", "text", "longtext", "checkbox", "select", "list", "skills"] as const;
 /** Components that only display or act: rolls, derived numbers and decoration. */
 export const SHEET_STATIC_KINDS = ["roll", "computed", "title", "label", "image", "portrait", "divider"] as const;
 export const SHEET_COMPONENT_KINDS = [...SHEET_VALUE_KINDS, ...SHEET_STATIC_KINDS] as const;
@@ -28,6 +28,11 @@ export const SHEET_TEXT_ALIGNS = ["left", "center", "right"] as const;
 export const SHEET_LIST_COLUMN_TYPES = ["text", "number", "checkbox"] as const;
 export const SHEET_ROLL_MODES = ["sum", "highest", "lowest"] as const;
 export type SheetRollMode = (typeof SHEET_ROLL_MODES)[number];
+export const SHEET_SKILL_VALUE_STYLES = ["number", "pips"] as const;
+export type SheetSkillValueStyle = (typeof SHEET_SKILL_VALUE_STYLES)[number];
+export const MAX_SHEET_SKILLS = 80;
+export const MAX_SKILL_COLUMNS = 4;
+export const MAX_SKILL_POINTS = 100000;
 
 const localIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,24}$/);
 const documentIdSchema = z.string().regex(/^[A-Za-z0-9]{16}$/);
@@ -59,6 +64,12 @@ export const sheetListColumnSchema = z.object({
 });
 export type SheetListColumn = z.infer<typeof sheetListColumnSchema>;
 
+export const sheetSkillSchema = z.object({
+  key: keySchema,
+  label: labelSchema,
+});
+export type SheetSkill = z.infer<typeof sheetSkillSchema>;
+
 export const sheetComponentSchema = z
   .object({
     id: localIdSchema,
@@ -84,6 +95,16 @@ export const sheetComponentSchema = z
     rollMode: z.enum(SHEET_ROLL_MODES).optional(),
     /** A table that lists the character's inventory items instead of rows stored in the sheet. */
     linkItems: z.boolean().optional(),
+    /** Skill list: one stored number per skill under `<key>.<skill>`, shown in 1 to 4 columns. */
+    skills: z
+      .array(sheetSkillSchema)
+      .max(MAX_SHEET_SKILLS)
+      .refine((skills) => new Set(skills.map((skill) => skill.key)).size === skills.length, { message: "Perícias repetidas" })
+      .optional(),
+    skillColumns: z.number().int().min(1).max(MAX_SKILL_COLUMNS).optional(),
+    skillStyle: z.enum(SHEET_SKILL_VALUE_STYLES).optional(),
+    /** Points a character may spread across the skills; the header warns when the total goes over. */
+    pointsMax: z.number().int().min(0).max(MAX_SKILL_POINTS).optional(),
     gmOnly: z.boolean().optional(),
     style: sheetComponentStyleSchema.optional(),
   })

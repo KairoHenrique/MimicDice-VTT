@@ -13,6 +13,7 @@ import { puppetToken, seesEverything } from "./viewpoint";
 const [VISION_LIMIT_NAMESPACE, VISION_LIMIT_KEY] = PLAYER_VISION_LIMIT_SETTING_KEY.split(".") as [string, string];
 const MAX_FOG_TEXTURE_SIZE = 2048;
 const EXPLORED_REVEAL_ALPHA = 0.45;
+const GM_PREVIEW_DARKNESS_ALPHA = 0.7;
 
 interface VisionShapes {
   sight: PIXI.Polygon[];
@@ -69,9 +70,13 @@ export class VisibilityLayer extends CanvasLayer {
     this.#dirty = true;
   }
 
-  /** The GM looking through a token sees only what it sees now: everything else stays fully black. */
+  /** The GM looking through a token previews the player's view: outside it the map is only dimmed, never hidden. */
+  get #isGmPreview(): boolean {
+    return currentGame()?.user?.isGM === true;
+  }
+
   #remembersExploration(canvas: any): boolean {
-    return canvas.scene._source.fog?.exploration !== false && currentGame()?.user?.isGM !== true;
+    return canvas.scene._source.fog?.exploration !== false && !this.#isGmPreview;
   }
 
   protected override async _draw(): Promise<void> {
@@ -115,7 +120,7 @@ export class VisibilityLayer extends CanvasLayer {
 
   isTokenVisible(token: Token): boolean {
     const puppet = puppetToken();
-    if (!this.active || (puppet ? token === puppet : token.isOwner)) return true;
+    if (!this.active || this.#isGmPreview || (puppet ? token === puppet : token.isOwner)) return true;
     const { x, y, width, height } = token.bounds;
     const inset = Math.min(width, height) * 0.2;
     const probes: Point[] = [token.center, { x: x + inset, y: y + inset }, { x: x + width - inset, y: y + inset }, { x: x + inset, y: y + height - inset }, { x: x + width - inset, y: y + height - inset }];
@@ -199,7 +204,8 @@ export class VisibilityLayer extends CanvasLayer {
     sprite.visible = this.active;
     if (!this.active) return;
     const transform = new PIXI.Matrix().scale(this.#textureScale, this.#textureScale);
-    const darkness = new PIXI.Graphics().beginFill(0x000000, 1).drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height).endFill();
+    const darknessAlpha = this.#isGmPreview ? GM_PREVIEW_DARKNESS_ALPHA : 1;
+    const darkness = new PIXI.Graphics().beginFill(0x000000, darknessAlpha).drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height).endFill();
     renderer.render(darkness, { renderTexture: overlayTexture, clear: true, transform });
     darkness.destroy();
     if (this.#remembersExploration(canvas) && this.#explorationTexture) {

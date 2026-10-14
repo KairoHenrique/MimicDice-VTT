@@ -1,5 +1,7 @@
-import { MAX_PIPS, type SheetComponent, type SheetRollMode } from "@tabbletop/protocol";
+import { MAX_PIPS, MAX_SHEET_SKILLS, MAX_SKILL_POINTS, type SheetComponent, type SheetRollMode, type SheetSkillValueStyle } from "@tabbletop/protocol";
+import { h } from "../../../../views/dom";
 import { isValidComputedFormula, isValidRollFormula } from "../formulaChecks";
+import { skillsFromLabels } from "../skillList";
 import { checkRow, choiceRow, numberRow, textareaRow, textRow } from "./inspectorControls";
 import { buildListColumnsEditor } from "./listColumnsEditor";
 
@@ -68,6 +70,8 @@ export function buildKindFields(component: SheetComponent, patch: ComponentPatch
         formulaRow(component, patch, "roll", "Opcional: cada linha ganha um dado. Use @linha.<coluna>, ex.: 1d20 + @linha.bonus"),
         rollModeRow(component, patch),
       ];
+    case "skills":
+      return skillsFields(component, patch);
     case "roll":
       return [formulaRow(component, patch, "roll", "Use @atalhos de outros componentes, ex.: 1d20 + @forca"), rollModeRow(component, patch)];
     case "computed":
@@ -80,6 +84,42 @@ export function buildKindFields(component: SheetComponent, patch: ComponentPatch
     default:
       return [];
   }
+}
+
+const SKILL_COLUMN_CHOICES: ReadonlyArray<readonly ["1" | "2" | "3" | "4", string]> = [
+  ["1", "1 coluna"],
+  ["2", "2 colunas"],
+  ["3", "3 colunas"],
+  ["4", "4 colunas"],
+];
+
+const SKILL_STYLE_CHOICES: ReadonlyArray<readonly [SheetSkillValueStyle, string]> = [
+  ["number", "Número"],
+  ["pips", "Bolinhas"],
+];
+
+function skillsFields(component: SheetComponent, patch: ComponentPatch): HTMLElement[] {
+  const skills = component.skills ?? [];
+  const style = component.skillStyle ?? "number";
+  const names = textareaRow("Perícias (uma por linha)", skills.map((skill) => skill.label).join("\n"), "skills", (value) => patch({ skills: skillsFromLabels(value.split(/\r?\n/), skills) }), {
+    maxlength: 5000,
+    hint: `Até ${MAX_SHEET_SKILLS}. Trocar a ordem ou adicionar não apaga os pontos já marcados; renomear começa do zero.`,
+  });
+  const rows: HTMLElement[] = [
+    names,
+    choiceRow("Formato", String(component.skillColumns ?? 1) as "1", SKILL_COLUMN_CHOICES, "skillColumns", (value) => patch({ skillColumns: value === "1" ? undefined : Number(value) })),
+    choiceRow("Valor de cada perícia", style, SKILL_STYLE_CHOICES, "skillStyle", (value) => patch({ skillStyle: value === "number" ? undefined : value })),
+  ];
+  if (style === "pips") rows.push(numberRow("Bolinhas por perícia", component.max ?? 3, "max", (value) => patch({ max: Math.min(MAX_PIPS, Math.max(1, Math.round(value ?? 3))) }), { min: 1, max: MAX_PIPS }));
+  else rows.push(numberRow("Mínimo", component.min, "min", (value) => patch({ min: value })));
+  rows.push(
+    numberRow("Pontos máximos (vazio = sem limite)", component.pointsMax, "pointsMax", (value) => patch({ pointsMax: value && value > 0 ? Math.min(MAX_SKILL_POINTS, Math.round(value)) : undefined }), { min: 0, max: MAX_SKILL_POINTS, step: 1, hint: "Aparece no topo como \"máx\". O total fica vermelho se passar." }),
+    initialNumberRow(component, patch, "Pontos iniciais de cada perícia"),
+    formulaRow(component, patch, "roll", "Opcional: o nome da perícia vira botão de rolar. Use @valor para os pontos dela, ex.: 1d20 + @valor"),
+    rollModeRow(component, patch),
+  );
+  if (component.key && skills[0]) rows.push(h("p", { class: "hint" }, `Em outras fórmulas: @${component.key}.${skills[0].key} (pontos de ${skills[0].label}).`));
+  return rows;
 }
 
 function imagePathRow(component: SheetComponent, patch: ComponentPatch): HTMLElement {

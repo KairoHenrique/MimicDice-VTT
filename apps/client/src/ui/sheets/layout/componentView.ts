@@ -4,9 +4,10 @@ import type { BoardContext } from "./boardContext";
 import { storesValue } from "./componentCatalog";
 import { formatDerived } from "./computedValues";
 import { buildListControl } from "./listComponentView";
+import { buildSkillsControl } from "./skillsComponentView";
 import { buildValueControl, sheetRollButton } from "./valueComponentViews";
 
-const LABELLESS_KINDS = new Set(["title", "label", "image", "portrait", "divider", "roll", "checkbox"]);
+const LABELLESS_KINDS = new Set(["title", "label", "image", "portrait", "divider", "roll", "checkbox", "skills"]);
 
 function staticContent(context: BoardContext, component: SheetComponent): HTMLElement | null {
   switch (component.kind) {
@@ -60,7 +61,14 @@ export function gridPlacement(component: Pick<SheetComponent, "x" | "y" | "w" | 
 
 /** Inner part of a component (label + control), shared by the play view and the editor preview. */
 export function buildComponentBody(context: BoardContext, component: SheetComponent): HTMLElement {
-  const control = component.kind === "list" ? buildListControl(context, component) : storesValue(component.kind) ? buildValueControl(context, component) : staticContent(context, component);
+  const control =
+    component.kind === "list"
+      ? buildListControl(context, component)
+      : component.kind === "skills"
+        ? buildSkillsControl(context, component)
+        : storesValue(component.kind)
+          ? buildValueControl(context, component)
+          : staticContent(context, component);
   const showLabel = !LABELLESS_KINDS.has(component.kind) && !component.style?.hideLabel && component.label;
   const label = showLabel ? h("span", { class: "md-field-label" }, component.label as string) : null;
   return h("div", { class: styleClasses(component), style: inlineStyle(component), title: component.hint ?? "" }, label, control);

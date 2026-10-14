@@ -20,7 +20,7 @@ export class BoardEditor {
   readonly #history = new EditHistory<SheetLayout>();
   #layout: SheetLayout;
   #pageId: string;
-  #selectedId: string | null = null;
+  #selectedIds: string[] = [];
   readonly #saver: DebouncedSaver<SheetLayout>;
   #inspectorSlot: HTMLElement | null = null;
 
@@ -51,7 +51,7 @@ export class BoardEditor {
     this.#pageId = page.id;
     const context = new BoardContext(this.actor, this.#layout, false);
     this.#inspectorSlot = h("div", { class: "md-inspector-slot" }, this.#inspector());
-    const canvas = h("div", { class: "md-editor-canvas" }, buildEditorCanvas(context, page, this.#selectedId, this.#canvasCallbacks()));
+    const canvas = h("div", { class: "md-editor-canvas" }, buildEditorCanvas(context, page, new Set(this.#selectedIds), this.#canvasCallbacks()));
     this.element.replaceChildren(buildPageBar(this.#layout, page, this.#pageActions()), h("div", { class: "md-editor-body" }, buildPalette((kind) => this.#addKind(kind)), canvas, this.#inspectorSlot));
     if (focusKey) this.element.querySelector<HTMLElement>(`[data-focus-key="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
     return this.element;
@@ -61,11 +61,16 @@ export class BoardEditor {
     return this.#saver.flush();
   }
 
+  get #selectedId(): string | null {
+    return this.#selectedIds.length === 1 ? this.#selectedIds[0] : null;
+  }
+
   #selected(): SheetComponent | null {
     return resolveActivePage(this.#layout, this.#pageId).components.find((component) => component.id === this.#selectedId) ?? null;
   }
 
   #inspector(): HTMLElement {
+    if (this.#selectedIds.length > 1) return this.#groupInspector();
     const id = this.#selectedId;
     return buildComponentInspector(this.#layout, this.#selected(), {
       patch: (patch) => id && this.#patch(id, patch),
@@ -77,12 +82,34 @@ export class BoardEditor {
     });
   }
 
-  #select(componentId: string | null): void {
-    this.#selectedId = componentId;
+  #groupInspector(): HTMLElement {
+    const count = this.#selectedIds.length;
+    const button = (icon: string, label: string, onClick: () => void, danger = false) => {
+      const element = h("button", { type: "button", class: danger ? "danger" : "" }, h("i", { class: icon }), ` ${label}`);
+      element.addEventListener("click", onClick);
+      return element;
+    };
+    return h(
+      "div",
+      { class: "md-inspector md-group-inspector" },
+      h("h3", {}, h("i", { class: "fa-solid fa-object-group" }), ` ${count} componentes selecionados`),
+      h("p", { class: "hint" }, "Arraste qualquer um deles para mover o grupo todo. Setas movem, Delete apaga e Ctrl+D duplica. Shift ou Ctrl + clique tira ou põe um componente na seleção."),
+      h(
+        "div",
+        { class: "md-group-actions" },
+        button("fa-solid fa-clone", "Duplicar", () => this.#duplicateSelection()),
+        button("fa-solid fa-xmark", "Tirar seleção", () => this.#select([])),
+        button("fa-solid fa-trash", "Apagar todos", () => this.#removeSelection(), true),
+      ),
+    );
+  }
+
+  #select(componentIds: string[]): void {
+    this.#selectedIds = componentIds;
     this.#inspectorSlot?.replaceChildren(this.#inspector());
   }
 
-  #apply(next: SheetLayout, selectId: string | null = this.#selectedId): void {
+  #apply(next: SheetLayout, selectIds: string | string[] | null = this.#selectedIds): void {
     const parsed = sheetLayoutSchema.safeParse(next);
     if (!parsed.success) {
       ui.notifications.warn(`Alteração inválida: ${parsed.error.issues[0]?.message ?? "dados fora do limite"}.`);
@@ -91,7 +118,7 @@ export class BoardEditor {
     }
     this.#history.record(this.#layout);
     this.#layout = parsed.data;
-    this.#selectedId = selectId;
+    this.#selectedIds = selectIds === null ? [] : typeof selectIds === "string" ? [selectIds] : selectIds;
     this.#saver.schedule(this.#layout);
     this.render();
   }
@@ -124,18 +151,43 @@ export class BoardEditor {
     this.#apply(mutate.removeComponent(this.#layout, this.#pageId, componentId), null);
   }
 
+  #removeSelection(): void {
+    this.#apply(mutate.removeComponents(this.#layout, this.#pageId, new Set(this.#selectedIds)), null);
+  }
+
+  #duplicateSelection(): void {
+    let layout = this.#layout;
+    const copies: string[] = [];
+    try {
+      for (const id of this.#selectedIds) {
+        const result = mutate.duplicateComponent(layout, this.#pageId, id);
+        layout = result.layout;
+        if (result.copyId) copies.push(result.copyId);
+      }
+    } catch (error) {
+      ui.notifications.warn(error instanceof Error ? error.message : "Não foi possível duplicar.");
+      return;
+    }
+    this.#apply(layout, copies);
+  }
+
+  #moveSelection(dx: number, dy: number): void {
+    this.#apply(mutate.moveComponents(this.#layout, this.#pageId, new Set(this.#selectedIds), dx, dy));
+  }
+
   #restore(snapshot: SheetLayout | null): void {
     if (!snapshot) return;
     this.#layout = snapshot;
-    this.#selectedId = null;
+    this.#selectedIds = [];
     this.#saver.schedule(snapshot);
     this.render();
   }
 
   #canvasCallbacks(): CanvasCallbacks {
     return {
-      onSelect: (componentId) => this.#select(componentId),
-      onPlace: (componentId, rect) => this.#apply(mutate.placeComponent(this.#layout, this.#pageId, componentId, rect)),
+      onSelect: (componentIds) => this.#select(componentIds),
+      onPlace: (componentId, rect) => this.#apply(mutate.placeComponent(this.#layout, this.#pageId, componentId, rect), componentId),
+      onMoveGroup: (componentIds, dx, dy) => this.#apply(mutate.moveComponents(this.#layout, this.#pageId, new Set(componentIds), dx, dy), componentIds),
       onDropKind: (kind, cell) => this.#addKind(kind, { x: cell.col, y: cell.row }),
       onKey: (componentId, event) => this.#onKey(componentId, event),
     };
@@ -143,25 +195,41 @@ export class BoardEditor {
 
   #onKey(componentId: string, event: KeyboardEvent): void {
     const action = componentKeyAction(event);
+    if (!action) return;
+    if (this.#selectedIds.length > 1 && this.#onGroupKey(action)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     const component = this.#selected() ?? resolveActivePage(this.#layout, this.#pageId).components.find((entry) => entry.id === componentId);
-    if (!action || !component) return;
+    if (!component) return;
     event.preventDefault();
     event.stopPropagation();
-    this.#selectedId = component.id;
+    this.#selectedIds = [component.id];
     if (action.type === "nudge") this.#apply(mutate.placeComponent(this.#layout, this.#pageId, component.id, { ...component, x: component.x + action.dx, y: component.y + action.dy }));
     else if (action.type === "resize") this.#apply(mutate.placeComponent(this.#layout, this.#pageId, component.id, { ...component, w: component.w + action.dw, h: component.h + action.dh }));
     else if (action.type === "remove") this.#remove(component.id);
     else if (action.type === "duplicate") this.#duplicate(component.id);
-    else if (action.type === "deselect") this.#select(null);
+    else if (action.type === "deselect") this.#select([]);
     else if (action.type === "undo") this.#restore(this.#history.undo(this.#layout));
     else this.#restore(this.#history.redo(this.#layout));
+  }
+
+  /** Keys that act on the whole selection; resizing and undo keep their single-component meaning. */
+  #onGroupKey(action: NonNullable<ReturnType<typeof componentKeyAction>>): boolean {
+    if (action.type === "nudge") this.#moveSelection(action.dx, action.dy);
+    else if (action.type === "remove") this.#removeSelection();
+    else if (action.type === "duplicate") this.#duplicateSelection();
+    else if (action.type === "deselect") this.#select([]);
+    else return false;
+    return true;
   }
 
   #pageActions() {
     return {
       select: (pageId: string) => {
         this.#pageId = pageId;
-        this.#selectedId = null;
+        this.#selectedIds = [];
         this.render();
       },
       add: () => this.#guard(() => {

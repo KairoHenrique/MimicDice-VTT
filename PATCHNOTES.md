@@ -1,5 +1,17 @@
 # Notas de versão
 
+## 1.2.2
+
+- **Apagar notas:** clique direito numa nota abre um menu com **Abrir nota**, **Editar nota** e **Apagar nota**. O mestre apaga qualquer nota; o jogador, as que forem dele.
+- **Visão do mestre pelo token:** quando o mestre entra na visão de um token, o que o token não vê fica **escurecido, mas visível**, com tokens e objetos aparecendo por baixo. Assim o mestre sabe onde está cada coisa e ainda tem uma ideia de como o jogador vê. A visão dos jogadores continua igual.
+- **Quem está movendo:** enquanto alguém arrasta um token, aparece embaixo dele o nome de quem está movendo (na cor do jogador), para todos da mesa e para quem está arrastando.
+- **Portas na seleção:** com a ferramenta de seleção das paredes, as portas podem ser selecionadas e arrastadas (Shift soma à seleção). Clique duplo abre ou fecha a porta.
+- **Ficha: vários componentes de uma vez:** Shift/Ctrl+clique ou um retângulo arrastado no espaço vazio seleciona vários componentes, que podem ser movidos, duplicados ou apagados juntos.
+- **Ficha: lista de perícias:** novo componente **Perícias**, com cabeçalho de total e pontos máximos. O mestre define os nomes (um por linha), quantas colunas, se o valor é número ou bolinhas, e uma fórmula de rolagem com `@valor`.
+- **Minhas pastas para o jogador:** botão de pasta na barra do jogador abre os arquivos dele.
+- **Notas, PDFs e imagens nas pastas:** o botão **Nova nota** cria uma anotação de texto na pasta. Clique duplo abre a nota para editar (só leitura em pastas compartilhadas por outros); PDFs e imagens abrem em outra janela. Agora também é possível enviar PDFs.
+- **Guia de fórmulas:** novo tópico **Fórmulas da ficha** no tutorial (botão ?) e no README, com atalhos `@`, dados, manter/descartar, resultado da rolagem, funções de cálculo, tabelas e perícias.
+
 ## 1.2.1
 
 ### Arquivos e pastas

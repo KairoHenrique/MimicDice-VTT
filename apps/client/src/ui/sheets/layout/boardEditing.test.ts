@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SheetComponent } from "@tabbletop/protocol";
-import { clampRect, findFreeSpot } from "./boardMutations";
+import { clampGroupDelta, clampRect, componentsInArea, findFreeSpot } from "./boardMutations";
 import { computeDerivedValues, formatDerived } from "./computedValues";
 import { componentKeyAction } from "./editor/editorKeys";
 import { cellAt } from "./editor/gridGeometry";
@@ -21,6 +21,21 @@ describe("grid placement", () => {
     expect(cellAt(metrics, 100, 50)).toEqual({ col: 0, row: 0 });
     expect(cellAt(metrics, 100 + 2 * 100 + 5, 50 + 3 * 40 + 1)).toEqual({ col: 2, row: 3 });
     expect(cellAt(metrics, 5000, 0)).toEqual({ col: 11, row: 0 });
+  });
+});
+
+describe("group editing", () => {
+  const rect = (id: string, x: number, y: number, w: number, h: number): SheetComponent => ({ id, kind: "title", x, y, w, h });
+
+  it("stops the whole group at the grid edge so it keeps its shape", () => {
+    const group = [rect("a", 0, 2, 4, 1), rect("b", 6, 4, 4, 2)];
+    expect(clampGroupDelta(group, -5, -1)).toEqual({ dx: 0, dy: -1 });
+    expect(clampGroupDelta(group, 5, -9)).toEqual({ dx: 2, dy: -2 });
+  });
+
+  it("picks every component a selection box touches", () => {
+    const components = [rect("a", 0, 0, 4, 2), rect("b", 6, 0, 4, 2), rect("c", 0, 6, 12, 1)];
+    expect(componentsInArea(components, { x: 3, y: 1, w: 4, h: 1 })).toEqual(["a", "b"]);
   });
 });
 

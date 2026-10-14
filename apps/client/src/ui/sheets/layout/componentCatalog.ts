@@ -26,6 +26,7 @@ export const COMPONENT_CATALOG: readonly ComponentKindInfo[] = Object.freeze([
   { kind: "checkbox", label: "Caixa", icon: "fa-solid fa-square-check", group: "values", description: "Liga/desliga uma condição.", defaultSize: { w: 3, h: 1 } },
   { kind: "select", label: "Lista de opções", icon: "fa-solid fa-list-ul", group: "values", description: "Escolha uma entre várias opções.", defaultSize: { w: 4, h: 2 } },
   { kind: "list", label: "Tabela", icon: "fa-solid fa-table-list", group: "values", description: "Linhas repetíveis: inventário, magias, ataques.", defaultSize: { w: 12, h: 5 } },
+  { kind: "skills", label: "Perícias", icon: "fa-solid fa-list-check", group: "values", description: "Lista de perícias com pontos, total e máximo.", defaultSize: { w: 4, h: 16 } },
   { kind: "roll", label: "Botão de rolagem", icon: "fa-solid fa-dice-d20", group: "actions", description: "Rola uma fórmula com @atalhos.", defaultSize: { w: 3, h: 2 } },
   { kind: "computed", label: "Cálculo", icon: "fa-solid fa-calculator", group: "actions", description: "Mostra um valor calculado, ex.: floor((@forca-10)/2).", defaultSize: { w: 3, h: 2 } },
   { kind: "title", label: "Título", icon: "fa-solid fa-heading", group: "decoration", description: "Cabeçalho de uma área da ficha.", defaultSize: { w: 12, h: 1 } },

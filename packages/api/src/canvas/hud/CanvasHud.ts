@@ -277,6 +277,16 @@ export class CanvasHud {
     if (values) await light.document.update(values);
   }
 
+  showNoteMenu(note: Note, event: PIXI.FederatedPointerEvent): void {
+    const user = currentGame()?.user;
+    const entries: MenuEntry[] = [
+      { label: "Abrir nota", icon: "fa-solid fa-book-open", onSelect: () => note.activate() },
+      { label: "Editar nota", icon: "fa-solid fa-pen", onSelect: () => void this.configureNote(note) },
+    ];
+    if (note.document.canUserModify?.(user, "delete")) entries.push({ label: "Apagar nota", icon: "fa-solid fa-trash", onSelect: () => note.document.delete() });
+    this.#openMenu(entries, event);
+  }
+
   async configureNote(note: Note | null, _event?: unknown, initial: PlainObject = {}): Promise<PlainObject | null> {
     const source = note?.document ?? initial;
     const journalChoices = (currentGame()?.journal?.contents ?? []).map((entry: any) => ({ value: entry.id, label: entry.name }));

@@ -44,6 +44,7 @@ export class Token extends PlaceableObject {
   #animation: MoveAnimation | null = null;
   #animationTick = () => this.#stepAnimation();
   #livePosition: Point | null = null;
+  #dragLabel: PIXI.Text | null = null;
 
   get w(): number {
     return Number(this.document.width) * currentCanvas().grid.size;
@@ -126,6 +127,7 @@ export class Token extends PlaceableObject {
     this.nameplate.text = this.document.name ?? "";
     this.nameplate.position.set(w / 2, h + 4);
     this.nameplate.visible = this.hover || this.controlled || Number(this.document.displayName) >= CONST.TOKEN_DISPLAY_MODES.ALWAYS;
+    this.#placeDragLabel(w, h);
     this.alpha = this.document.hidden ? 0.5 : (Number(this.document.alpha) ?? 1);
     this.hitArea = new PIXI.Rectangle(0, 0, w, h);
     this.cursor = this.canControl() || this.canDrag() ? "pointer" : "default";
@@ -222,6 +224,32 @@ export class Token extends PlaceableObject {
   override _onDelete(options: PlainObject, userId: string): void {
     this.#stopAnimation();
     super._onDelete(options, userId);
+  }
+
+  /** Names the user dragging this token under its nameplate, for everyone at the table; `null` hides it. */
+  showDragger(user: { name?: unknown; color?: unknown } | null): void {
+    if (this.destroyed) return;
+    const name = typeof user?.name === "string" ? user.name.trim() : "";
+    if (!name) {
+      if (this.#dragLabel) this.#dragLabel.visible = false;
+      return;
+    }
+    if (!this.#dragLabel || this.#dragLabel.destroyed) {
+      this.#dragLabel = new PIXI.Text("", new PIXI.TextStyle({ fontFamily: "Signika, Arial, sans-serif", fontSize: 18, fontStyle: "italic", fill: 0xffffff, stroke: 0x111111, strokeThickness: 4, align: "center" }));
+      this.#dragLabel.anchor.set(0.5, 0);
+      this.addChild(this.#dragLabel);
+    }
+    this.#dragLabel.text = `${name} está movendo`;
+    this.#dragLabel.style.fill = colorToNumber(user?.color, 0xffffff);
+    this.#dragLabel.visible = true;
+    this.#placeDragLabel(this.w, this.h);
+  }
+
+  #placeDragLabel(width: number, height: number): void {
+    const label = this.#dragLabel;
+    if (!label || label.destroyed || !label.visible) return;
+    const below = this.nameplate?.visible ? this.nameplate.height + 2 : 0;
+    label.position.set(width / 2, height + 4 + below);
   }
 
   /** Where another user is dragging this token right now; `null` returns it to its saved position. */

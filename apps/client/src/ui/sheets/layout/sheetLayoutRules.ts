@@ -71,6 +71,8 @@ export function initialValueFor(component: SheetComponent): unknown {
       return typeof component.initial === "string" ? component.initial : "";
     case "list":
       return [];
+    case "skills":
+      return Object.fromEntries((component.skills ?? []).map((skill) => [skill.key, numericInitial(component)]));
     default:
       return undefined;
   }

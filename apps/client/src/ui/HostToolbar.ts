@@ -1,4 +1,4 @@
-import type { ApplicationConfiguration, RenderOptions } from "@tabbletop/api";
+import { FilePicker, type ApplicationConfiguration, type RenderOptions } from "@tabbletop/api";
 import { isGmEditMode, isMapLocked, isToolbarCollapsed, shareGameMasterView, toggleGmEditMode, toggleMapLock, toggleToolbarCollapsed } from "../game/tableControls";
 import { isScenePaused, toggleScenePause } from "../game/scenePause";
 import { isTableSessionOpen, toggleTableSession } from "../game/tableSession";
@@ -102,7 +102,9 @@ export class HostToolbar extends DomApplication {
   #playerGroups(): HTMLElement[] {
     const sessionBadge = isTableSessionOpen() ? null : h("span", { class: "map-locked-badge", title: "O mestre ainda não iniciou a sessão" }, h("i", { class: "fas fa-moon" }), " Sessão fechada");
     const badge = isMapLocked() ? h("span", { class: "map-locked-badge", title: "O mestre travou o mapa" }, h("i", { class: "fas fa-lock" }), " Mapa travado") : null;
-    return [this.#group("Personagem", this.#characterButton(), playersSeeStatusPanel() ? this.#statusButton() : null, sessionBadge, badge)];
+    const folders = this.#button("fas fa-folder-open", "Minhas pastas", () => new FilePicker({ type: "any", browseOnly: true, window: { title: "Minhas pastas", icon: "fa-solid fa-folder-open" } as ApplicationConfiguration["window"] }).render({ force: true }), "compact", "toolbar:player-files");
+    folders.title = "Sua pasta de arquivos e as pastas que o grupo compartilhou.";
+    return [this.#group("Personagem", this.#characterButton(), playersSeeStatusPanel() ? this.#statusButton() : null, folders, sessionBadge, badge)];
   }
 
   #statusButton(): HTMLButtonElement {

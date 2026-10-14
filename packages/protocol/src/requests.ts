@@ -179,6 +179,19 @@ export interface FileBrowseResult {
 export const shareFolderRequestSchema = z.object({ target: filePathSchema.min(1), shared: z.boolean() });
 export type ShareFolderRequest = z.infer<typeof shareFolderRequestSchema>;
 
+/** Plain-text notes kept in the uploads folders (`.md` or `.txt`). */
+export const MAX_NOTE_FILE_CHARACTERS = 200_000;
+export const readNoteFileQuerySchema = z.object({ path: filePathSchema.min(1) });
+export type ReadNoteFileQuery = z.infer<typeof readNoteFileQuerySchema>;
+export const writeNoteFileRequestSchema = z.object({ path: filePathSchema.min(1), content: z.string().max(MAX_NOTE_FILE_CHARACTERS) });
+export type WriteNoteFileRequest = z.infer<typeof writeNoteFileRequestSchema>;
+
+export interface NoteFileResult {
+  path: string;
+  content: string;
+  writable: boolean;
+}
+
 export interface FileUploadResult {
   path: string;
 }

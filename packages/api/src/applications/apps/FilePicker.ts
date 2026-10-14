@@ -2,6 +2,9 @@ import { currentConfig, currentUi } from "../../runtime";
 import { parseS3URL } from "../../utils/routes";
 import { ApplicationV2, type ApplicationConfiguration, type RenderOptions } from "../ApplicationV2";
 import { createFilePickerView, type FilePickerViewModel } from "./filePickerView";
+import { NoteFileEditor } from "./NoteFileEditor";
+
+const NOTE_FILE_PATTERN = /\.(md|txt)$/i;
 
 export type FilePickerType = "image" | "audio" | "video" | "imagevideo" | "font" | "text" | "folder" | "any";
 
@@ -25,6 +28,7 @@ export interface FilePickerOptions extends Partial<ApplicationConfiguration> {
   field?: HTMLInputElement | null;
   button?: HTMLElement | null;
   activeSource?: string;
+  browseOnly?: boolean;
 }
 
 const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif", ".svg"];
@@ -163,14 +167,16 @@ export class FilePicker extends ApplicationV2 {
   readonly button: HTMLElement | null;
   readonly callback: FilePickerOptions["callback"];
   readonly activeSource = "data";
+  readonly browseOnly: boolean;
   request: string;
   target: string;
   result: FilePickerBrowseResult | null = null;
   selectedPath: string;
 
   constructor(options: FilePickerOptions = {}) {
-    const { type, current, callback, field, button, ...applicationOptions } = options;
+    const { type, current, callback, field, button, browseOnly, ...applicationOptions } = options;
     super(applicationOptions);
+    this.browseOnly = browseOnly === true;
     this.type = type && (type in EXTENSIONS_BY_TYPE || type === "folder" || type === "any") ? type : "any";
     this.field = field ?? null;
     this.button = button ?? null;
@@ -219,6 +225,7 @@ export class FilePicker extends ApplicationV2 {
       selectedPath: this.selectedPath,
       type: this.type,
       canUpload: this.canUpload,
+      browseOnly: this.browseOnly,
       toUrl: dataPathToUrl,
     };
     return createFilePickerView(model, {
@@ -226,11 +233,35 @@ export class FilePicker extends ApplicationV2 {
       select: (path) => this.#select(path),
       confirm: (path) => {
         this.selectedPath = path;
-        void this._onSubmit(new Event("submit"));
+        if (this.browseOnly) this.#openFile(path);
+        else void this._onSubmit(new Event("submit"));
       },
       upload: (files) => void this.#uploadFiles(files),
       createFolder: (name) => void this.#createFolder(name),
       share: (path, shared) => void this.#share(path, shared),
+      createNote: () => this.#openNoteEditor(),
+    });
+  }
+
+  #openFile(path: string): void {
+    if (NOTE_FILE_PATTERN.test(path)) {
+      this.#openNoteEditor(path);
+      return;
+    }
+    window.open(dataPathToUrl(path), "_blank", "noopener");
+  }
+
+  #openNoteEditor(path?: string): void {
+    const editor = new NoteFileEditor({
+      path,
+      folder: this.target,
+      onSaved: async (saved) => {
+        await this.browse(this.target);
+        this.#select(saved);
+      },
+    });
+    void editor.render({ force: true }).catch((error: unknown) => {
+      currentUi()?.notifications?.error(error instanceof Error ? error.message : "Não foi possível abrir a nota");
     });
   }
 

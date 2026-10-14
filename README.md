@@ -1,8 +1,8 @@
 # MimicDice VTT
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.1-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.2-blue) ![Status](https://img.shields.io/badge/status-est%C3%A1vel-brightgreen) ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6) ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-> **Versão atual: 1.2.1.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
+> **Versão atual: 1.2.2.** Veja o que mudou em [PATCHNOTES.md](PATCHNOTES.md).
 
 Mesa virtual (VTT) para jogar RPG com os amigos. Você hospeda a mesa no seu próprio computador, envia o link de convite e os jogadores entram pelo navegador, sem precisar de assinatura nem de servidor na nuvem.
 
@@ -38,6 +38,39 @@ O MimicDice inclui uma camada de compatibilidade com a API do Foundry VTT, entã
 - **Configurações e atalhos:** preferências por usuário e teclas trocáveis, salvas na conta.
 - **Salas no launcher:** crie, abra, entre e exclua suas mesas direto pelo app desktop.
 - **Usuários e permissões:** senha do mestre por sala (opcional), "lembrar minha senha", banimento de jogadores, papéis por jogador e presença em tempo real via Socket.IO.
+- **Fichas montáveis:** o mestre monta o modelo de ficha arrastando componentes (números, barras, tabelas, perícias, cálculos e rolagens), seleciona vários de uma vez e escreve fórmulas com atalhos `@`.
+- **Pastas e notas dos jogadores:** cada jogador tem sua pasta para imagens, PDFs e notas de texto que ele escreve e edita ali mesmo.
+- **Quem está movendo:** enquanto alguém arrasta um token, todos veem o nome dessa pessoa embaixo dele.
+
+## Fórmulas da ficha
+
+Os componentes da ficha usam fórmulas para rolar dados e calcular valores. O mesmo guia está no tutorial do app (botão **?** > **Fórmulas da ficha**).
+
+| O que | Como escrever | Exemplo |
+| --- | --- | --- |
+| Usar outro componente | `@atalho` (o "Atalho @" definido no componente) | `1d20 + @forca` |
+| Dados | `NdX` rola N dados de X lados | `2d6 + 3` |
+| Quantidade de dados vinda da ficha | `(@atalho)dX` | `(@agilidade)d20` |
+| Manter os maiores / menores | `kh` / `kl` (com quantidade opcional) | `4d6kh3`, `2d20kl` |
+| Descartar o menor / maior | `dl` / `dh` | `4d6dl1` |
+| Valor dentro de outro | `@atalho.campo` | `@recursos.vida.max` |
+| Coluna da linha da tabela | `@linha.<coluna>` | `1d20 + @linha.bonus` |
+| Pontos da perícia clicada | `@valor` | `(@valor)d20`, `1d20 + @valor` |
+| Uma perícia em outro componente | `@<atalho da lista>.<chave da perícia>` | `@pericias.luta` |
+
+**Resultado da rolagem.** Os componentes que rolam dados têm a opção *Somar todos os dados*, *Só o maior dado* ou *Só o menor dado*. Com `(@agilidade)d20` e *Só o maior dado*, o personagem rola um d20 por ponto de Agilidade e fica com o melhor.
+
+**Cálculo.** O componente *Cálculo* mostra um número sem rolar dados, e outros componentes podem usar o atalho dele. Funções disponíveis: `floor` (arredonda para baixo), `ceil` (para cima), `round`, `abs`, `min`, `max`, `clamp(valor, mínimo, máximo)`, `sqrt` e `pow`.
+
+```text
+floor((@forca - 10) / 2)
+max(1, @vigor * 2)
+clamp(@pv_atual, 0, @pv_max)
+```
+
+**Lista de perícias.** O mestre escreve os nomes (um por linha), escolhe de 1 a 4 colunas, se o valor é número ou bolinhas, os pontos máximos (o cabeçalho fica vermelho quando passa) e uma fórmula com `@valor`. Cada nome vira um botão de rolar.
+
+Se a fórmula estiver errada, a rolagem não acontece e o app avisa: confira os parênteses e se o atalho existe na ficha.
 
 ## Segurança
 

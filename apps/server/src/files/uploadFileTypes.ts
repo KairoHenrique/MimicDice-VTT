@@ -12,6 +12,17 @@ function startsWithAscii(bytes: Uint8Array, text: string, offset = 0): boolean {
 const isRiffOf = (format: string): SignatureCheck => (bytes) => startsWithAscii(bytes, "RIFF") && startsWithAscii(bytes, format, 8);
 const isIsoMedia: SignatureCheck = (bytes) => startsWithAscii(bytes, "ftyp", 4);
 const isMatroska: SignatureCheck = (bytes) => startsWithBytes(bytes, [0x1a, 0x45, 0xdf, 0xa3]);
+/** Valid UTF-8 without NUL bytes: a real text file, not a renamed binary. */
+export const isPlainText: SignatureCheck = (bytes) => {
+  if (bytes.includes(0)) return false;
+  try {
+    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const isSvg: SignatureCheck = (bytes) => {
   const head = new TextDecoder().decode(bytes.subarray(0, 1024)).trimStart().toLowerCase();
   return head.startsWith("<svg") || (head.startsWith("<?xml") && head.includes("<svg"));
@@ -41,7 +52,12 @@ const UPLOAD_SIGNATURES: Readonly<Record<string, SignatureCheck>> = {
   woff2: (bytes) => startsWithAscii(bytes, "wOF2"),
   ttf: (bytes) => startsWithBytes(bytes, [0x00, 0x01, 0x00, 0x00]),
   otf: (bytes) => startsWithAscii(bytes, "OTTO"),
+  pdf: (bytes) => startsWithAscii(bytes, "%PDF-"),
+  txt: isPlainText,
+  md: isPlainText,
 };
+
+export const NOTE_FILE_EXTENSIONS: ReadonlySet<string> = new Set(["md", "txt"]);
 
 export function uploadExtension(fileName: string): string {
   const dotIndex = fileName.lastIndexOf(".");
