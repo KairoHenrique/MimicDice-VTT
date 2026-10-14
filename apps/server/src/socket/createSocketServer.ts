@@ -21,6 +21,8 @@ import { attachPackageEventRelay } from "./packageEventRelay";
 import { PresenceTracker } from "./PresenceTracker";
 import { SlidingWindowLimiter } from "./SlidingWindowLimiter";
 import { attachTokenDragRelay } from "./tokenDragRelay";
+import { attachItemExchangeHandler } from "./itemExchangeHandler";
+import { attachChestHandler } from "./chestHandler";
 import { attachLootPickupHandler } from "./lootPickupHandler";
 import { TableSessionIdleCloser } from "../world/TableSessionIdleCloser";
 
@@ -188,6 +190,8 @@ export function createSocketServer(context: ServerContext, httpServer: HttpServe
     attachPackageEventRelay(context, socket);
     attachTokenDragRelay(context, io, socket, identityOf(socket).userId);
     attachLootPickupHandler(context, io, socket, presence, identityOf(socket).userId);
+    attachItemExchangeHandler(context, io, socket, presence, identityOf(socket).userId);
+    attachChestHandler(context, io, socket, presence, identityOf(socket).userId);
   });
 
   return io;

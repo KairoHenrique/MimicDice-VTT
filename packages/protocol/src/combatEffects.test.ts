@@ -3,7 +3,9 @@ import {
   afterOwnTurn,
   type AppliedEffect,
   effectIconSchema,
+  formatDamage,
   hasActsLast,
+  parseDamageInput,
   parseEffectDefinitions,
   searchEffectDefinitions,
   STARTER_EFFECT_DEFINITIONS,
@@ -50,6 +52,22 @@ describe("combat effects", () => {
   it("refreshes an effect applied twice instead of stacking it", () => {
     const effects = withAppliedEffect([applied("envenenado", { turnsLeft: 1 })], applied("envenenado", { turnsLeft: 5 }));
     expect(effects).toEqual([expect.objectContaining({ turnsLeft: 5 })]);
+  });
+
+  it("reads damage typed as a number or as dice, and refuses anything else", () => {
+    expect(parseDamageInput("3")).toEqual({ damagePerTurn: 3, damageDice: "" });
+    expect(parseDamageInput(" 1d6 + 2 ")).toEqual({ damagePerTurn: 0, damageDice: "1d6+2" });
+    expect(parseDamageInput("")).toEqual({ damagePerTurn: 0, damageDice: "" });
+    expect(parseDamageInput("1d6+@forca")).toBeNull();
+    expect(parseDamageInput("1d6*99")).toBeNull();
+    expect(formatDamage({ damagePerTurn: 2, damageDice: "1d6" })).toBe("1d6+2");
+    expect(parseEffectDefinitions([{ ...STARTER_EFFECT_DEFINITIONS[0], damageDice: "alert(1)" }])).toEqual([]);
+  });
+
+  it("adds each effect's dice result to its fixed damage", () => {
+    const poison = applied("envenenado", { damagePerTurn: 2, damageDice: "1d6" });
+    expect(turnStartDamage([poison], () => 4).get("vida")).toBe(6);
+    expect(turnStartDamage([applied("envenenado", { damagePerTurn: 0, damageDice: "1d4" })], () => 3).get("vida")).toBe(3);
   });
 
   it("finds effects ignoring accents and case", () => {

@@ -7,3 +7,5 @@ export * from "./actorSheetRules";
 export * from "./combatEffects";
 export * from "./mapLayers";
 export * from "./mapLoot";
+export * from "./concealment";
+export * from "./chests";

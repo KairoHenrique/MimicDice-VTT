@@ -5,6 +5,7 @@ import { seesEverything } from "../perception/viewpoint";
 import { Hooks } from "../../hooks/Hooks";
 import { currentCanvas, currentGame } from "../../runtime";
 import type { Point, Rectangle } from "../geometry";
+import type { SnapMode } from "../grid";
 
 const DOUBLE_CLICK_MS = 350;
 
@@ -195,7 +196,7 @@ export abstract class PlaceableObject extends PIXI.Container {
     return { _id: this.id, x: Math.round(destination.x), y: Math.round(destination.y) };
   }
 
-  get snapMode(): "corner" | "center" | "half" {
+  get snapMode(): SnapMode {
     return "corner";
   }
 

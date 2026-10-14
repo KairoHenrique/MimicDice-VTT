@@ -8,6 +8,7 @@ import type { ServerContext } from "../ServerContext";
 import type { ActiveWorld } from "../world/ActiveWorld";
 import type { PresenceTracker } from "./PresenceTracker";
 import { SocketRateLimiter } from "./SocketRateLimiter";
+import { auditAbilityChanges } from "./abilityAudit";
 
 const DOCUMENT_REQUEST_BURST = 60;
 const DOCUMENT_REQUESTS_PER_SECOND = 20;
@@ -70,6 +71,7 @@ async function handleModifyDocument(scope: DocumentHandlerScope, payload: unknow
 
   const outcome = await world.documents.modify(parsed.data, { userId: scope.userId, role: user.role });
   broadcastToViewers(scope, world, outcome);
+  await auditAbilityChanges(scope.io, scope.presence, world, outcome, { userId: scope.userId, role: user.role }).catch((error: unknown) => scope.context.logger.error("Falha ao registrar auditoria de habilidades", error));
   return { response: redactResponseForRequester(outcome, { userId: scope.userId, isGameMaster: isGameMasterRole(user.role) }) };
 }
 

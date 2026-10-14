@@ -1,4 +1,5 @@
 import { h } from "../../views/dom";
+import { makeItemDraggable } from "../items/itemExchange";
 
 function itemRow(item: any, editable: boolean): HTMLElement {
   const row = h(
@@ -15,6 +16,8 @@ function itemRow(item: any, editable: boolean): HTMLElement {
     const remove = h("button", { type: "button", class: "icon", title: "Excluir" }, h("i", { class: "fa-solid fa-trash" }));
     remove.addEventListener("click", () => void item.deleteDialog());
     row.append(remove);
+    row.title = "Arraste para outro personagem, para a ficha dele ou para o chão do mapa";
+    makeItemDraggable(row, item);
   }
   return row;
 }

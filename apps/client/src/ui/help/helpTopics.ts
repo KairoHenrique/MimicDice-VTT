@@ -50,6 +50,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       "Segure Ctrl ao arrastar para ver o caminho e confirmar antes de mover.",
       "Clique direito no token para abrir a ficha. O mestre também pode ocultar, travar a posição e colocar em combate.",
       "Se o mestre travar o mapa ou pausar a cena, ninguém se mexe até ele liberar.",
+      "O mestre pode selecionar vários tokens e escolher \"Agrupar\" no clique direito: eles andam juntos mantendo a distância.",
     ],
   },
   {
@@ -111,7 +112,29 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     icon: "fa-solid fa-cubes",
     audience: "gm",
     summary: "Imagens soltas no mapa: móveis, baús, decorações.",
-    steps: ["Disponível no modo edição.", "Escolha \"Colocar tile\", arraste a área e escolha a imagem.", "Clique direito no tile para travar ou excluir."],
+    steps: [
+      "Disponível no modo edição.",
+      "Escolha \"Colocar tile\", arraste a área e escolha a imagem. Clique simples ocupa um quadrado; arrastando, o tamanho pode ser de 1/4 de quadrado em diante.",
+      "Arraste o canto inferior direito de um tile selecionado para mudar o tamanho.",
+      "Imagens GIF e vídeos (webm, mp4) ficam animados.",
+      "Delete apaga os selecionados e Ctrl+Z desfaz movimentos, edições e exclusões no mapa.",
+      "Clique direito no tile para travar, excluir, definir a DT de percepção, transformar em armadilha ou em baú.",
+    ],
+  },
+  {
+    id: "concealment",
+    title: "Percepção, armadilhas e baús",
+    icon: "fa-solid fa-eye-low-vision",
+    audience: "gm",
+    summary: "Esconda tiles, notas, armadilhas e itens de baú de quem não passou no teste de percepção.",
+    steps: [
+      "Clique direito num tile ou nota e escolha \"Percepção e armadilha\" (ou \"Percepção (DT)\" na nota).",
+      "Defina a DT e anote a percepção de cada personagem. Só quem tiver percepção igual ou maior vê o objeto.",
+      "Marque \"Isto é uma armadilha\" para que fique invisível até alguém pisar nela. Ao disparar, aparece, avisa no chat e aplica o efeito escolhido. Também dá para ativar ou rearmar pelo menu.",
+      "\"Transformar em baú\" guarda itens no tile. Cada item pode ter sua própria DT. Arraste itens da aba Itens ou de um inventário até o baú.",
+      "Os jogadores abrem o baú com o clique direito quando o personagem está perto, e só veem os itens que notaram.",
+      "Fora da visão, os jogadores veem tiles e notas transparentes como estavam da última vez que viram.",
+    ],
   },
   {
     id: "control:walls",
@@ -196,7 +219,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     steps: [
       "Configurações > Controle do mestre > Gerenciar efeitos: crie o efeito com nome, ícone (ou emoji) e cor.",
       "Escolha o que ele faz: dano (ou cura) no começo de cada turno do personagem, agir sempre por último ou limitar a visão (0 = cego).",
-      "Para aplicar: clique com o botão direito no token (vale para todos os tokens selecionados) ou no botão de varinha do painel de status. Busque o efeito, diga quantos turnos dura e, se tiver dano, quanto.",
+      "Para aplicar: clique com o botão direito no token (vale para todos os tokens selecionados) ou no botão de varinha do painel de status. Busque o efeito, diga quantos turnos dura e, se tiver dano, quanto. O dano aceita dados, como 1d6+2, rolados a cada turno.",
       "O efeito aparece no token, no painel de status e na lista do combate. A cada turno do personagem ele perde 1 turno e some sozinho; o dano sai no chat.",
       "Para tirar antes, abra a mesma janela de aplicar e clique no X do efeito.",
     ],
@@ -275,7 +298,12 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     icon: "fa-solid fa-suitcase",
     audience: "all",
     summary: "Armas, poções e equipamentos.",
-    steps: ["Arraste um item para a ficha de um personagem para dar o item a ele.", "Itens com o nome certo podem servir de chave para portas."],
+    steps: [
+      "Arraste um item para a ficha ou o token de um personagem para dar o item a ele.",
+      "Do inventário, arraste o item para outro personagem ou para o chão do mapa. Para pegar do chão, clique direito no item (mesmo com o token em cima).",
+      "O mestre vê ao lado de cada item onde estão as cópias: com quem, no chão ou em baús.",
+      "Itens com o nome certo podem servir de chave para portas.",
+    ],
   },
   {
     id: "tab:journal",
@@ -459,6 +487,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       "Use + Rolagem para adicionar outra e o X para remover. O dado ao lado de cada rolagem testa a fórmula.",
       "No chat a rolagem aparece como Habilidade: Rolagem, por exemplo Golpe: Efeito.",
       "Quem pode editar a ficha (o dono, o mestre ou quem recebeu Ver e editar) cria e muda as habilidades. Quem só vê a ficha lê a descrição e as fórmulas, sem rolar.",
+      "Quando um jogador cria, apaga ou muda uma habilidade, o mestre recebe uma mensagem privada de Auditoria no chat dizendo o que mudou.",
     ],
   },
   {

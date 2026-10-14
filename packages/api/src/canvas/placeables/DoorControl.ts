@@ -86,9 +86,11 @@ export class DoorControl extends PIXI.Container {
     }
   }
 
+  /** A shut door that needs a key reads as locked, like one the GM locked. */
   #leafColor(): number {
     if (this.#appearance.locked) return LEAF_COLORS.locked;
-    return this.#appearance.open ? LEAF_COLORS.open : LEAF_COLORS.closed;
+    if (this.#appearance.open) return LEAF_COLORS.open;
+    return this.#appearance.keyed ? LEAF_COLORS.locked : LEAF_COLORS.closed;
   }
 
   #draw(): void {

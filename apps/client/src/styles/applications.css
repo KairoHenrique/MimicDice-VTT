@@ -805,6 +805,27 @@ button.icon {
   font-weight: 500;
 }
 
+.entry-name-stack {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.entry-name-stack > .entry-name {
+  flex: none;
+}
+
+.md-item-where {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
 .entry-controls {
   display: flex;
   gap: 2px;

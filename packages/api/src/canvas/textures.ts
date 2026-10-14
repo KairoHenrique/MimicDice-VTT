@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { isGifPath, loadAnimatedGif, loopVideoTexture } from "./animatedTextures";
 
 const MAX_PATH_LENGTH = 2048;
 const pendingTextures = new Map<string, Promise<PIXI.Texture | null>>();
@@ -14,14 +15,21 @@ export function loadTexture(path: unknown): Promise<PIXI.Texture | null> {
   if (!isLoadablePath(path)) return Promise.resolve(null);
   const cached = pendingTextures.get(path);
   if (cached) return cached;
-  const loading = PIXI.Assets.load<PIXI.Texture>(path)
-    .then((texture) => (texture instanceof PIXI.Texture ? texture : null))
-    .catch(() => {
-      pendingTextures.delete(path);
-      return null;
-    });
+  const loading = loadAnimatedOrStatic(path).catch(() => {
+    pendingTextures.delete(path);
+    return null;
+  });
   pendingTextures.set(path, loading);
   return loading;
+}
+
+async function loadAnimatedOrStatic(path: string): Promise<PIXI.Texture | null> {
+  if (isGifPath(path)) {
+    const animated = await loadAnimatedGif(path);
+    if (animated) return animated;
+  }
+  const texture = await PIXI.Assets.load<PIXI.Texture>(path);
+  return texture instanceof PIXI.Texture ? loopVideoTexture(texture) : null;
 }
 
 export function getCachedTexture(path: unknown): PIXI.Texture | null {

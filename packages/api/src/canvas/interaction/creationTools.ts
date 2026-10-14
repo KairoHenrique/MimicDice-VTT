@@ -1,7 +1,7 @@
 import type { PlainObject } from "@tabbletop/common";
 import { CONST } from "../../constants";
 import type { Point } from "../geometry";
-import type { SceneDimensions, SquareGrid } from "../grid";
+import type { SceneDimensions, SnapMode, SquareGrid } from "../grid";
 
 export interface CreationContext {
   grid: SquareGrid;
@@ -13,7 +13,7 @@ export interface CreationTool {
   documentName: string;
   /** Minimum drag in pixels before the tool creates anything; 0 means a click is enough. */
   minimumDrag: number;
-  snapMode: "corner" | "center" | "half";
+  snapMode: SnapMode;
   /** Only a pressed-and-held drag creates it, so stray clicks never leave objects behind. */
   requiresHold?: boolean;
   build(origin: Point, destination: Point, context: CreationContext, freehandPoints?: number[]): PlainObject | null;
@@ -89,14 +89,20 @@ const lightTool: CreationTool = {
   }),
 };
 
+/** A click fills the clicked square; a drag draws any size down to a quarter of a square. */
 const tileTool: CreationTool = {
   documentName: "Tile",
   minimumDrag: 0,
-  snapMode: "corner",
+  snapMode: "quarter",
   build: (origin, destination, context) => {
     const area = rectangleBetween(origin, destination);
     const size = context.grid.size;
-    return { x: area.x, y: area.y, width: Math.max(area.width, size), height: Math.max(area.height, size) };
+    const smallest = Math.round(size / 4);
+    if (area.width < smallest && area.height < smallest) {
+      const corner = context.grid.getTopLeftPoint(context.grid.getOffset(origin));
+      return { x: corner.x, y: corner.y, width: size, height: size };
+    }
+    return { x: area.x, y: area.y, width: Math.max(area.width, smallest), height: Math.max(area.height, smallest) };
   },
 };
 

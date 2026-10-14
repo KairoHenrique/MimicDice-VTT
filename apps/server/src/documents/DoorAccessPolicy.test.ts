@@ -33,7 +33,7 @@ describe("door access", () => {
   it("lets players open plain doors but never locked ones", () => {
     const { doors } = policies([]);
     expect(() => doors.assertMayOperateDoor(player, door())).not.toThrow();
-    expect(() => doors.assertMayOperateDoor(player, door({ ds: 2 }))).toThrow(/trancada/);
+    expect(() => doors.assertMayOperateDoor(player, door({ ds: 2 }))).toThrow(/Trancada pelo mestre/);
     expect(() => doors.assertMayOperateDoor(gameMaster, door({ ds: 2 }))).not.toThrow();
   });
 

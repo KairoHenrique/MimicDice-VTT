@@ -729,6 +729,185 @@ body.sidebar-collapsed .private-message-alerts {
   width: 72px;
 }
 
+.md-conceal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.md-conceal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.md-conceal-section > legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.md-conceal-section .hint {
+  margin: 0;
+}
+
+.md-conceal-inline,
+.md-conceal-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.md-conceal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.md-conceal-grid > label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.md-conceal-grid input,
+.md-conceal-grid select {
+  width: 100%;
+  min-width: 0;
+}
+
+.md-conceal-grid[hidden] {
+  display: none;
+}
+
+.md-conceal-number {
+  width: 72px;
+  flex: none;
+}
+
+.md-conceal-scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 4px 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.md-conceal-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.md-conceal-score-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-chest {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.md-chest .hint {
+  margin: 0;
+}
+
+.md-chest-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.md-chest-title > input,
+.md-chest-title > select {
+  flex: 1;
+  min-width: 0;
+}
+
+.md-chest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.md-chest-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.md-chest-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.md-chest-item {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.md-chest-thumb {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  object-fit: contain;
+}
+
+.md-chest-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-chest-dc-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.md-chest-dc {
+  width: 64px;
+}
+
+.md-chest-row > button,
+.md-chest-add > button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.md-chest-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.md-chest-add > select {
+  flex: 1;
+  min-width: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
   .status-bar-fill {

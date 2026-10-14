@@ -20,7 +20,8 @@ import { buildSystemFieldsEditor } from "./systemFieldsEditor";
 import { actorVariants, chooseActorVariantsDialog, chooseVariantDialog } from "./sheetVariants";
 import { playersEditSheets } from "../../game/tableRules";
 import { buildAppearanceStrip } from "../actors/appearances";
-import { draggedItem, giveItemToActor } from "../items/inventorySync";
+import { draggedItem } from "../items/inventorySync";
+import { moveItemToActor } from "../items/itemExchange";
 import { buildLinkedSheets, isSheetShared, shareSheetDialog } from "../actors/sheetSharing";
 
 type SheetTab = "sheet" | "rolls" | "items";
@@ -195,7 +196,7 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
       const item = draggedItem(event.dataTransfer?.getData("text/plain"));
       if (!item || item.parent === this.document) return;
       event.preventDefault();
-      void giveItemToActor(this.document, item);
+      void moveItemToActor(item, this.document);
     });
   }
 

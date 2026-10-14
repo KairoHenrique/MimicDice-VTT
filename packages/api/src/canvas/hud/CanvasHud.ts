@@ -195,8 +195,8 @@ export class CanvasHud {
     const update = (changes: PlainObject) => wall.document.update(changes);
     const entries: MenuEntry[] = wall.isDoor
       ? [
-          { label: wall.isLocked ? "Destrancar" : "Trancar", icon: wall.isLocked ? "fa-solid fa-lock-open" : "fa-solid fa-lock", onSelect: () => update({ ds: wall.isLocked ? CONST.WALL_DOOR_STATES.CLOSED : CONST.WALL_DOOR_STATES.LOCKED }) },
-          { label: wall.requiredItem ? `Chave: ${wall.requiredItem}` : "Exigir item para abrir", icon: "fa-solid fa-key", onSelect: () => this.configureDoorKey(wall) },
+          { label: wall.isLocked ? "Destrancar" : "Trancar (até o mestre destrancar)", icon: wall.isLocked ? "fa-solid fa-lock-open" : "fa-solid fa-lock", onSelect: () => update({ ds: wall.isLocked ? CONST.WALL_DOOR_STATES.CLOSED : CONST.WALL_DOOR_STATES.LOCKED }) },
+          { label: wall.requiredItem ? `Trancada a chave: ${wall.requiredItem}` : "Trancar a chave (exigir item)", icon: "fa-solid fa-key", onSelect: () => this.configureDoorKey(wall) },
           { label: "Virar parede comum", icon: "fa-solid fa-grip-lines-vertical", onSelect: () => update({ door: CONST.WALL_DOOR_TYPES.NONE, ds: CONST.WALL_DOOR_STATES.CLOSED }) },
         ]
       : [{ label: "Virar porta", icon: "fa-solid fa-door-closed", onSelect: () => update({ door: CONST.WALL_DOOR_TYPES.DOOR, ds: CONST.WALL_DOOR_STATES.CLOSED }) }];
@@ -284,6 +284,7 @@ export class CanvasHud {
       { label: "Editar nota", icon: "fa-solid fa-pen", onSelect: () => void this.configureNote(note) },
     ];
     if (note.document.canUserModify?.(user, "delete")) entries.push({ label: "Apagar nota", icon: "fa-solid fa-trash", onSelect: () => note.document.delete() });
+    Hooks.callAll("getNoteMenuEntries", note, entries);
     this.#openMenu(entries, event);
   }
 

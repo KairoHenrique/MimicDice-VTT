@@ -1,5 +1,21 @@
 # Notas de versão
 
+## 1.4.0
+
+- **Baús:** clique direito num tile (mestre) e escolha **Transformar em baú**. O mestre guarda itens da aba Itens ou arrasta itens até o baú, e cada item pode ter sua **DT de percepção**. O jogador abre o baú com o clique direito quando o personagem está perto, vê só os itens que notou, pega e guarda itens do inventário. O servidor confere a distância e a DT.
+- **Percepção:** tiles e notas podem ter uma **DT de percepção**. O mestre anota a percepção de cada personagem e só quem alcança a DT vê o objeto no mapa.
+- **Armadilhas:** um tile pode virar armadilha invisível. Dispara quando um token pisa nela ou quando o mestre ativa, aparece com a imagem do tile (GIF também), avisa no chat e aplica um efeito em quem pisou. O mestre pode rearmar.
+- **Memória da névoa:** fora da visão, o jogador vê os tiles e notas transparentes como estavam da última vez que viu. Mudanças só aparecem quando ele vê o lugar de novo.
+- **Itens:** arraste um item para o token ou a ficha de um personagem; do inventário, para outro personagem ou para o chão. Clique direito pega o item do chão mesmo com o token em cima. Na aba Itens, o mestre vê onde está cada cópia (com quem, no chão ou em baús).
+- **Itens escondidos:** itens no chão fora da visão não aparecem para os jogadores.
+- **Grupos de tokens:** selecione vários tokens e escolha **Agrupar** no clique direito. Eles andam juntos mantendo a distância e param em paredes.
+- **Objetos do mapa:** tiles não precisam ocupar o quadrado inteiro (a partir de 1/4) e podem ser redimensionados pelo canto no modo edição. Paredes e movimento continuam no grid.
+- **GIFs e vídeos:** imagens GIF, webm e mp4 ficam animadas em tiles e tokens.
+- **Desfazer e apagar:** Ctrl+Z desfaz movimentos, edições e exclusões no mapa; Delete apaga os objetos selecionados no modo edição.
+- **Efeitos com dados:** o dano por turno aceita fórmulas como 1d6+2.
+- **Portas com chave:** portas trancadas a chave aparecem em vermelho como as trancadas pelo mestre, com o texto certo para cada caso.
+- **Auditoria de habilidades:** quando um jogador muda as habilidades da ficha, o mestre recebe uma mensagem privada dizendo o que mudou.
+
 ## 1.3.1
 
 - **Atualização automática:** o app procura uma versão nova ao abrir (e a cada 4 horas) e baixa sozinho em segundo plano. Quando terminar, aparece o aviso **Reiniciar e atualizar** na tela inicial. Se preferir não reiniciar na hora, a atualização é instalada quando você fechar o app. O rodapé tem o botão **Procurar atualização**. O download vem das releases oficiais no GitHub e o app confere o código de verificação (SHA-512) do instalador antes de instalar. Quem está na 1.3.0 ou anterior precisa instalar esta versão manualmente uma vez; daqui pra frente é automático.

@@ -38,10 +38,10 @@ export class DoorAccessPolicy {
   assertMayOperateDoor(actor: DocumentActor, wall: DocumentSource, scene: DocumentSource | null = null): void {
     if (this.permissions.isGameMaster(actor)) return;
     if (!roleHasPermission(actor.role, "WALL_DOORS", this.readConfiguredPermissions())) throw HttpError.forbidden("Sem permissão para usar portas");
-    if (Number(wall.ds) === DOOR_STATES.LOCKED) throw HttpError.forbidden("A porta está trancada");
+    if (Number(wall.ds) === DOOR_STATES.LOCKED) throw HttpError.forbidden("Trancada pelo mestre: só abre quando o mestre destrancar");
     if (scene && !this.#seesDoor(actor, wall, scene)) throw HttpError.forbidden("Você não vê esta porta");
     const requiredItem = requiredDoorItem(wall);
-    if (requiredItem && !this.#carriesItem(actor, requiredItem)) throw HttpError.forbidden(`Você precisa de "${requiredItem}" para abrir esta porta`);
+    if (requiredItem && !this.#carriesItem(actor, requiredItem)) throw HttpError.forbidden(`Trancada a chave: você precisa de "${requiredItem}" para abrir`);
   }
 
   /** With token vision on, a player reaches only doors one of their tokens can see; without it the whole map is in view. */

@@ -2,9 +2,11 @@ import * as PIXI from "pixi.js";
 import { PLAYER_VISION_LIMIT_SETTING_KEY } from "@tabbletop/protocol";
 import { Hooks } from "../../hooks/Hooks";
 import { currentCanvas, currentGame } from "../../runtime";
-import { computeVisibilityPolygon, type Point, type Segment } from "../geometry";
+import { computeVisibilityPolygon, type Point, type Rectangle, type Segment } from "../geometry";
 import type { SceneDimensions } from "../grid";
 import { CanvasLayer } from "../layers/CanvasLayer";
+import type { PlaceableObject } from "../placeables/PlaceableObject";
+import { SightMemory } from "./SightMemory";
 import type { Token } from "../placeables/Token";
 import type { AmbientLight, Wall } from "../placeables/simplePlaceables";
 import { FogExplorationStore } from "./FogExplorationStore";
@@ -16,6 +18,7 @@ const EXPLORED_REVEAL_ALPHA = 0.45;
 const GM_PREVIEW_DARKNESS_ALPHA = 0.7;
 const DOOR_PROBE_OFFSET_PX = 12;
 const DOOR_PROBE_FRACTIONS = [0.5, 0.2, 0.8] as const;
+const AREA_PROBE_FRACTIONS = [0.5, 0.15, 0.85] as const;
 
 interface VisionShapes {
   sight: PIXI.Polygon[];
@@ -39,6 +42,7 @@ export class VisibilityLayer extends CanvasLayer {
   #showLightAreas = false;
   #dirty = true;
   #fogStore: FogExplorationStore | null = null;
+  #sightMemory: SightMemory | null = null;
   #tick = () => this.#refreshIfDirty();
 
   get tokenVision(): boolean {
@@ -92,6 +96,7 @@ export class VisibilityLayer extends CanvasLayer {
     this.#overlaySprite.scale.set(1 / this.#textureScale);
     this.addChild(this.#overlaySprite);
     this.#fogStore = new FogExplorationStore(canvas.scene.id, currentGame()?.userId ?? "", canvas.app.renderer, this.#explorationTexture);
+    this.#sightMemory = new SightMemory(canvas.scene.id, currentGame()?.userId ?? "", this.#remembersExploration(canvas));
     if (this.#remembersExploration(canvas)) await this.#fogStore.restore();
     this.#dirty = true;
     canvas.app.ticker.add(this.#tick);
@@ -101,6 +106,8 @@ export class VisibilityLayer extends CanvasLayer {
     currentCanvas()?.app?.ticker?.remove(this.#tick);
     this.#fogStore?.flush();
     this.#fogStore = null;
+    this.#sightMemory?.destroy();
+    this.#sightMemory = null;
     this.illumination.removeChildren().forEach((child) => child.destroy());
     await super.tearDown();
     this.#overlayTexture?.destroy(true);
@@ -158,7 +165,25 @@ export class VisibilityLayer extends CanvasLayer {
     this.#renderOverlay(canvas);
     for (const token of canvas.tokens?.placeables ?? []) token.visible = token.isVisible;
     for (const wall of (canvas.walls?.placeables ?? []) as Wall[]) if (wall.door) wall.door.visible = this.isDoorVisible(wall);
+    if (this.active && !this.#isGmPreview) this.#sightMemory?.update(canvas, (area) => this.isAreaVisible(area));
+    else this.#sightMemory?.release(canvas);
     Hooks.callAll("sightRefresh", this);
+  }
+
+  /** Whether the player sees any part of an area: its middle or a spread of points inside it. */
+  isAreaVisible(area: Rectangle): boolean {
+    if (!this.active) return true;
+    for (const fractionY of AREA_PROBE_FRACTIONS) {
+      for (const fractionX of AREA_PROBE_FRACTIONS) {
+        if (this.isPointVisible({ x: area.x + area.width * fractionX, y: area.y + area.height * fractionY })) return true;
+      }
+    }
+    return false;
+  }
+
+  /** Tiles and notes out of the player's sight show their remembered look instead of the real one. */
+  isOutOfSight(placeable: PlaceableObject): boolean {
+    return this.#sightMemory?.isOutOfSight(placeable) === true;
   }
 
   #wallSegments(sense: "sight" | "light"): Segment[] {

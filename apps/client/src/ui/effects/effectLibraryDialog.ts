@@ -1,18 +1,25 @@
 import { DialogV2 } from "@tabbletop/api";
-import { EFFECT_ICON_CHOICES, type EffectDefinition, effectDefinitionSchema, MAX_EFFECT_DAMAGE, MAX_EFFECT_DEFINITIONS, MAX_VISION_LIMIT } from "@tabbletop/protocol";
+import { dealsTurnDamage, EFFECT_ICON_CHOICES, type EffectDefinition, effectDefinitionSchema, formatDamage, MAX_DAMAGE_DICE_LENGTH, MAX_EFFECT_DEFINITIONS, MAX_VISION_LIMIT, parseDamageInput } from "@tabbletop/protocol";
 import { statusResources } from "../../game/tableRules";
 import { h } from "../../views/dom";
 import { EFFECT_LIBRARY_CHANGED_HOOK, effectDefinitions, newEffectId, saveEffectDefinitions } from "./effectStore";
 import { effectIcon, effectLabel } from "./effectVisuals";
 
-const DEFAULT_DRAFT: Omit<EffectDefinition, "id"> = { name: "", description: "", icon: "fa-solid fa-wand-magic-sparkles", color: "#8e44ad", damagePerTurn: 0, damageResourceId: null, actsLast: false, visionLimit: null };
+const DEFAULT_DRAFT: Omit<EffectDefinition, "id"> = { name: "", description: "", icon: "fa-solid fa-wand-magic-sparkles", color: "#8e44ad", damagePerTurn: 0, damageDice: "", damageResourceId: null, actsLast: false, visionLimit: null };
+
+/** Text box for damage: a whole number or dice such as 1d6+2 (negative heals). */
+export function damageInput(name: string, value: string, label: string): HTMLInputElement {
+  return h("input", { type: "text", name, value, maxlength: MAX_DAMAGE_DICE_LENGTH, placeholder: "0, 3 ou 1d6+2", "aria-label": label, autocomplete: "off", spellcheck: "false" });
+}
 
 /** One line describing what the effect does in combat. */
-export function describeMechanics(effect: Pick<EffectDefinition, "damagePerTurn" | "damageResourceId" | "actsLast" | "visionLimit">): string {
+export function describeMechanics(effect: Pick<EffectDefinition, "damagePerTurn" | "damageDice" | "damageResourceId" | "actsLast" | "visionLimit">): string {
   const parts: string[] = [];
-  if (effect.damagePerTurn !== 0 && effect.damageResourceId) {
+  if (dealsTurnDamage(effect)) {
     const label = statusResources().find((resource) => resource.id === effect.damageResourceId)?.label ?? effect.damageResourceId;
-    parts.push(effect.damagePerTurn > 0 ? `perde ${effect.damagePerTurn} de ${label} por turno` : `recupera ${-effect.damagePerTurn} de ${label} por turno`);
+    const amount = formatDamage(effect);
+    const heals = !effect.damageDice && effect.damagePerTurn < 0;
+    parts.push(heals ? `recupera ${-effect.damagePerTurn} de ${label} por turno` : `perde ${amount} de ${label} por turno`);
   }
   if (effect.actsLast) parts.push("age por último");
   if (effect.visionLimit !== null) parts.push(effect.visionLimit === 0 ? "não enxerga" : `enxerga até ${effect.visionLimit.toLocaleString()} m`);
@@ -61,7 +68,7 @@ function editorControls(draft: Omit<EffectDefinition, "id">): EditorControls {
     description: h("input", { type: "text", name: "description", value: draft.description, maxlength: 200, placeholder: "O que o efeito faz, para lembrar na mesa" }),
     icon: h("input", { type: "text", name: "icon", value: draft.icon, maxlength: 60, "aria-label": "Ícone ou emoji" }),
     color: h("input", { type: "color", name: "color", value: draft.color }),
-    damage: numberInput("damage", draft.damagePerTurn, -MAX_EFFECT_DAMAGE, MAX_EFFECT_DAMAGE),
+    damage: damageInput("damage", formatDamage(draft), "Dano por turno"),
     resource,
     actsLast: h("input", { type: "checkbox", name: "actsLast", checked: draft.actsLast }),
     limitsVision: h("input", { type: "checkbox", name: "limitsVision", checked: draft.visionLimit !== null }),
@@ -82,19 +89,20 @@ function editorContent(controls: EditorControls): HTMLElement {
     field("Descrição", controls.description),
     h("div", { class: "form-group md-effect-field" }, h("label", {}, "Ícone (escolha um ou digite um emoji)", controls.icon), iconPicker(controls.icon)),
     field("Cor", controls.color),
-    h("fieldset", { class: "md-effect-mechanics" }, h("legend", {}, "No combate"), field("Dano no começo de cada turno do personagem", h("span", { class: "md-effect-inline" }, controls.damage, controls.resource), "0 = sem dano. Número negativo cura."), h("label", { class: "md-check-row" }, controls.actsLast, h("span", {}, "Sempre age por último")), h("label", { class: "md-check-row" }, controls.limitsVision, h("span", {}, "Limita a visão a"), controls.vision, h("span", {}, "metros (0 = cego)"))),
+    h("fieldset", { class: "md-effect-mechanics" }, h("legend", {}, "No combate"), field("Dano no começo de cada turno do personagem", h("span", { class: "md-effect-inline" }, controls.damage, controls.resource), "Número ou dados, como 2 ou 1d6+2 (rola a cada turno). Vazio ou 0 = sem dano. Número negativo cura."), h("label", { class: "md-check-row" }, controls.actsLast, h("span", {}, "Sempre age por último")), h("label", { class: "md-check-row" }, controls.limitsVision, h("span", {}, "Limita a visão a"), controls.vision, h("span", {}, "metros (0 = cego)"))),
   );
 }
 
+/** Invalid damage text is kept as typed so the schema rejects it and the form reopens with it. */
 function readDraft(controls: EditorControls): Omit<EffectDefinition, "id"> {
-  const damage = Math.round(Number(controls.damage.value) || 0);
+  const damage = parseDamageInput(controls.damage.value) ?? { damagePerTurn: 0, damageDice: controls.damage.value };
   return {
     name: controls.name.value.trim(),
     description: controls.description.value.trim(),
     icon: controls.icon.value.trim(),
     color: controls.color.value,
-    damagePerTurn: damage,
-    damageResourceId: damage !== 0 ? controls.resource.value : null,
+    ...damage,
+    damageResourceId: damage.damagePerTurn !== 0 || damage.damageDice !== "" ? controls.resource.value : null,
     actsLast: controls.actsLast.checked,
     visionLimit: controls.limitsVision.checked ? Math.max(0, Number(controls.vision.value) || 0) : null,
   };
@@ -110,7 +118,7 @@ export async function editEffectDialog(existing: EffectDefinition | null): Promi
     draft = typed as Omit<EffectDefinition, "id">;
     const parsed = effectDefinitionSchema.safeParse({ ...draft, id: existing?.id ?? newEffectId() });
     if (parsed.success) return parsed.data;
-    ui.notifications.warn("Confira o nome (obrigatório) e o ícone: use um da lista ou um emoji.");
+    ui.notifications.warn("Confira o nome (obrigatório), o ícone (um da lista ou um emoji) e o dano (número ou dados, como 1d6+2).");
   }
 }
 

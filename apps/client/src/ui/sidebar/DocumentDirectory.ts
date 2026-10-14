@@ -4,6 +4,7 @@ import { createSampleScenes } from "../canvas/sampleScenes";
 import { DocumentOwnershipConfig } from "../documents/DocumentOwnershipConfig";
 import { describeVisibility } from "../documents/ownershipLevels";
 import { DomApplication } from "../DomApplication";
+import { describeWhereabouts, indexItemWhereabouts, type ItemWhereabouts } from "../items/itemLocations";
 
 export const SIDEBAR_CONTENT_ID = "sidebar-content";
 
@@ -125,8 +126,15 @@ export abstract class DocumentDirectory extends DomApplication {
     return entry.img ? h("img", { class: "thumbnail", src: entry.img, alt: "", loading: "lazy" }) : h("i", { class: "thumbnail fa-solid fa-book" });
   }
 
+  /** Optional second line under the entry name. */
+  protected entrySubtitle(_entry: any): HTMLElement | null {
+    return null;
+  }
+
   #buildEntry(entry: any): HTMLElement {
-    const name = h("span", { class: "entry-name" }, entry.name);
+    const title = h("span", { class: "entry-name" }, entry.name);
+    const subtitle = this.entrySubtitle(entry);
+    const name = subtitle ? h("span", { class: "entry-name-stack" }, title, subtitle) : title;
     const item = h("li", { class: "directory-item document", "data-document-id": entry.id, "data-entry-id": entry.id, draggable: "true" }, this.entryThumbnail(entry), name, ...this.entryBadges(entry));
     if (entry.limited) item.append(h("i", { class: "fa-solid fa-eye-low-vision entry-limited", title: "Você vê apenas nome e imagem" }));
     item.addEventListener("click", (event) => void this._onClickEntry(event, item));
@@ -161,11 +169,24 @@ export abstract class DocumentDirectory extends DomApplication {
   }
 }
 
+/** The GM also sees, under each item, who carries a copy and on which maps one lies on the floor. */
 export class ItemDirectory extends DocumentDirectory {
   static override documentName = "Item";
   static override tabName = "items";
   static override tabLabel = "Itens";
   static override tabIcon = "fa-solid fa-suitcase";
+
+  #whereabouts = new Map<string, ItemWhereabouts>();
+
+  protected override filterDocuments(documents: any[]): any[] {
+    this.#whereabouts = game.user.isGM ? indexItemWhereabouts(game.actors?.contents ?? [], (game.scenes?.contents ?? []).map((scene: any) => ({ name: scene.name, tiles: scene.tiles?.contents ?? [] }))) : new Map();
+    return documents;
+  }
+
+  protected override entrySubtitle(entry: any): HTMLElement | null {
+    const text = describeWhereabouts(this.#whereabouts.get(entry.uuid));
+    return text ? h("span", { class: "md-item-where", title: text }, h("i", { class: "fa-solid fa-location-dot", "aria-hidden": "true" }), ` ${text}`) : null;
+  }
 }
 
 export class JournalDirectory extends DocumentDirectory {

@@ -5,7 +5,7 @@ import { currentGame, currentUi } from "../../runtime";
 import { segmentsCross, type Point } from "../geometry";
 import type { PlaceableObject } from "../placeables/PlaceableObject";
 import type { Token } from "../placeables/Token";
-import type { Wall } from "../placeables/simplePlaceables";
+import type { Tile, Wall } from "../placeables/simplePlaceables";
 import { colorToNumber } from "../textures";
 import { CREATION_TOOLS, type CreationTool } from "./creationTools";
 import { handleCanvasDrop } from "./canvasDrop";
@@ -27,7 +27,8 @@ type Session =
   | { kind: "ruler"; origin: Point }
   | { kind: "create"; origin: Point; tool: CreationTool; points: number[]; startedAt: number }
   | { kind: "move"; origin: Point; objects: PlaceableObject[] }
-  | { kind: "endpoint"; wall: Wall; index: 0 | 1 };
+  | { kind: "endpoint"; wall: Wall; index: 0 | 1 }
+  | { kind: "resize"; tile: Tile };
 
 export type MovePathMode = "modifier" | "always" | "never";
 
@@ -94,6 +95,10 @@ export class CanvasInteraction {
         this.#session = { kind: "endpoint", wall: placeable as Wall, index };
         return;
       }
+    }
+    if (placeable.document.documentName === "Tile" && (placeable as Tile).grabsResizeHandle(this.#toWorld(event))) {
+      this.#session = { kind: "resize", tile: placeable as Tile };
+      return;
     }
     const pool = placeable.controlled ? (placeable.layer.controlled as PlaceableObject[]) : [placeable];
     const objects = pool.filter((object) => object.canDrag());
@@ -172,6 +177,35 @@ export class CanvasInteraction {
       case "endpoint":
         this.#previewEndpoint(session, this.#wallPoint(world, event.shiftKey));
         break;
+      case "resize":
+        this.#previewResize(session.tile, this.#resizedArea(session.tile, world, event.shiftKey));
+        break;
+    }
+  }
+
+  /** New tile size from the dragged corner: quarter-square steps (free with Shift), never below a quarter square. */
+  #resizedArea(tile: Tile, world: Point, free: boolean): { width: number; height: number } {
+    const corner = free ? world : this.canvas.grid.getSnappedPoint(world, { mode: "quarter" });
+    const smallest = Math.round(this.canvas.grid.size / 4);
+    return { width: Math.max(smallest, Math.round(corner.x - tile.document.x)), height: Math.max(smallest, Math.round(corner.y - tile.document.y)) };
+  }
+
+  #previewResize(tile: Tile, area: { width: number; height: number }): void {
+    const { x, y } = tile.document;
+    this.#drawOverlay((graphics) => graphics.lineStyle(3, 0x3b82f6, 1).beginFill(0x3b82f6, 0.12).drawRect(x, y, area.width, area.height).endFill());
+    const size = this.canvas.grid.size;
+    const squares = (value: number) => String(Math.round((value / size) * 100) / 100).replace(".", ",");
+    this.label.text = `${squares(area.width)} × ${squares(area.height)}`;
+    this.label.position.set(x + area.width / 2, y + area.height);
+    this.label.visible = true;
+  }
+
+  async #commitResize(tile: Tile, area: { width: number; height: number }): Promise<void> {
+    if (tile.destroyed || (area.width === Number(tile.document.width) && area.height === Number(tile.document.height))) return;
+    try {
+      await tile.document.update(area);
+    } catch {
+      if (!tile.destroyed) tile.refresh();
     }
   }
 
@@ -301,6 +335,9 @@ export class CanvasInteraction {
         break;
       case "endpoint":
         void this.#commitEndpoint(session, this.#wallPoint(world, event.shiftKey));
+        break;
+      case "resize":
+        void this.#commitResize(session.tile, this.#resizedArea(session.tile, world, event.shiftKey));
         break;
       case "pan":
         this.#openBoardMenuOnRightClick(session, event, world);

@@ -27,10 +27,26 @@ export function isFontAwesomeIcon(icon: string): boolean {
 const localIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,24}$/);
 const resourceIdSchema = z.string().regex(/^[a-z0-9-]{1,32}$/);
 
+export const MAX_DAMAGE_DICE_LENGTH = 40;
+/** Only dice and whole numbers joined by + or -, e.g. 1d6+2 or -1d4; nothing else reaches the dice roller. */
+const DAMAGE_DICE_PATTERN = /^[+-]?\d{1,3}(?:d\d{1,3})?(?:[+-]\d{1,3}(?:d\d{1,3})?){0,5}$/i;
+const DICE_TERM_PATTERN = /d/i;
+
+export function normalizeDamageText(text: string): string {
+  return text.replace(/\s+/g, "").toLowerCase();
+}
+
+export function isDamageDice(text: string): boolean {
+  const compact = normalizeDamageText(text);
+  return compact === "" || (DAMAGE_DICE_PATTERN.test(compact) && DICE_TERM_PATTERN.test(compact));
+}
+
 /** What an effect does to the fight; every field is optional so an effect can be purely descriptive. */
 const effectMechanicsShape = {
   /** Lost at the start of each of the character's turns (negative heals). */
   damagePerTurn: z.number().int().min(-MAX_EFFECT_DAMAGE).max(MAX_EFFECT_DAMAGE).default(0),
+  /** Dice rolled every turn on top of `damagePerTurn`, e.g. "1d6+2"; empty means a fixed amount. */
+  damageDice: z.string().max(MAX_DAMAGE_DICE_LENGTH).transform(normalizeDamageText).refine(isDamageDice, "Dano inválido: use números e dados, como 2 ou 1d6+2").default(""),
   /** Status panel resource that takes the damage (e.g. "vida"). */
   damageResourceId: resourceIdSchema.nullable().default(null),
   /** Always acts after everyone without this effect. */
@@ -84,12 +100,34 @@ export function strongestVisionLimit(effects: readonly AppliedEffect[]): number 
   return limit;
 }
 
-/** Damage each resource takes when the character's turn starts. */
-export function turnStartDamage(effects: readonly AppliedEffect[]): Map<string, number> {
+type DamageFields = Pick<EffectDefinition, "damagePerTurn" | "damageDice" | "damageResourceId">;
+
+export function dealsTurnDamage(effect: DamageFields): boolean {
+  return Boolean(effect.damageResourceId) && (effect.damagePerTurn !== 0 || effect.damageDice !== "");
+}
+
+/** Reads what the GM typed as damage: "2", "-1" or a dice formula such as "1d6+2"; null when invalid. */
+export function parseDamageInput(text: string): Pick<EffectDefinition, "damagePerTurn" | "damageDice"> | null {
+  const compact = normalizeDamageText(text);
+  if (compact === "") return { damagePerTurn: 0, damageDice: "" };
+  if (/^[+-]?\d{1,3}$/.test(compact)) return { damagePerTurn: Math.max(-MAX_EFFECT_DAMAGE, Math.min(MAX_EFFECT_DAMAGE, Number(compact))), damageDice: "" };
+  return isDamageDice(compact) ? { damagePerTurn: 0, damageDice: compact } : null;
+}
+
+/** The damage as the GM would write it: "1d6+2", "3", or "" when there is none. */
+export function formatDamage(effect: Pick<EffectDefinition, "damagePerTurn" | "damageDice">): string {
+  if (!effect.damageDice) return effect.damagePerTurn === 0 ? "" : String(effect.damagePerTurn);
+  if (effect.damagePerTurn === 0) return effect.damageDice;
+  return `${effect.damageDice}${effect.damagePerTurn > 0 ? "+" : ""}${effect.damagePerTurn}`;
+}
+
+/** Damage each resource takes when the character's turn starts; `rolled` gives each effect's dice result. */
+export function turnStartDamage(effects: readonly AppliedEffect[], rolled: (effect: AppliedEffect) => number = () => 0): Map<string, number> {
   const damage = new Map<string, number>();
   for (const effect of effects) {
-    if (effect.damagePerTurn === 0 || !effect.damageResourceId) continue;
-    damage.set(effect.damageResourceId, (damage.get(effect.damageResourceId) ?? 0) + effect.damagePerTurn);
+    if (!dealsTurnDamage(effect)) continue;
+    const amount = effect.damagePerTurn + (effect.damageDice ? rolled(effect) : 0);
+    damage.set(effect.damageResourceId!, (damage.get(effect.damageResourceId!) ?? 0) + amount);
   }
   return damage;
 }
@@ -123,8 +161,8 @@ export const EFFECT_ICON_CHOICES: readonly string[] = Object.freeze(
 
 /** Effects every new world starts with; the GM edits or deletes them freely. */
 export const STARTER_EFFECT_DEFINITIONS: readonly EffectDefinition[] = Object.freeze([
-  { id: "envenenado", name: "Envenenado", description: "Perde vida no começo de cada turno.", icon: "fa-solid fa-skull-crossbones", color: "#3fa34d", damagePerTurn: 2, damageResourceId: "vida", actsLast: false, visionLimit: null },
-  { id: "tonto", name: "Tonto", description: "Sempre age por último no combate.", icon: "fa-solid fa-face-dizzy", color: "#d4a017", damagePerTurn: 0, damageResourceId: null, actsLast: true, visionLimit: null },
-  { id: "cego", name: "Cego", description: "Enxerga só bem de perto.", icon: "fa-solid fa-eye-slash", color: "#5b5b6b", damagePerTurn: 0, damageResourceId: null, actsLast: false, visionLimit: 1.5 },
-  { id: "sangrando", name: "Sangrando", description: "Perde vida no começo de cada turno.", icon: "fa-solid fa-droplet", color: "#b3261e", damagePerTurn: 1, damageResourceId: "vida", actsLast: false, visionLimit: null },
+  { id: "envenenado", name: "Envenenado", description: "Perde vida no começo de cada turno.", icon: "fa-solid fa-skull-crossbones", color: "#3fa34d", damagePerTurn: 2, damageDice: "", damageResourceId: "vida", actsLast: false, visionLimit: null },
+  { id: "tonto", name: "Tonto", description: "Sempre age por último no combate.", icon: "fa-solid fa-face-dizzy", color: "#d4a017", damagePerTurn: 0, damageDice: "", damageResourceId: null, actsLast: true, visionLimit: null },
+  { id: "cego", name: "Cego", description: "Enxerga só bem de perto.", icon: "fa-solid fa-eye-slash", color: "#5b5b6b", damagePerTurn: 0, damageDice: "", damageResourceId: null, actsLast: false, visionLimit: 1.5 },
+  { id: "sangrando", name: "Sangrando", description: "Perde vida no começo de cada turno.", icon: "fa-solid fa-droplet", color: "#b3261e", damagePerTurn: 1, damageDice: "", damageResourceId: "vida", actsLast: false, visionLimit: null },
 ]);

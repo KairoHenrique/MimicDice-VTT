@@ -57,6 +57,10 @@ export const SOCKET_EVENTS = Object.freeze({
   TOKEN_DRAG: "tokenDrag",
   TABLE_ACTIVITY: "tableActivity",
   LOOT_PICKUP: "lootPickup",
+  LOOT_DROP: "lootDrop",
+  ITEM_TRANSFER: "itemTransfer",
+  CHEST_TAKE: "chestTake",
+  CHEST_PUT: "chestPut",
 });
 
 export const MAX_DOCUMENT_BYTES = 1024 * 1024;

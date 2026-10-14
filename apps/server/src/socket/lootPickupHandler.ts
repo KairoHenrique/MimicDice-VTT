@@ -9,13 +9,13 @@ import { SocketRateLimiter } from "./SocketRateLimiter";
 
 const PICKUPS_BURST = 5;
 const PICKUPS_PER_SECOND = 2;
-const DEFAULT_GRID_SIZE = 100;
-const SERVER_GAME_MASTER = { userId: "server", role: USER_ROLES.GAMEMASTER };
+export const DEFAULT_GRID_SIZE = 100;
+export const SERVER_GAME_MASTER = { userId: "server", role: USER_ROLES.GAMEMASTER };
 
 type Acknowledge = (response: { ok: true; name: string } | { error: string }) => void;
 type SceneSource = Record<string, any>;
 
-function findScene(world: ActiveWorld, sceneId: string): SceneSource {
+export function findScene(world: ActiveWorld, sceneId: string): SceneSource {
   const scene = world.documents.listCollection("scenes").find((candidate) => candidate._id === sceneId);
   if (!scene) throw HttpError.notFound("Cena não encontrada");
   return scene;
@@ -39,14 +39,19 @@ function reachDistance(token: SceneSource, tile: SceneSource, gridSize: number):
   return Math.hypot(centerX - closestX, centerY - closestY);
 }
 
-function assertWithinReach(scene: SceneSource, request: LootPickupRequest): void {
+/** The character must have a token next to the tile (players only; the GM reaches everything). */
+export function assertActorNearTile(scene: SceneSource, tileId: string, actorId: string, message: string): void {
   const gridSize = Number(scene.grid?.size) || DEFAULT_GRID_SIZE;
-  const tile = (scene.tiles as SceneSource[]).find((candidate) => candidate._id === request.tileId) as SceneSource;
-  const tokens = ((scene.tokens as SceneSource[] | undefined) ?? []).filter((token) => token.actorId === request.actorId);
-  if (!tokens.some((token) => reachDistance(token, tile, gridSize) <= LOOT_REACH_SQUARES * gridSize)) throw HttpError.badRequest("Chegue mais perto do item para pegar");
+  const tile = (scene.tiles as SceneSource[]).find((candidate) => candidate._id === tileId) as SceneSource;
+  const tokens = ((scene.tokens as SceneSource[] | undefined) ?? []).filter((token) => token.actorId === actorId);
+  if (!tokens.some((token) => reachDistance(token, tile, gridSize) <= LOOT_REACH_SQUARES * gridSize)) throw HttpError.badRequest(message);
 }
 
-function assertTableOpen(world: ActiveWorld, userId: string): void {
+function assertWithinReach(scene: SceneSource, request: LootPickupRequest): void {
+  assertActorNearTile(scene, request.tileId, request.actorId, "Chegue mais perto do item para pegar");
+}
+
+export function assertTableOpen(world: ActiveWorld, userId: string): void {
   if (world.users.isGameMaster(userId)) return;
   if (world.settings.readWorldValue<boolean>(TABLE_SESSION_OPEN_SETTING_KEY) !== true) throw HttpError.forbidden("A sessão está fechada pelo mestre");
 }

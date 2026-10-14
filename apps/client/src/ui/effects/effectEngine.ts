@@ -1,5 +1,5 @@
 import { CONST, escapeHTML } from "@tabbletop/api";
-import { afterOwnTurn, type AppliedEffect, hasActsLast, strongestVisionLimit, turnStartDamage } from "@tabbletop/protocol";
+import { afterOwnTurn, type AppliedEffect, dealsTurnDamage, hasActsLast, strongestVisionLimit, turnStartDamage } from "@tabbletop/protocol";
 import { statusResources } from "../../game/tableRules";
 import { readActorResources } from "../status/statusReadings";
 import { resourceUpdate, steppedValue } from "../status/statusValueEditing";
@@ -86,16 +86,36 @@ async function endTurn(combat: any, combatantId: string | null): Promise<void> {
   if (expired.length > 0) await announce(actor, `${escapeHTML(expired.map((effect) => effect.name).join(", "))} acabou.`);
 }
 
+/** Rolls each effect's damage dice once; a formula that fails to roll counts as 0. */
+async function rollEffectDice(effects: readonly AppliedEffect[]): Promise<{ totals: Map<string, number>; notes: string[] }> {
+  const totals = new Map<string, number>();
+  const notes: string[] = [];
+  for (const effect of effects) {
+    if (!dealsTurnDamage(effect) || !effect.damageDice) continue;
+    try {
+      const roll = await new Roll(effect.damageDice).evaluate();
+      const total = Math.trunc(Number(roll.total) || 0);
+      totals.set(effect.id, total);
+      notes.push(`${escapeHTML(effect.name)}: ${escapeHTML(effect.damageDice)} = ${total}`);
+    } catch {
+      totals.set(effect.id, 0);
+    }
+  }
+  return { totals, notes };
+}
+
 async function startTurn(combat: any, combatantId: string | null): Promise<void> {
   const actor = combatantId ? combat.combatants?.get(combatantId)?.actor : null;
   const effects = actorEffects(actor);
   if (!actor || effects.length === 0) return;
-  const damage = turnStartDamage(effects);
+  const dice = await rollEffectDice(effects);
+  const damage = turnStartDamage(effects, (effect) => dice.totals.get(effect.id) ?? 0);
   if (damage.size === 0) return;
   const readings = readActorResources(actor, statusResources());
   const update: Record<string, unknown> = {};
   const sources = escapeHTML(damageSources(effects));
   const lines: string[] = [];
+  if (dice.notes.length > 0) lines.push(`Dados: ${dice.notes.join("; ")}.`);
   for (const [resourceId, amount] of damage) {
     const reading = readings.find((entry) => entry.resource.id === resourceId);
     if (!reading) continue;
@@ -104,14 +124,14 @@ async function startTurn(combat: any, combatantId: string | null): Promise<void>
     const label = escapeHTML(reading.label);
     lines.push(amount >= 0 ? `${sources}: perdeu ${amount} de ${label} (agora ${edit.value}).` : `${sources}: recuperou ${-amount} de ${label} (agora ${edit.value}).`);
   }
-  if (lines.length === 0) return;
+  if (Object.keys(update).length === 0) return;
   await safely(() => actor.update(update));
   for (const line of lines) await announce(actor, line);
 }
 
 function damageSources(effects: readonly AppliedEffect[]): string {
   return effects
-    .filter((effect) => effect.damagePerTurn !== 0 && effect.damageResourceId)
+    .filter(dealsTurnDamage)
     .map((effect) => effect.name)
     .join(", ");
 }

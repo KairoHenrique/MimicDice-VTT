@@ -4,6 +4,7 @@ import { CONST } from "../../constants";
 import { Hooks } from "../../hooks/Hooks";
 import { currentCanvas, currentGame, currentUi } from "../../runtime";
 import type { Point, Rectangle, Segment } from "../geometry";
+import type { SnapMode } from "../grid";
 import { colorToNumber, loadTexture } from "../textures";
 import { seesEverything } from "../perception/viewpoint";
 import { DoorControl } from "./DoorControl";
@@ -30,9 +31,17 @@ export interface TileLayerState {
   locked: boolean;
 }
 
+/** Whether something the GM concealed (a trap, a perception check) is hidden from the current user; set by the app. */
+export type ConcealRule = (document: any) => boolean;
+
+function isConcealed(rule: ConcealRule | null, document: any): boolean {
+  return rule?.(document) === true;
+}
+
 export class Tile extends PlaceableObject {
   static override embeddedName = "Tile";
   static layerStateRule: ((document: any) => TileLayerState) | null = null;
+  static concealRule: ConcealRule | null = null;
   mesh: PIXI.Sprite | null = null;
   frame = new PIXI.Graphics();
 
@@ -40,8 +49,19 @@ export class Tile extends PlaceableObject {
     return (this.constructor as typeof Tile).layerStateRule?.(this.document) ?? null;
   }
 
+  /** The current user may see this tile at all (not GM-hidden, its layer is shown, not concealed from them). */
+  get isRevealed(): boolean {
+    if (!super.isVisible || this.layerState?.visible === false) return false;
+    return seesEverything() || !isConcealed((this.constructor as typeof Tile).concealRule, this.document);
+  }
+
   override get isVisible(): boolean {
-    return super.isVisible && this.layerState?.visible !== false;
+    return this.isRevealed && !currentCanvas()?.visibility?.isOutOfSight?.(this);
+  }
+
+  /** The GM sees concealed tiles faded, like hidden ones. */
+  get #fadedForGameMaster(): boolean {
+    return this.document.hidden === true || (seesEverything() && isConcealed((this.constructor as typeof Tile).concealRule, this.document));
   }
 
   /** A locked layer cannot be clicked, selected or dragged, by anyone. */
@@ -75,10 +95,36 @@ export class Tile extends PlaceableObject {
     const layerState = this.layerState;
     this.zIndex = layerState?.order ?? (Number(this.document.sort) || 0);
     this.eventMode = layerState?.locked ? "none" : "static";
-    this.alpha = (this.document.hidden ? 0.5 : Number(this.document.alpha ?? 1)) * (layerState?.opacity ?? 1);
+    this.alpha = (this.#fadedForGameMaster ? 0.5 : Number(this.document.alpha ?? 1)) * (layerState?.opacity ?? 1);
     this.frame.clear();
     if (this.controlled || (this.hover && this.layer?.active)) this.frame.lineStyle(3, this.controlled ? 0x3b82f6 : 0xffffff, 0.9).drawRect(0, 0, width, height);
-    this.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    const handle = this.resizable ? this.resizeHandleSize : 0;
+    if (handle > 0) this.frame.lineStyle(2, 0xffffff, 1).beginFill(0x3b82f6, 1).drawRect(width - handle / 2, height - handle / 2, handle, handle).endFill();
+    this.hitArea = new PIXI.Rectangle(0, 0, width + handle / 2, height + handle / 2);
+  }
+
+  /** Objects that do not fill whole squares move by quarter squares so they can sit anywhere inside one. */
+  override get snapMode(): SnapMode {
+    const size = Number(currentCanvas()?.grid?.size) || 100;
+    const { width, height } = this.bounds;
+    return width % size === 0 && height % size === 0 ? "corner" : "quarter";
+  }
+
+  /** The selected tile shows a corner handle; dragging it resizes the tile. */
+  get resizable(): boolean {
+    return this.controlled && this.canDrag();
+  }
+
+  get resizeHandleSize(): number {
+    return Math.max(12, Math.round((Number(currentCanvas()?.grid?.size) || 100) * 0.16));
+  }
+
+  /** Whether a canvas point grabs the resize handle (bottom-right corner). */
+  grabsResizeHandle(point: Point): boolean {
+    if (!this.resizable) return false;
+    const { x, y, width, height } = this.bounds;
+    const reach = this.resizeHandleSize;
+    return Math.abs(point.x - (x + width)) <= reach && Math.abs(point.y - (y + height)) <= reach;
   }
 
   override _onClickRight(event: PIXI.FederatedPointerEvent): void {
@@ -282,7 +328,7 @@ export class Wall extends PlaceableObject {
     if (!this.isDoor) return;
     const notifications = currentUi()?.notifications;
     if (this.isLocked) {
-      notifications?.warn(currentGame()?.user?.isGM ? "Porta trancada. Use o botão direito para destrancar." : "A porta está trancada.");
+      notifications?.warn(currentGame()?.user?.isGM ? "Porta trancada pelo mestre. Use o botão direito para destrancar." : "Trancada pelo mestre: só abre quando o mestre destrancar.");
       return;
     }
     if (!currentGame()?.user?.isGM && currentCanvas()?.perception?.isDoorVisible?.(this) === false) {
@@ -291,7 +337,7 @@ export class Wall extends PlaceableObject {
     }
     const requiredItem = this.requiredItem;
     if (requiredItem && !currentGame()?.user?.isGM && !userCarriesItem(requiredItem)) {
-      notifications?.warn(`Você precisa de "${requiredItem}" para abrir esta porta.`);
+      notifications?.warn(`Trancada a chave: você precisa de "${requiredItem}" para abrir.`);
       return;
     }
     const nextState = this.isOpen ? CONST.WALL_DOOR_STATES.CLOSED : CONST.WALL_DOOR_STATES.OPEN;
@@ -365,6 +411,7 @@ export class AmbientLight extends PlaceableObject {
 
 export class Note extends PlaceableObject {
   static override embeddedName = "Note";
+  static concealRule: ConcealRule | null = null;
   icon: PIXI.Sprite | null = null;
   tooltip: PIXI.Text | null = null;
 
@@ -377,10 +424,16 @@ export class Note extends PlaceableObject {
     return { x: this.document.x - size / 2, y: this.document.y - size / 2, width: size, height: size };
   }
 
-  override get isVisible(): boolean {
+  /** The current user may see this note at all: its journal is shared with them and it is not concealed from them. */
+  get isRevealed(): boolean {
     if (seesEverything()) return true;
     const entry = this.document.entry;
-    return !entry || entry.testUserPermission?.(currentGame()?.user, "LIMITED") === true;
+    if (entry && entry.testUserPermission?.(currentGame()?.user, "LIMITED") !== true) return false;
+    return !isConcealed((this.constructor as typeof Note).concealRule, this.document);
+  }
+
+  override get isVisible(): boolean {
+    return this.isRevealed && !currentCanvas()?.visibility?.isOutOfSight?.(this);
   }
 
   protected override async _draw(): Promise<void> {
@@ -397,6 +450,7 @@ export class Note extends PlaceableObject {
   protected override _refresh(): void {
     const size = this.size;
     this.position.set(this.document.x, this.document.y);
+    this.alpha = seesEverything() && isConcealed((this.constructor as typeof Note).concealRule, this.document) ? 0.5 : 1;
     if (this.icon) {
       this.icon.width = size;
       this.icon.height = size;

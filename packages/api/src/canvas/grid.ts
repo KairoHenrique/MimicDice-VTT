@@ -1,6 +1,8 @@
 import { CONST } from "../constants";
 import type { Point, Rectangle } from "./geometry";
 
+export type SnapMode = "corner" | "center" | "half" | "quarter";
+
 export interface GridConfiguration {
   type: number;
   size: number;
@@ -78,10 +80,10 @@ export class SquareGrid {
     return { x: (j + 0.5) * this.size, y: (i + 0.5) * this.size };
   }
 
-  /** Snaps to grid vertices (`mode` "corner"), cell centers ("center"), or either half-step ("half"). */
-  getSnappedPoint({ x, y }: Point, { mode = "corner" }: { mode?: "corner" | "center" | "half" } = {}): Point {
+  /** Snaps to grid vertices (`mode` "corner"), cell centers ("center"), half-steps ("half") or quarter-steps ("quarter"). */
+  getSnappedPoint({ x, y }: Point, { mode = "corner" }: { mode?: SnapMode } = {}): Point {
     if (this.isGridless) return { x, y };
-    const step = mode === "half" ? this.size / 2 : this.size;
+    const step = mode === "half" ? this.size / 2 : mode === "quarter" ? this.size / 4 : this.size;
     const offset = mode === "center" ? this.size / 2 : 0;
     return { x: Math.round((x - offset) / step) * step + offset, y: Math.round((y - offset) / step) * step + offset };
   }

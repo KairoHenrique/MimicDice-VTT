@@ -64,12 +64,12 @@ export function newEffectId(): string {
 export interface EffectApplication {
   turns: number;
   /** Replaces the definition's damage per turn for this application only. */
-  damagePerTurn?: number;
+  damage?: Pick<EffectDefinition, "damagePerTurn" | "damageDice">;
 }
 
-export function appliedFrom(definition: EffectDefinition, { turns, damagePerTurn }: EffectApplication): AppliedEffect {
+export function appliedFrom(definition: EffectDefinition, { turns, damage }: EffectApplication): AppliedEffect {
   const turnsLeft = Math.min(Math.max(Math.round(turns), 1), MAX_EFFECT_TURNS);
-  return { ...definition, id: newEffectId(), definitionId: definition.id, turnsLeft, damagePerTurn: damagePerTurn ?? definition.damagePerTurn };
+  return { ...definition, id: newEffectId(), definitionId: definition.id, turnsLeft, ...(damage ?? {}) };
 }
 
 export async function applyEffectToActors(actors: readonly any[], definition: EffectDefinition, application: EffectApplication): Promise<number> {

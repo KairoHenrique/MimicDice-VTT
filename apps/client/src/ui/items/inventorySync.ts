@@ -1,3 +1,5 @@
+import { dropInventoryItemOnMap, moveItemToActor } from "./itemExchange";
+
 /** Items handed to characters remember the Items-tab entry they came from, so the GM's later edits reach every copy. */
 
 const SYNCED_FIELDS = ["name", "type", "img", "system"] as const;
@@ -57,7 +59,26 @@ async function propagateEdit(original: any, changes: Record<string, unknown>): P
 }
 
 /** The GM's edit of an Items-tab entry updates the copies in every inventory; dropping an item on a token gives it. */
+const WHEREABOUTS_REFRESH_MS = 250;
+
+/** The GM's Items tab shows who carries each item, so inventory and loot changes redraw it (batched). */
+function refreshItemWhereabouts(): void {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const schedule = () => {
+    if (!game.user.isGM || timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      void ui.items?.render();
+    }, WHEREABOUTS_REFRESH_MS);
+  };
+  for (const hook of ["createItem", "deleteItem", "createTile", "deleteTile", "deleteActor", "updateActor"]) Hooks.on(hook, schedule);
+  Hooks.on("updateTile", (_tile: unknown, changes: any) => {
+    if (changes?.flags?.core) schedule();
+  });
+}
+
 export function installInventorySync(): void {
+  refreshItemWhereabouts();
   Hooks.on("preUpdateItem", (item: any) => {
     if (!item.parent && game.user.isGM) namesBeforeUpdate.set(item.id, item.name);
   });
@@ -73,8 +94,12 @@ export function installInventorySync(): void {
       const { x, y, width, height } = candidate.bounds;
       return candidate.visible && point.x >= x && point.x <= x + width && point.y >= y && point.y <= y + height;
     });
-    if (!token?.actor) return true;
-    void giveItemToActor(token.actor, item);
+    if (token?.actor && token.actor !== item.parent) {
+      void moveItemToActor(item, token.actor);
+      return false;
+    }
+    if (!item.parent) return true;
+    if (!token) void dropInventoryItemOnMap(item, point);
     return false;
   });
 }

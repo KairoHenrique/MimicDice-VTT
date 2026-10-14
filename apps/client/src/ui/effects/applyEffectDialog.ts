@@ -1,7 +1,7 @@
 import { DialogV2, type MenuEntry } from "@tabbletop/api";
-import { type EffectDefinition, MAX_EFFECT_DAMAGE, MAX_EFFECT_TURNS, searchEffectDefinitions } from "@tabbletop/protocol";
+import { type EffectDefinition, formatDamage, MAX_EFFECT_TURNS, parseDamageInput, searchEffectDefinitions } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
-import { createEffect, describeMechanics } from "./effectLibraryDialog";
+import { createEffect, damageInput, describeMechanics } from "./effectLibraryDialog";
 import { actorEffects, applyEffectToActors, effectDefinitions, removeActorEffect } from "./effectStore";
 import { effectLabel, effectTitle } from "./effectVisuals";
 
@@ -10,7 +10,7 @@ const DEFAULT_TURNS = 3;
 interface ApplyChoice {
   definition: EffectDefinition;
   turns: number;
-  damagePerTurn: number;
+  damage: Pick<EffectDefinition, "damagePerTurn" | "damageDice">;
 }
 
 function currentEffectsSection(actor: any): HTMLElement | null {
@@ -80,13 +80,13 @@ export async function applyEffectDialog(actors: readonly any[]): Promise<void> {
   const empty = h("p", { class: "hint", hidden: true }, "Nenhum efeito com esse nome.");
   wireSearch(search, definitions, rows, radios, empty);
   const turns = h("input", { type: "number", min: 1, max: MAX_EFFECT_TURNS, step: 1, value: String(DEFAULT_TURNS), "aria-label": "Duração em turnos" });
-  const damage = h("input", { type: "number", min: -MAX_EFFECT_DAMAGE, max: MAX_EFFECT_DAMAGE, step: 1, value: String(definitions[0]!.damagePerTurn), "aria-label": "Dano por turno" });
+  const damage = damageInput("damage", formatDamage(definitions[0]!), "Dano por turno");
   const damageField = h("label", { class: "md-effect-inline" }, "Dano por turno", damage);
   const selected = () => definitions.find((definition) => definition.id === radios.find((radio) => radio.checked)?.value) ?? null;
   const syncDamage = () => {
     const definition = selected();
     damageField.hidden = !definition?.damageResourceId;
-    if (definition) damage.value = String(definition.damagePerTurn);
+    if (definition) damage.value = formatDamage(definition);
   };
   for (const radio of radios) radio.addEventListener("change", syncDamage);
   syncDamage();
@@ -107,12 +107,18 @@ export async function applyEffectDialog(actors: readonly any[]): Promise<void> {
       icon: "fa-solid fa-wand-magic-sparkles",
       callback: (): ApplyChoice | null => {
         const definition = selected();
-        return definition ? { definition, turns: Number(turns.value) || DEFAULT_TURNS, damagePerTurn: Math.round(Number(damage.value) || 0) } : null;
+        if (!definition) return null;
+        const parsedDamage = parseDamageInput(damage.value);
+        if (!parsedDamage) {
+          ui.notifications.warn("Dano inválido: use um número ou dados, como 2 ou 1d6+2.");
+          return null;
+        }
+        return { definition, turns: Number(turns.value) || DEFAULT_TURNS, damage: parsedDamage };
       },
     },
   })) as ApplyChoice | null;
   if (!choice) return;
-  const applied = await applyEffectToActors(actors, choice.definition, { turns: choice.turns, damagePerTurn: choice.damagePerTurn });
+  const applied = await applyEffectToActors(actors, choice.definition, { turns: choice.turns, damage: choice.damage });
   if (applied < actors.length) ui.notifications.warn(`O efeito não pôde ser aplicado em ${actors.length - applied} personagem(ns).`);
   else ui.notifications.info(`${choice.definition.name} aplicado em ${targetsText(actors)}.`);
 }

@@ -84,7 +84,7 @@ export class Sidebar extends DomApplication {
     for (const tabClass of SIDEBAR_TABS) {
       const button = h(
         "button",
-        { type: "button", class: `item${tabClass.tabName === this.activeTab ? " active" : ""}`, "data-tab": tabClass.tabName, title: tabClass.tabLabel, role: "tab", hidden: !isTabAvailable(tabClass) },
+        { type: "button", class: `item${tabClass.tabName === this.activeTab ? " active" : ""}`, "data-tab": tabClass.tabName, title: tabClass.tabLabel, role: "tab", "aria-selected": String(tabClass.tabName === this.activeTab), hidden: !isTabAvailable(tabClass) },
         h("i", { class: tabClass.tabIcon }),
         ` ${tabClass.tabLabel}`,
       );
@@ -132,6 +132,7 @@ export class Sidebar extends DomApplication {
     this.activeTab = tabName;
     for (const button of Array.from(this.element.querySelectorAll<HTMLElement>(".sidebar-tabs [data-tab]"))) {
       button.classList.toggle("active", button.dataset.tab === tabName);
+      button.setAttribute("aria-selected", String(button.dataset.tab === tabName));
     }
     for (const tab of this.tabs) {
       const isActive = tab.tabName === tabName;

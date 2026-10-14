@@ -22,3 +22,33 @@ export const lootPickupRequestSchema = z.object({
   actorId: documentIdSchema,
 });
 export type LootPickupRequest = z.infer<typeof lootPickupRequestSchema>;
+
+const MAP_COORDINATE_LIMIT = 1_000_000;
+const mapCoordinateSchema = z.number().finite().min(-MAP_COORDINATE_LIMIT).max(MAP_COORDINATE_LIMIT);
+
+/** A player leaves an item from their character's inventory on the map, next to that character's token. */
+export const lootDropRequestSchema = z.object({
+  sceneId: documentIdSchema,
+  actorId: documentIdSchema,
+  itemId: documentIdSchema,
+  x: mapCoordinateSchema,
+  y: mapCoordinateSchema,
+});
+export type LootDropRequest = z.infer<typeof lootDropRequestSchema>;
+
+/** A player hands an item from their character to another character standing on the same scene. */
+export const itemTransferRequestSchema = z.object({
+  sceneId: documentIdSchema,
+  fromActorId: documentIdSchema,
+  itemId: documentIdSchema,
+  toActorId: documentIdSchema,
+});
+export type ItemTransferRequest = z.infer<typeof itemTransferRequestSchema>;
+
+/** Inventory data that moves with an item: what a loot tile or another character receives. */
+export function movableItemData(item: Record<string, unknown>): LootItem | null {
+  const flags = (item.flags ?? {}) as { core?: { sourceId?: unknown } };
+  const sourceId = typeof flags.core?.sourceId === "string" ? flags.core.sourceId : undefined;
+  const parsed = lootItemSchema.safeParse({ name: item.name, type: item.type, img: item.img ?? null, system: item.system ?? {}, flags: { core: sourceId ? { sourceId } : {} } });
+  return parsed.success ? parsed.data : null;
+}
