@@ -82,6 +82,14 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     ],
   },
   {
+    id: "tool:color",
+    title: "Cor dos desenhos e textos",
+    icon: "fa-solid fa-palette",
+    audience: "all",
+    summary: "Escolhe a cor dos próximos desenhos e textos.",
+    steps: ["Clique na paleta e escolha a cor. O ícone mostra a cor atual.", "Para mudar a cor de um desenho que já está no mapa, clique nele para selecionar e depois clique na paleta."],
+  },
+  {
     id: "tool:lockAll",
     title: "Travar desenhos selecionados",
     icon: "fa-solid fa-lock",

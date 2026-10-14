@@ -12,6 +12,7 @@ export { actorTokenData } from "./canvas/interaction/canvasDrop";
 export type { TokenBadge } from "./canvas/placeables/Token";
 export type { TileLayerState } from "./canvas/placeables/simplePlaceables";
 export type { MenuEntry } from "./canvas/hud/CanvasHud";
+export { defaultDrawingColor, setDrawingColor, drawingColorPatch } from "./canvas/hud/drawingFields";
 export { Hooks } from "./hooks/Hooks";
 export { escapeHTML } from "./utils/miscUtils";
 export { DocumentSheetV2, ActorSheetV2, ItemSheetV2 } from "./documents/sheets";

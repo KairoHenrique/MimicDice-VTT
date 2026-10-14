@@ -10,6 +10,7 @@ import { colorToNumber } from "../textures";
 import { CREATION_TOOLS, type CreationTool } from "./creationTools";
 import { handleCanvasDrop } from "./canvasDrop";
 import { paintCreationPreview } from "./creationPreview";
+import { defaultDrawingColor } from "../hud/drawingFields";
 
 const CLICK_TOLERANCE_PX = 4;
 const FREEHAND_SAMPLE_PX = 8;
@@ -225,7 +226,7 @@ export class CanvasInteraction {
     const lastY = session.points[session.points.length - 1];
     if (Math.hypot(world.x - lastX, world.y - lastY) >= FREEHAND_SAMPLE_PX) session.points.push(world.x, world.y);
     const destination = freeSnap ? world : this.canvas.grid.getSnappedPoint(world, { mode: session.tool.snapMode });
-    this.#drawOverlay((graphics) => paintCreationPreview(graphics, session.tool, session.origin, destination, this.#creationContext(false), session.points, currentGame()?.user?.color));
+    this.#drawOverlay((graphics) => paintCreationPreview(graphics, session.tool, session.origin, destination, this.#creationContext(false), session.points, defaultDrawingColor()));
   }
 
   /** Path from the token's current center to where it would land, with the distance it walks. */

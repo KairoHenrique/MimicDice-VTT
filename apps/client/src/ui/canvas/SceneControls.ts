@@ -84,7 +84,9 @@ export class SceneControls extends DomApplication {
   #buildToolButton(tool: SceneControlTool): HTMLButtonElement {
     const isActive = tool.toggle ? tool.active === true : !tool.button && tool.name === this.activeTool;
     const title = game.i18n.localize(tool.title ?? "");
-    const button = h("button", { type: "button", class: `tool ui-control${isActive ? " active" : ""}${tool.toggle ? " toggle" : ""}`, "data-tool": tool.name, title, "aria-label": title, "aria-pressed": String(isActive) }, h("i", { class: tool.icon }));
+    const icon = h("i", { class: tool.icon });
+    if (tool.iconColor) icon.style.color = tool.iconColor;
+    const button = h("button", { type: "button", class: `tool ui-control${isActive ? " active" : ""}${tool.toggle ? " toggle" : ""}`, "data-tool": tool.name, title, "aria-label": title, "aria-pressed": String(isActive) }, icon);
     button.addEventListener("click", (event) => {
       if (tool.button) {
         void tool.onChange?.(event, true);

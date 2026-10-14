@@ -25,6 +25,7 @@
 
 - O **preview** mostra a forma certa (retângulo, elipse, mão livre, texto e moldes) na cor de quem desenha, sem a reta seguindo o mouse.
 - **Linhas a mão livre** agora podem ser selecionadas e apagadas clicando na própria linha.
+- **Paleta de cor** na barra de desenhos (abaixo do texto): escolhe a cor dos próximos desenhos e textos. Com um desenho selecionado (clique nele), a paleta muda a cor dele na hora.
 - **Cor:** clique direito ou duplo clique muda a cor, a espessura e o preenchimento do desenho, ou o texto, a cor e o tamanho da letra.
 - **Textos** podem ser editados. Só o criador mexe neles, além de quem o mestre liberar em **Quem pode editar e mover**.
 - O cadeado da barra de desenhos trava **só os desenhos selecionados**, não todos.

@@ -374,3 +374,14 @@ body.table-session-closed:not(:has(.session-banner)) #navigation {
 .directory-item[draggable="true"] {
   cursor: grab;
 }
+
+.drawing-color-picker {
+  position: fixed;
+  z-index: 1000;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}

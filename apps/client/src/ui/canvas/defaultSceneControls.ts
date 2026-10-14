@@ -1,5 +1,6 @@
 import { isGmEditMode, isMapLocked } from "../../game/tableControls";
 import { toggleLayersPanel } from "../layers/LayersPanel";
+import { drawingColorTool } from "./drawingColorTool";
 
 export interface SceneControlTool {
   name: string;
@@ -10,6 +11,7 @@ export interface SceneControlTool {
   toggle?: boolean;
   active?: boolean;
   button?: boolean;
+  iconColor?: string;
   onChange?: (event: Event, active: boolean) => unknown;
 }
 
@@ -121,6 +123,7 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
         ellipse: tool("ellipse", 3, "Elipse", "fa-solid fa-circle"),
         freehand: tool("freehand", 4, "Mão livre", "fa-solid fa-signature"),
         text: tool("text", 5, "Texto", "fa-solid fa-font"),
+        color: drawingColorTool(),
         lockAll: lockSelectedDrawingsTool(),
         clear: clearTool("drawings", "desenhos"),
       },
