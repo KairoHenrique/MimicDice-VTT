@@ -22,7 +22,7 @@ export const PLAYER_SHEET_PAGES: readonly SheetPage[] = [
       { id: "pp14", kind: "number", x: 4, y: 5, w: 2, h: 2, key: "intelecto", label: "Intelecto", formula: "(max(@intelecto, 1))d20", min: 0, initial: 1, hint: "Rola um d20 por ponto e fica com o maior", rollMode: "highest" },
       { id: "pp15", kind: "number", x: 6, y: 5, w: 2, h: 2, key: "presenca", label: "Presença", formula: "(max(@presenca, 1))d20", min: 0, initial: 1, hint: "Rola um d20 por ponto e fica com o maior", rollMode: "highest" },
       { id: "pp16", kind: "number", x: 8, y: 5, w: 2, h: 2, key: "vigor", label: "Vigor", formula: "(max(@vigor, 1))d20", min: 0, initial: 1, hint: "Rola um d20 por ponto e fica com o maior", rollMode: "highest" },
-      { id: "pp17", kind: "resource", x: 0, y: 8, w: 6, h: 2, key: "pv", label: "PV", min: 0, style: { accent: "#c0392b" }, initial: 16, formula: "floor((choose(@classe_n, 15, 11, 8) + @vigor) * @nivel)" },
+      { id: "pp17", kind: "resource", x: 0, y: 8, w: 6, h: 2, key: "pv", label: "PV", min: 0, style: { accent: "#c0392b" }, initial: 16, formula: "if(eq(@classe_n, 1), (15 + @vigor) * @nivel, if(eq(@classe_n, 2), (11 + @vigor) * @nivel, if(eq(@classe_n, 3), (8 + @vigor) * @nivel, 0)))" },
       {
         id: "pp18",
         kind: "resource",
@@ -35,7 +35,7 @@ export const PLAYER_SHEET_PAGES: readonly SheetPage[] = [
         min: 0,
         initial: 6,
         style: { accent: "#2f80d1" },
-        formula: "choose(@classe_n, 5 + @presenca * 2 * @nivel / 2, 8 + @presenca * 4 * @nivel / 2, 8 + @presenca * 6 * @nivel / 2)",
+        formula: "if(eq(@classe_n, 1), 5 + (@presenca * 2) * @nivel / 2, if(eq(@classe_n, 2), 8 + (@presenca * 4) * @nivel / 2, if(eq(@classe_n, 3), 8 + (@presenca * 6) * @nivel / 2, 0)))",
       },
       { id: "pp19", kind: "computed", x: 0, y: 12, w: 3, h: 2, key: "defesa", label: "Defesa", formula: "10 + @intelecto + if(@leve, 3, if(@media, 5, if(@pesada, 7, 0))) + if(eq(@classe_n, 2), 2, 0)" },
       { id: "pp20", kind: "computed", x: 3, y: 12, w: 3, h: 2, key: "bloqueio", label: "Bloqueio", formula: "@pericias.fortitude", hint: "0 = sem bloqueio" },

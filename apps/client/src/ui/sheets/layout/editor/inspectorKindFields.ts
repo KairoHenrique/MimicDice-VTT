@@ -67,7 +67,9 @@ export function buildKindFields(component: SheetComponent, patch: ComponentPatch
       return [
         initialNumberRow(component, patch, "Valor inicial (atual e máximo)"),
         numberRow("Mínimo", component.min, "min", (value) => patch({ min: value })),
-        formulaRow(component, patch, "computed", "Opcional: o máximo é calculado e muda sozinho, como na planilha. Ex.: @pv_maximo ou (@vigor + 10) * @nivel. Barra cheia continua cheia quando o máximo sobe.", "Máximo (fórmula)"),
+        game.user.isGM
+          ? formulaRow(component, patch, "computed", "Opcional: o máximo é calculado e muda sozinho, como na planilha. Ex.: (@vigor + 10) * @nivel ou if(eq(@classe_n, 1), 15, 11). Barra cheia continua cheia quando o máximo sobe.", "Máximo (fórmula)")
+          : h("p", { class: "hint" }, "Só o mestre muda o máximo e a fórmula da barra."),
       ];
     case "pips":
       return [

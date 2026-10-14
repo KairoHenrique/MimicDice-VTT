@@ -62,7 +62,7 @@ function syncFormulaMaximum(context: BoardContext, component: SheetComponent, ke
 }
 
 function resourceMaxField(component: SheetComponent, name: string, max: number, editable: boolean, label: string): HTMLElement {
-  if (!component.formula) return h("input", { type: "number", name, value: String(max), disabled: !editable, "aria-label": `${label} máximo` });
+  if (!component.formula) return h("input", { type: "number", name, value: String(max), disabled: !editable || !game.user.isGM, title: game.user.isGM ? "" : "Só o mestre muda o máximo", "aria-label": `${label} máximo` });
   return h("output", { class: "md-resource-max", title: `Calculado: ${component.formula}`, "aria-label": `${label} máximo (calculado)` }, formatDerived(max));
 }
 

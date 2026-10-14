@@ -1,5 +1,10 @@
 # Notas de versão
 
+## 1.4.5
+
+- **Máximo das barras só pelo mestre:** o jogador não muda mais o máximo de PV, PE e outras barras, nem na ficha nem no painel de status, e não vê o campo de fórmula do máximo no editor. O mestre continua mudando o valor e a fórmula.
+- **Fórmulas de PV e PE:** escritas como o SE da planilha (`if(eq(@classe_n, 1), ...)`) para Brutamonte, Sagaz e Erudito. Os valores não mudam. Para fichas já criadas, aplique o modelo de novo em **Modelos**.
+
 ## 1.4.4
 
 - **Nova ficha de jogador:** "Agente (jogador)" é o único modelo de jogador que vem com o app, com sanidade, PV e PE lado a lado e o novo arranjo da página de perícias.

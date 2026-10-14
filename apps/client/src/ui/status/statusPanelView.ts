@@ -61,7 +61,10 @@ function ownerControls(actor: any, reading: ResourceReading): HTMLElement {
     valueInput,
   );
   if (reading.kind === "bar") {
-    controls.append(h("span", { class: "status-separator", "aria-hidden": "true" }, "/"), numberField(`${reading.label} máximo de ${actor.name}`, reading.max, (typed) => commit(editedMax(reading, typed)), (edit) => edit.max, `${baseKey}:max`));
+    const maximum = game.user.isGM
+      ? numberField(`${reading.label} máximo de ${actor.name}`, reading.max, (typed) => commit(editedMax(reading, typed)), (edit) => edit.max, `${baseKey}:max`)
+      : h("span", { class: "status-readonly", title: "Só o mestre muda o máximo" }, String(reading.max));
+    controls.append(h("span", { class: "status-separator", "aria-hidden": "true" }, "/"), maximum);
   }
   controls.append(stepButton("fa-solid fa-plus", `Aumentar ${reading.label} de ${actor.name}`, () => saveEdit(actor, reading, steppedValue(reading, 1))));
   return controls;
