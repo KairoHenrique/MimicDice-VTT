@@ -3,6 +3,7 @@ import { LOOT_FLAG } from "@tabbletop/protocol";
 import { CONST } from "../../constants";
 import { fromUuidSync } from "../../documents/abstract/ClientDatabaseBackend";
 import { currentGame, currentUi } from "../../runtime";
+import { IMAGE_TILE_DROP_TYPE, placeImageTile } from "./imageTileDrop";
 
 /** Token source for an actor centered on (x, y), snapped to the grid, from the actor's prototype token. */
 export function actorTokenData(actor: any, x: number, y: number, canvas: any): PlainObject {
@@ -47,6 +48,13 @@ async function dropLoot(canvas: any, item: any, x: number, y: number): Promise<v
 
 /** Turns supported drops into embedded documents: Actor -> Token, Item -> loot tile, JournalEntry -> Note. */
 export async function handleCanvasDrop(canvas: any, data: PlainObject): Promise<void> {
+  if (data.type === IMAGE_TILE_DROP_TYPE && data.texture && typeof data.texture === "object") {
+    const point = { x: Number(data.x), y: Number(data.y) };
+    if (Number.isFinite(point.x) && Number.isFinite(point.y)) {
+      await placeImageTile(canvas, (data.texture as PlainObject).src, point, { pixelsPerSquare: Number(data.pixelsPerSquare) || undefined, free: data.free === true });
+    }
+    return;
+  }
   const document = typeof data.uuid === "string" ? fromUuidSync(data.uuid) : null;
   const x = Number(data.x);
   const y = Number(data.y);

@@ -1,4 +1,4 @@
-import { expandObject, type PlainObject } from "@tabbletop/common";
+import { expandObject, getProperty, type PlainObject } from "@tabbletop/common";
 import { FilePicker } from "../../applications/apps/FilePicker";
 
 export interface FormFieldSpec {
@@ -98,6 +98,25 @@ function coerce(field: FormFieldSpec, element: HTMLInputElement | HTMLSelectElem
   if (field.type === "color") return COLOR_PATTERN.test(element.value) ? element.value : field.value;
   if (field.type === "select") return (field.choices ?? []).some((choice) => choice.value === element.value) ? element.value : field.value;
   return element.value.slice(0, field.maxLength ?? DEFAULT_MAX_TEXT);
+}
+
+/**
+ * Shows the listed fields on the map while they are edited, by changing only this screen's copy of the document.
+ * The returned function puts the saved values back without redrawing, so a save that follows does not flicker.
+ */
+export function attachLivePreview(form: HTMLFormElement, fields: FormFieldSpec[], document: any, liveNames: readonly string[], redraw: (changed: PlainObject) => void): () => PlainObject {
+  const liveFields = fields.filter((field) => liveNames.includes(field.name));
+  const saved = expandObject(Object.fromEntries(liveFields.map((field) => [field.name, getProperty(document._source, field.name)])));
+  form.addEventListener("input", () => {
+    if (!document.object || document.object.destroyed) return;
+    const previewed = readForm(form, liveFields);
+    document.updateSource(previewed);
+    redraw(previewed);
+  });
+  return () => {
+    document.updateSource(saved);
+    return saved;
+  };
 }
 
 /** Reads typed, range-checked values; unknown inputs are ignored. Dotted names become nested objects. */

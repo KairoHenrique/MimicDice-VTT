@@ -192,7 +192,8 @@ export class CanvasInteraction {
 
   #previewResize(tile: Tile, area: { width: number; height: number }): void {
     const { x, y } = tile.document;
-    this.#drawOverlay((graphics) => graphics.lineStyle(3, 0x3b82f6, 1).beginFill(0x3b82f6, 0.12).drawRect(x, y, area.width, area.height).endFill());
+    tile.previewSize = area;
+    tile.refresh();
     const size = this.canvas.grid.size;
     const squares = (value: number) => String(Math.round((value / size) * 100) / 100).replace(".", ",");
     this.label.text = `${squares(area.width)} × ${squares(area.height)}`;
@@ -200,11 +201,14 @@ export class CanvasInteraction {
     this.label.visible = true;
   }
 
+  /** The stretched preview stays until the save lands, so the tile does not snap back for a moment. */
   async #commitResize(tile: Tile, area: { width: number; height: number }): Promise<void> {
-    if (tile.destroyed || (area.width === Number(tile.document.width) && area.height === Number(tile.document.height))) return;
     try {
-      await tile.document.update(area);
+      if (!tile.destroyed && (area.width !== Number(tile.document.width) || area.height !== Number(tile.document.height))) await tile.document.update(area);
     } catch {
+      currentUi()?.notifications?.warn("Não foi possível mudar o tamanho.");
+    } finally {
+      tile.previewSize = null;
       if (!tile.destroyed) tile.refresh();
     }
   }
@@ -477,6 +481,11 @@ export class CanvasInteraction {
     const raw = event.dataTransfer?.getData("text/plain") ?? "";
     const rect = (this.canvas.app.view as HTMLCanvasElement).getBoundingClientRect();
     const world = (this.canvas.stage as PIXI.Container).toLocal({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    if (!raw && files.length > 0) {
+      Hooks.callAll("dropCanvasFiles", this.canvas, files, { x: world.x, y: world.y, free: event.shiftKey });
+      return;
+    }
     let data: unknown;
     try {
       data = JSON.parse(raw);
@@ -484,7 +493,7 @@ export class CanvasInteraction {
       return;
     }
     if (!data || typeof data !== "object") return;
-    const dropData = { ...(data as PlainObject), x: world.x, y: world.y };
+    const dropData = { ...(data as PlainObject), x: world.x, y: world.y, free: event.shiftKey };
     if (Hooks.call("dropCanvasData", this.canvas, dropData, event) === false) return;
     await handleCanvasDrop(this.canvas, dropData);
   }

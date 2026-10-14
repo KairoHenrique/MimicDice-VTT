@@ -1,5 +1,6 @@
 import { isGmEditMode, isMapLocked } from "../../game/tableControls";
 import { toggleLayersPanel } from "../layers/LayersPanel";
+import { toggleImageLibrary } from "../mapBuilder/imageLibrary";
 import { drawingColorTool } from "./drawingColorTool";
 
 export interface SceneControlTool {
@@ -111,7 +112,8 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
       tools: {
         select: selectTool(),
         tile: tool("tile", 2, "Colocar tile (imagem)", "fa-solid fa-image"),
-        layers: tool("layers", 3, "Camadas (mapa, props, personagens, notas)", "fa-solid fa-layer-group", { button: true, visible: isGM, onChange: () => toggleLayersPanel() }),
+        images: tool("images", 3, "Imagens do mapa: arraste das suas pastas para montar o mapa", "fa-solid fa-images", { button: true, visible: isGM, onChange: () => toggleImageLibrary() }),
+        layers: tool("layers", 4, "Camadas (mapa, props, personagens, notas)", "fa-solid fa-layer-group", { button: true, visible: isGM, onChange: () => toggleLayersPanel() }),
         clear: clearTool("tiles", "tiles"),
       },
     },

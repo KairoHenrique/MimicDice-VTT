@@ -27,5 +27,6 @@ export { Scene, TokenDocument } from "./documents/sceneClientDocuments";
 export { Canvas } from "./canvas/Canvas";
 export { CONST as FOUNDRY_CONST } from "./constants";
 export { FilePicker, dataPathToUrl, normalizeDataPath } from "./applications/apps/FilePicker";
+export { IMAGE_TILE_DROP_TYPE, imageTileDragData, placeImageTile, type ImageTilePlacement } from "./canvas/interaction/imageTileDrop";
 export { NoteFileEditor } from "./applications/apps/NoteFileEditor";
 export { TextEditor } from "./applications/ux/TextEditor";

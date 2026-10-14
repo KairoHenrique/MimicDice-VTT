@@ -1,3 +1,4 @@
+import { imageTileDragData } from "../../canvas/interaction/imageTileDrop";
 import type { FilePickerBrowseResult, FilePickerType } from "./FilePicker";
 
 export interface FilePickerViewModel {
@@ -113,6 +114,13 @@ function buildFileEntry(path: string, model: FilePickerViewModel, handlers: File
   entry.append(buildFilePreview(path, model), element("span", "file-picker-name", baseName(path)));
   entry.addEventListener("click", () => handlers.select(path));
   entry.addEventListener("dblclick", () => handlers.confirm(path));
+  if (IMAGE_PATTERN.test(path) || VIDEO_PATTERN.test(path)) {
+    entry.draggable = true;
+    entry.addEventListener("dragstart", (event) => {
+      event.dataTransfer?.setData("text/plain", JSON.stringify(imageTileDragData(path)));
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+    });
+  }
   if (model.browseOnly) {
     entry.tabIndex = 0;
     entry.setAttribute("aria-label", `Abrir ${baseName(path)}`);

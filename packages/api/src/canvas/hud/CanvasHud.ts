@@ -8,7 +8,7 @@ import type { PlaceableObject } from "../placeables/PlaceableObject";
 import type { Token } from "../placeables/Token";
 import type { AmbientLight, Note, Tile, Wall } from "../placeables/simplePlaceables";
 import { defaultDrawingColor, drawingEditFields, editorFields, readEditors, textFields } from "./drawingFields";
-import { buildForm, readForm, type FormFieldSpec } from "./hudForms";
+import { attachLivePreview, buildForm, readForm, type FormFieldSpec } from "./hudForms";
 
 const MAX_ITEM_SUGGESTIONS = 200;
 
@@ -149,7 +149,10 @@ export class CanvasHud {
 
   async configureDrawing(document: any): Promise<void> {
     const isText = document.shape?.type === CONST.DRAWING_TYPES.TEXT;
-    const values = await this.#formDialog(isText ? "Editar texto" : "Editar desenho", drawingEditFields(document._source));
+    const values = await this.#formDialog(isText ? "Editar texto" : "Editar desenho", drawingEditFields(document._source), {
+      document,
+      fields: ["text", "textColor", "fontSize", "strokeColor", "strokeWidth", "fillColor", "fillAlpha"],
+    });
     if (!values) return;
     if (isText && (typeof values.text !== "string" || !values.text.trim())) {
       currentUi()?.notifications?.warn("O texto não pode ficar vazio.");
@@ -257,7 +260,7 @@ export class CanvasHud {
       { name: "sight.range", label: `Alcance da visão (${currentGame()?.canvas?.dimensions?.units ?? ""}; 0 = ilimitado)`, type: "number", value: document.sight?.range ?? 0, min: 0, max: 1000 },
       { name: "displayName", label: "Mostrar nome sempre", type: "checkbox", value: Number(document.displayName) >= CONST.TOKEN_DISPLAY_MODES.ALWAYS },
     ];
-    const values = await this.#formDialog("Configurar token", fields);
+    const values = await this.#formDialog("Configurar token", fields, { document, fields: ["width", "height"] });
     if (!values) return;
     const showName = values.displayName === true;
     await document.update({ ...values, displayName: showName ? CONST.TOKEN_DISPLAY_MODES.ALWAYS : CONST.TOKEN_DISPLAY_MODES.OWNER_HOVER });
@@ -273,7 +276,7 @@ export class CanvasHud {
       { name: "config.alpha", label: "Intensidade (0 a 1)", type: "number", value: config.alpha ?? 0.5, min: 0, max: 1, step: 0.05 },
       { name: "walls", label: "Bloqueada por paredes", type: "checkbox", value: light.document.walls !== false },
       { name: "hidden", label: "Desligada", type: "checkbox", value: light.document.hidden === true },
-    ]);
+    ], { document: light.document, fields: ["config.dim", "config.bright", "config.color", "config.alpha", "walls", "hidden"] });
     if (values) await light.document.update(values);
   }
 
@@ -324,17 +327,29 @@ export class CanvasHud {
     return data;
   }
 
-  async #formDialog(title: string, fields: FormFieldSpec[]): Promise<PlainObject | null> {
+  async #formDialog(title: string, fields: FormFieldSpec[], preview?: { document: any; fields: readonly string[] }): Promise<PlainObject | null> {
     const form = buildForm(fields);
-    const result = await DialogV2.wait({
-      window: { title },
-      content: form,
-      buttons: [
-        { action: "save", label: "Salvar", icon: "fa-solid fa-check", default: true, callback: () => readForm(form, fields) },
-        { action: "cancel", label: "Cancelar", icon: "fa-solid fa-xmark", callback: () => null },
-      ],
-    });
-    return result && typeof result === "object" ? (result as PlainObject) : null;
+    const restore = preview ? attachLivePreview(form, fields, preview.document, preview.fields, (changed) => this.#redrawPreview(preview.document, changed)) : null;
+    let saved = false;
+    try {
+      const result = await DialogV2.wait({
+        window: { title },
+        content: form,
+        buttons: [
+          { action: "save", label: "Salvar", icon: "fa-solid fa-check", default: true, callback: () => readForm(form, fields) },
+          { action: "cancel", label: "Cancelar", icon: "fa-solid fa-xmark", callback: () => null },
+        ],
+      });
+      saved = Boolean(result && typeof result === "object");
+      return saved ? (result as PlainObject) : null;
+    } finally {
+      const restored = restore?.();
+      if (preview && restored && !saved) this.#redrawPreview(preview.document, restored);
+    }
+  }
+
+  #redrawPreview(document: any, changed: PlainObject): void {
+    if (document.object && !document.object.destroyed) document.object._onUpdate(changed, { animate: false }, "");
   }
 
   #openMenu(entries: MenuEntry[], event: PIXI.FederatedPointerEvent): void {

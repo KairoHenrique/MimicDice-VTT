@@ -44,6 +44,8 @@ export class Tile extends PlaceableObject {
   static concealRule: ConcealRule | null = null;
   mesh: PIXI.Sprite | null = null;
   frame = new PIXI.Graphics();
+  /** Size shown while the corner handle is being dragged, before the change is saved. */
+  previewSize: { width: number; height: number } | null = null;
 
   get layerState(): TileLayerState | null {
     return (this.constructor as typeof Tile).layerStateRule?.(this.document) ?? null;
@@ -70,7 +72,8 @@ export class Tile extends PlaceableObject {
   }
 
   override get bounds(): Rectangle {
-    return { x: this.document.x, y: this.document.y, width: Number(this.document.width), height: Number(this.document.height) };
+    const size = this.previewSize ?? { width: Number(this.document.width), height: Number(this.document.height) };
+    return { x: this.document.x, y: this.document.y, ...size };
   }
 
   protected override async _draw(): Promise<void> {

@@ -5,10 +5,21 @@ import { activeLayer, asLayeredObjects, MAP_LAYERS_CHANGED_HOOK, sceneLayers, ti
 
 const TILE_HOOKS = ["createTile", "updateTile", "deleteTile", "canvasReady"];
 
+const previewedOpacity = new Map<string, number>();
+
 function tileLayerState(document: any): TileLayerState {
   const layers = sceneLayers(document?.parent);
   const layer = tileLayerOf(document, layers);
-  return { order: stackingOrder(layers, layer, Number(document?.sort) || 0), visible: layer.visible, opacity: layer.opacity, locked: layer.locked };
+  const opacity = previewedOpacity.get(layer.id) ?? layer.opacity;
+  return { order: stackingOrder(layers, layer, Number(document?.sort) || 0), visible: layer.visible, opacity, locked: layer.locked };
+}
+
+/** Shows a layer's opacity on this screen while its slider moves; `null` goes back to the saved value. */
+export function previewLayerOpacity(scene: any, layerId: string, opacity: number | null): void {
+  if (opacity === null) previewedOpacity.delete(layerId);
+  else previewedOpacity.set(layerId, opacity);
+  if (scene?.id !== canvas?.scene?.id) return;
+  for (const tile of canvas.tiles?.placeables ?? []) if (tileLayerOf(tile.document, sceneLayers(scene)).id === layerId) tile.refresh();
 }
 
 function changedLayers(change: Record<string, any>): boolean {

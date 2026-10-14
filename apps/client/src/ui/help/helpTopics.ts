@@ -115,7 +115,10 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     steps: [
       "Disponível no modo edição.",
       "Escolha \"Colocar tile\", arraste a área e escolha a imagem. Clique simples ocupa um quadrado; arrastando, o tamanho pode ser de 1/4 de quadrado em diante.",
-      "Arraste o canto inferior direito de um tile selecionado para mudar o tamanho.",
+      "Para montar o mapa como quebra-cabeça, abra \"Imagens do mapa\": navegue pelas pastas enviadas e arraste cada imagem direto para o mapa. Ela encaixa em 1/4 de quadrado; segure Shift para soltar livre.",
+      "Em \"px/quadrado\", diga quantos pixels da imagem formam 1 quadrado (ex.: 140 para peças feitas numa grade de 140 px). Vazio usa o tamanho original da imagem.",
+      "Arquivos do computador podem ser soltos no painel ou direto no mapa: são enviados e colocados onde caíram.",
+      "Arraste o canto inferior direito de um tile selecionado para mudar o tamanho. O tile acompanha o mouse enquanto você arrasta.",
       "Imagens GIF e vídeos (webm, mp4) ficam animados.",
       "Delete apaga os selecionados e Ctrl+Z desfaz movimentos, edições e exclusões no mapa.",
       "Clique direito no tile para travar, excluir, definir a DT de percepção, transformar em armadilha ou em baú.",

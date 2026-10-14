@@ -1,5 +1,11 @@
 # Notas de versão
 
+## 1.4.1
+
+- **Montar o mapa arrastando:** na ferramenta Tiles, o painel **Imagens do mapa** mostra as pastas enviadas. Arraste as imagens direto para o mapa e monte como um quebra-cabeça: elas encaixam em 1/4 de quadrado (Shift solta livre). O campo **px/quadrado** ajusta peças feitas para outra grade. Arquivos do computador podem ser soltos no painel ou direto no mapa.
+- **Prévia ao vivo:** o tamanho de tiles (pelo canto), a opacidade das camadas e as janelas de token, luz e desenho mostram a mudança enquanto você mexe. Cancelar volta ao que era.
+- **Procurar atualização:** o launcher tem um botão visível para conferir se há versão nova.
+
 ## 1.4.0
 
 - **Baús:** clique direito num tile (mestre) e escolha **Transformar em baú**. O mestre guarda itens da aba Itens ou arrasta itens até o baú, e cada item pode ter sua **DT de percepção**. O jogador abre o baú com o clique direito quando o personagem está perto, vê só os itens que notou, pega e guarda itens do inventário. O servidor confere a distância e a DT.

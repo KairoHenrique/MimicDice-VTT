@@ -231,7 +231,9 @@ function renderUpdate(update: UpdateStatus): void {
   progress.value = update.percent ?? 0;
   byId("install-update").hidden = update.phase !== "ready";
   byId("update-footer").textContent = UPDATE_FOOTER_TEXT[update.phase] ?? "";
-  byId("check-update").hidden = !["idle", "latest", "error"].includes(update.phase);
+  const checkButton = byId<HTMLButtonElement>("check-update");
+  checkButton.hidden = !["idle", "checking", "latest", "error"].includes(update.phase);
+  checkButton.disabled = update.phase === "checking";
 }
 
 async function refresh(): Promise<void> {

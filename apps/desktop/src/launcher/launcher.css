@@ -318,6 +318,12 @@ button.danger:hover:not(:disabled) {
   background: rgb(239 68 68 / 15%);
 }
 
+button.small {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
 button.link {
   min-height: 0;
   background: none;

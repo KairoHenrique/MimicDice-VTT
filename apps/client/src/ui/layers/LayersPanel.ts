@@ -1,12 +1,13 @@
 import { DEFAULT_LAYER_NAMES, layerBelow, layersInGroup, type MapLayer, type MapLayerGroup } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
+import { FloatingPanelPosition } from "../common/floatingPanel";
 import { addLayer, deleteLayer, mergeLayerDown, moveLayer, renameLayer, updateLayer } from "./layerActions";
+import { previewLayerOpacity } from "./layerEngine";
 import { activeLayer, MAP_LAYERS_CHANGED_HOOK, sceneLayers, setActiveLayer, tilesInLayer } from "./layerStore";
 
 const PANEL_ID = "layers-panel";
 const POSITION_STORAGE_KEY = "mimicdice.layersPanel";
 const RENDER_DEBOUNCE_MS = 50;
-const EDGE_MARGIN_PX = 8;
 const DEFAULT_POSITION = { left: 120, top: 64 };
 
 const GROUP_TITLES: Record<MapLayerGroup, string> = { props: "Props (objetos)", map: "Mapa (chão)" };
@@ -15,15 +16,7 @@ const GROUP_HINTS: Record<MapLayerGroup, string> = {
   map: "O chão da cena. A imagem de fundo da cena fica embaixo de tudo.",
 };
 
-function readPosition(): { left: number; top: number } {
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(POSITION_STORAGE_KEY) ?? "null");
-    if (parsed && typeof parsed === "object" && Number.isFinite((parsed as any).left) && Number.isFinite((parsed as any).top)) return { left: (parsed as any).left, top: (parsed as any).top };
-  } catch {
-    // A corrupt entry just resets the panel position.
-  }
-  return { ...DEFAULT_POSITION };
-}
+const panelPosition = new FloatingPanelPosition(POSITION_STORAGE_KEY, DEFAULT_POSITION);
 
 function iconButton(icon: string, label: string, onClick: () => unknown, options: { pressed?: boolean; disabled?: boolean } = {}): HTMLButtonElement {
   const button = h("button", { type: "button", class: "icon md-layer-tool", title: label, "aria-label": label, disabled: options.disabled === true }, h("i", { class: icon, "aria-hidden": "true" }));
@@ -36,8 +29,11 @@ function opacitySlider(scene: any, layer: MapLayer): HTMLElement {
   const percent = Math.round(layer.opacity * 100);
   const output = h("output", { class: "md-layer-opacity-value" }, `${percent}%`);
   const slider = h("input", { type: "range", min: 0, max: 100, step: 5, value: percent, "aria-label": `Opacidade de ${layer.name}` });
-  slider.addEventListener("input", () => (output.textContent = `${slider.value}%`));
-  slider.addEventListener("change", () => void updateLayer(scene, layer.id, { opacity: Number(slider.value) / 100 }));
+  slider.addEventListener("input", () => {
+    output.textContent = `${slider.value}%`;
+    previewLayerOpacity(scene, layer.id, Number(slider.value) / 100);
+  });
+  slider.addEventListener("change", () => void updateLayer(scene, layer.id, { opacity: Number(slider.value) / 100 }).finally(() => previewLayerOpacity(scene, layer.id, null)));
   return h("label", { class: "md-layer-opacity", title: "Opacidade" }, slider, output);
 }
 
@@ -134,8 +130,7 @@ class LayersPanel {
     if (this.#element) this.#element.replaceWith(panel);
     else document.body.append(panel);
     this.#element = panel;
-    const position = readPosition();
-    this.#place(position.left, position.top);
+    panelPosition.place(panel);
     const body = panel.querySelector(".md-layers-body");
     if (body) body.scrollTop = scrollTop;
   }
@@ -143,43 +138,8 @@ class LayersPanel {
   #header(): HTMLElement {
     const close = iconButton("fa-solid fa-xmark", "Fechar camadas", () => this.setOpen(false));
     const header = h("header", { class: "md-layers-header", title: "Arraste para mover" }, h("i", { class: "fa-solid fa-layer-group", "aria-hidden": "true" }), h("strong", {}, "Camadas"), close);
-    this.#enableDragging(header);
+    panelPosition.enableDragging(header, () => this.#element);
     return header;
-  }
-
-  #place(left: number, top: number): { left: number; top: number } {
-    const panel = this.#element;
-    if (!panel) return { left, top };
-    const maxLeft = Math.max(EDGE_MARGIN_PX, window.innerWidth - panel.offsetWidth - EDGE_MARGIN_PX);
-    const maxTop = Math.max(EDGE_MARGIN_PX, window.innerHeight - panel.offsetHeight - EDGE_MARGIN_PX);
-    const placed = { left: Math.min(Math.max(EDGE_MARGIN_PX, left), maxLeft), top: Math.min(Math.max(EDGE_MARGIN_PX, top), maxTop) };
-    panel.style.left = `${placed.left}px`;
-    panel.style.top = `${placed.top}px`;
-    return placed;
-  }
-
-  #enableDragging(header: HTMLElement): void {
-    header.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0 || (event.target instanceof Element && event.target.closest("button"))) return;
-      const panel = this.#element;
-      if (!panel) return;
-      event.preventDefault();
-      const offset = { x: event.clientX - panel.offsetLeft, y: event.clientY - panel.offsetTop };
-      let placed = { left: panel.offsetLeft, top: panel.offsetTop };
-      header.setPointerCapture(event.pointerId);
-      const move = (moveEvent: PointerEvent) => {
-        placed = this.#place(moveEvent.clientX - offset.x, moveEvent.clientY - offset.y);
-      };
-      const end = () => {
-        header.removeEventListener("pointermove", move);
-        header.removeEventListener("pointerup", end);
-        header.removeEventListener("pointercancel", end);
-        localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(placed));
-      };
-      header.addEventListener("pointermove", move);
-      header.addEventListener("pointerup", end);
-      header.addEventListener("pointercancel", end);
-    });
   }
 }
 
