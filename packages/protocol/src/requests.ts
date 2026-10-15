@@ -168,6 +168,17 @@ export type UploadFileQuery = z.infer<typeof uploadFileQuerySchema>;
 export const createDirectoryRequestSchema = z.object({ target: filePathSchema.min(1) });
 export type CreateDirectoryRequest = z.infer<typeof createDirectoryRequestSchema>;
 
+/** Paths under uploads the user may erase (files or folders). */
+export const MAX_DELETE_PATHS = 100;
+export const deleteFilesRequestSchema = z.object({
+  paths: z.array(filePathSchema.min(1)).min(1).max(MAX_DELETE_PATHS),
+});
+export type DeleteFilesRequest = z.infer<typeof deleteFilesRequestSchema>;
+
+export interface FileDeleteResult {
+  deleted: string[];
+}
+
 export interface FileBrowseResult {
   target: string;
   dirs: string[];

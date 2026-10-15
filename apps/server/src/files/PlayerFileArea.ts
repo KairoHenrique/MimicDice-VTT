@@ -50,6 +50,14 @@ export class PlayerFileArea {
     return (startsWith(segments, root) ? segments : root).join("/");
   }
 
+  /** Deletes stay inside the player's own folder; the folder root itself cannot be removed. */
+  deletableTarget(userId: string, target: string): string {
+    const segments = parseTarget(target);
+    const root = ownRoot(userId);
+    if (!startsWith(segments, root) || segments.length <= root.length) throw HttpError.forbidden("Só dá para apagar arquivos dentro da sua pasta");
+    return segments.join("/");
+  }
+
   /** A player reads notes in their own folder (and may edit them) or in folders the group shared (read-only). */
   async noteAccess(userId: string, target: string): Promise<{ segments: string[]; writable: boolean }> {
     const segments = parseTarget(target);

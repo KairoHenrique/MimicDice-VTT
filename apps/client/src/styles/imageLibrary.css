@@ -33,13 +33,62 @@
   flex: 1;
 }
 
+.md-imglib-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 8px 0;
+  flex-wrap: wrap;
+}
+
+.md-imglib-tab {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.md-imglib-tab[aria-pressed="true"] {
+  border-color: var(--brand);
+  background: rgb(255 255 255 / 7%);
+  color: var(--foreground);
+  font-weight: 600;
+}
+
 .md-imglib-bar,
-.md-imglib-options {
+.md-imglib-options,
+.md-imglib-selection {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 8px 8px 0;
   min-width: 0;
+}
+
+.md-imglib-selection {
+  flex-wrap: wrap;
+}
+
+.md-imglib-action {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.md-imglib-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.md-imglib-action-danger:not(:disabled) {
+  border-color: var(--danger, #b33);
+  color: var(--danger, #f88);
 }
 
 .md-imglib-path {
@@ -85,8 +134,16 @@
   list-style: none;
 }
 
+.md-imglib-folder-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .md-imglib-folder,
 .md-imglib-image {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -97,6 +154,23 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: rgb(255 255 255 / 3%);
+}
+
+.md-imglib-check {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 1;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.md-imglib-image.is-selected,
+.md-imglib-folder-wrap.is-selected .md-imglib-folder {
+  border-color: var(--brand);
+  box-shadow: inset 0 0 0 1px var(--brand);
 }
 
 .md-imglib-folder {
@@ -216,16 +290,32 @@
   white-space: nowrap;
 }
 
+.md-tile-upload-grid {
+  font-size: 1.25em;
+  letter-spacing: 0.02em;
+}
+
 .md-tile-upload-size {
   margin: 0;
   color: var(--muted-foreground);
+  font-size: 0.9em;
 }
 
-.md-tile-upload-field {
+.md-tile-upload-field,
+.md-tile-upload-category-field {
   display: flex;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
+}
+
+.md-tile-upload-category-field {
+  width: 100%;
+}
+
+.md-tile-upload-category {
+  flex: 1;
+  min-width: 0;
 }
 
 .md-tile-upload-dpi {

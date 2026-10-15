@@ -4,10 +4,12 @@ import { roleHasPermission, type ConfiguredPermissions, type UserPermissionName 
 import {
   browseFilesQuerySchema,
   createDirectoryRequestSchema,
+  deleteFilesRequestSchema,
   readNoteFileQuerySchema,
   shareFolderRequestSchema,
   uploadFileQuerySchema,
   writeNoteFileRequestSchema,
+  type FileDeleteResult,
   type FileUploadResult,
   type NoteFileResult,
 } from "@tabbletop/protocol";
@@ -79,6 +81,14 @@ export function createFileRoutes(context: ServerContext, storage: FileStorage): 
     const { target } = parseRequestBody(createDirectoryRequestSchema, request);
     const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
     response.status(201).json({ path: await storage.createDirectory(isGameMaster ? target : area.newFolderTarget(userId, target)) });
+  });
+
+  router.delete("/", uploadRateLimiter, async (request, response) => {
+    assertPermission(response, "FILES_UPLOAD");
+    const { paths } = parseRequestBody(deleteFilesRequestSchema, request);
+    const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
+    const targets = isGameMaster ? paths : paths.map((path) => area.deletableTarget(userId, path));
+    response.json({ deleted: await storage.deletePaths(targets) } satisfies FileDeleteResult);
   });
 
   router.get("/note", async (request, response) => {

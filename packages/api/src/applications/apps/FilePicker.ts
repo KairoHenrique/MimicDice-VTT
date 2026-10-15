@@ -144,6 +144,24 @@ export class FilePicker extends ApplicationV2 {
     return ((await response.json()) as { path: string }).path;
   }
 
+  /** Removes files or folders under uploads; returns the paths that were erased. */
+  static async delete(paths: readonly string[], { notify = true }: { notify?: boolean } = {}): Promise<string[]> {
+    const response = await fetch("/api/files", {
+      method: "DELETE",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paths: paths.map((path) => normalizeDataPath(path)) }),
+    });
+    if (!response.ok) {
+      const message = await readErrorMessage(response);
+      if (notify) currentUi()?.notifications?.error(message);
+      throw new Error(message);
+    }
+    const { deleted } = (await response.json()) as { deleted: string[] };
+    if (notify && deleted.length) currentUi()?.notifications?.info(deleted.length === 1 ? "1 arquivo apagado." : `${deleted.length} arquivos apagados.`);
+    return deleted;
+  }
+
   /** Shares one of the user's own folders with the whole group, or makes it private again. */
   static async setFolderShared(target: string, shared: boolean): Promise<void> {
     const response = await fetch("/api/files/share", {

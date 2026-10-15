@@ -68,4 +68,41 @@ describe("PlayerFileArea", () => {
     expect(() => area.newFolderTarget("ana", "uploads/novapasta")).toThrow();
     await expect(area.setShared("ana", "uploads/players/bia/rascunhos", true)).rejects.toThrow();
   });
+
+  it("lets a player delete only inside their own folder", () => {
+    expect(area.deletableTarget("bia", "uploads/players/bia/retratos/bia.png")).toBe("uploads/players/bia/retratos/bia.png");
+    expect(() => area.deletableTarget("bia", "uploads/players/bia")).toThrow();
+    expect(() => area.deletableTarget("ana", "uploads/players/bia/retratos/bia.png")).toThrow();
+    expect(() => area.deletableTarget("bia", "uploads/mapas/segredo.png")).toThrow();
+  });
+});
+
+describe("FileStorage.deletePaths", () => {
+  let dataPath: string;
+  let storage: FileStorage;
+
+  beforeEach(async () => {
+    dataPath = await mkdtemp(path.join(os.tmpdir(), "md-delete-"));
+    storage = new FileStorage(dataPath);
+    await storage.upload("uploads/mapas", "a.png", PNG_HEADER);
+    await storage.upload("uploads/mapas/sala", "b.png", PNG_HEADER);
+  });
+
+  afterEach(async () => {
+    await rm(dataPath, { recursive: true, force: true });
+  });
+
+  it("deletes files and folders under uploads", async () => {
+    expect(await storage.deletePaths(["uploads/mapas/a.png"])).toEqual(["uploads/mapas/a.png"]);
+    expect((await storage.browse("uploads/mapas", null)).files).toEqual([]);
+    expect(await storage.deletePaths(["uploads/mapas/sala"])).toEqual(["uploads/mapas/sala"]);
+    expect((await storage.browse("uploads/mapas", null)).dirs).toEqual([]);
+  });
+
+  it("skips missing paths and refuses the uploads root or outside it", async () => {
+    expect(await storage.deletePaths(["uploads/mapas/nao-existe.png"])).toEqual([]);
+    await expect(storage.deletePaths(["uploads"])).rejects.toThrow();
+    await expect(storage.deletePaths(["modules/x"])).rejects.toThrow();
+    await expect(storage.deletePaths(["uploads/../config"])).rejects.toThrow();
+  });
 });

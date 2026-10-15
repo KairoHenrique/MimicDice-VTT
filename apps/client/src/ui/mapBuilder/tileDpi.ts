@@ -53,9 +53,26 @@ export function squaresAt(size: PixelSize, dpi: number): PixelSize {
   return { width: quarter(size.width), height: quarter(size.height) };
 }
 
-export function formatSquares(squares: PixelSize): string {
+/** Compact grid size for badges, e.g. `2×1`. */
+export function formatGridSize(squares: PixelSize): string {
   const format = (value: number) => String(value).replace(".", ",");
-  return `${format(squares.width)} × ${format(squares.height)} quadrados`;
+  return `${format(squares.width)}×${format(squares.height)}`;
+}
+
+export function formatSquares(squares: PixelSize): string {
+  return `${formatGridSize(squares)} quadrados`;
+}
+
+/** Forgets the DPI remembered for paths that were deleted from the library. */
+export function forgetDpi(paths: readonly string[]): void {
+  const map = rememberedMap();
+  let changed = false;
+  for (const path of paths) {
+    if (!(path in map)) continue;
+    delete map[path];
+    changed = true;
+  }
+  if (changed) localStorage.setItem(DPI_BY_PATH_KEY, JSON.stringify(map));
 }
 
 function rememberedMap(): Record<string, number> {

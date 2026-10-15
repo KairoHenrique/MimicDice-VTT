@@ -1,12 +1,12 @@
 # Notas de versão
 
+## 1.5.1
+
+- **Biblioteca de imagens:** pastas **Mapas**, **Personagens** e **Props**. Envie arquivos ou pastas inteiras; o diálogo mostra o tamanho na grade (ex.: 2×1) e o DPI. Marque várias imagens para excluir de uma vez.
+
 ## 1.5.0
 
 - **Percepção no mapa todo:** a janela **Anotar percepção** tem o interruptor **Valer para o mapa todo**, ligado por padrão. Ligado, a rolagem vale para todos os objetos, notas, armadilhas e itens de baú da cena; mesmo assim, cada um só aparece quando o token chegar a ver aquele lugar (no escuro ou fora da visão continua escondido). Desligado, vale só para o que o token de cada um está vendo na hora.
-
-## 1.5.9
-
-- **Percepção no mapa todo:** a janela **Anotar percepção** tem o interruptor **Valer para o mapa todo**, ligado por padrão. Ligado, a rolagem vale para todos os objetos do mapa, mas cada um só aparece quando o token chegar a ver aquele lugar: no escuro ou fora da visão continua escondido. Desligado, vale só para o que o token está vendo na hora.
 
 ## 1.4.9
 

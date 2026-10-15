@@ -127,6 +127,28 @@ export class FileStorage {
     return segments.join("/");
   }
 
+  /**
+   * Removes files or folders under uploads. The uploads root itself cannot be deleted. Missing paths are skipped.
+   * Returns the paths that were actually removed.
+   */
+  async deletePaths(targets: readonly string[]): Promise<string[]> {
+    const deleted: string[] = [];
+    for (const target of targets) {
+      const segments = writableSegments(target);
+      if (segments.length < 2) throw HttpError.badRequest("Não é possível apagar a pasta uploads");
+      const resolved = this.#resolve(segments);
+      try {
+        await rm(resolved, { recursive: true, force: false });
+        deleted.push(segments.join("/"));
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code === "ENOENT") continue;
+        throw error;
+      }
+    }
+    return deleted;
+  }
+
   #resolve(segments: readonly string[]): string {
     const rootDirectory = path.join(this.#dataPath, segments[0] as string);
     const resolved = path.resolve(rootDirectory, ...segments.slice(1));

@@ -116,9 +116,10 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     steps: [
       "Disponível no modo edição.",
       "Escolha \"Colocar tile\", arraste a área e escolha a imagem. Clique simples ocupa um quadrado; arrastando, o tamanho pode ser de 1/4 de quadrado em diante.",
-      "Para montar o mapa como quebra-cabeça, abra \"Imagens do mapa\": navegue pelas pastas enviadas e arraste cada imagem direto para o mapa. Ela encaixa em 1/4 de quadrado; segure Shift para soltar livre.",
-      "Ao enviar imagens (botão de upload, ou soltando arquivos no painel ou no mapa), aparece cada imagem com o DPI lido do arquivo e o tamanho que ela terá no mapa. DPI é quantos pixels formam 1 quadrado (1 polegada = 1 quadrado, como nos mapas impressos). Cada imagem guarda o DPI escolhido.",
+      "Para montar o mapa como quebra-cabeça, abra a biblioteca de imagens (ferramenta Tiles): use as abas Mapas, Personagens e Props. Arraste cada imagem para o mapa (Shift: livre).",
+      "Ao enviar arquivos ou pastas (botões de upload, ou soltando no painel ou no mapa), aparece o tamanho na grade (ex.: 2×1) e o DPI. DPI é quantos pixels formam 1 quadrado. Cada imagem guarda o DPI escolhido.",
       "O campo \"DPI\" do painel vale para imagens sem DPI próprio. Vazio usa o tamanho original da imagem.",
+      "Marque uma ou várias imagens (ou pastas) e use Excluir para apagá-las da biblioteca. Tiles já no mapa não somem.",
       "Arquivos soltos direto no mapa são enviados e colocados onde caíram.",
       "Clique direito num tile e escolha \"Tamanho pelo DPI\" para ajustar um tile que já está no mapa.",
       "Arraste o canto inferior direito de um tile selecionado para mudar o tamanho. O tile acompanha o mouse enquanto você arrasta.",
