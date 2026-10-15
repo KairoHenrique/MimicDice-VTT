@@ -126,7 +126,7 @@ function findsSomething(target: PerceptionTarget, score: number): boolean {
 
 function sightsOf(actorId: string): SightShape[] {
   const tokens: any[] = (canvas.tokens?.placeables ?? []).filter((token: any) => token.document?.actorId === actorId && !token.document?.hidden);
-  return tokens.map((token) => canvas.visibility.lineOfSightOf(token));
+  return tokens.map((token) => canvas.visibility.sightOf(token));
 }
 
 /** Records one character's roll on every target in its sight; returns what it saw and found. */

@@ -725,6 +725,7 @@
   "Elemento ausente: {0}": "Missing element: {0}",
   "Elipse": "Ellipse",
   "Elite": "Elite",
+  "Em cena escura, só conta o que está iluminado ou dentro do alcance de visão do token: um objeto no escuro não é achado.": "In a dark scene, only what is lit or within the token's sight range counts: an object in the dark is not found.",
   "Em jogo": "In play",
   "Em Minha pasta você envia imagens e cria pastas. O mestre sempre vê o que está nela.": "In My folder you upload images and create folders. The GM always sees what is in it.",
   "Em Quem pode controlar, você libera o boneco para outros jogadores ou para todos (bom para NPCs).": "In Who can control, you can open the character to other players or to everyone (good for NPCs).",

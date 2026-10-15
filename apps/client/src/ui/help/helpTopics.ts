@@ -430,6 +430,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       "Digite o resultado só de quem rolou agora. O campo mostra a última rolagem de cada um como lembrete.",
       "Objetos, notas, armadilhas e itens de baú à vista do token com DT igual ou menor que o resultado aparecem para aquele personagem e continuam aparecendo.",
       "O que estava fora da visão continua escondido até eles rolarem de novo com aquilo à vista. Uma rolagem menor nunca esconde o que já foi achado.",
+      "Em cena escura, só conta o que está iluminado ou dentro do alcance de visão do token: um objeto no escuro não é achado.",
       "Ao anotar, aparece quantos segredos cada um achou entre os que estavam à vista.",
       "Controlando o boneco de um jogador, o que ele não percebeu aparece apagado e com um olho cortado.",
     ],

@@ -1,5 +1,9 @@
 # Notas de versão
 
+## 1.4.9
+
+- **Percepção no escuro:** em cena escura, a rolagem só vale para o que está iluminado ou dentro do alcance de visão do token. Um baú num canto escuro, mesmo sem parede no caminho, não é achado até alguém levar luz.
+
 ## 1.4.8
 
 - **Percepção pelo campo de visão:** a rolagem de percepção só vale para o que o token de cada personagem está vendo na hora. Objetos, notas, armadilhas e itens de baú à vista com DT igual ou menor aparecem para ele e continuam aparecendo; o resto do mapa fica escondido até rolarem de novo com aquilo à vista. Uma rolagem menor nunca esconde o que já foi achado.

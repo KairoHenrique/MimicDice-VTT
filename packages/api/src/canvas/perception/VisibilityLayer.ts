@@ -195,31 +195,44 @@ export class VisibilityLayer extends CanvasLayer {
     return walls.filter((wall) => wall.blocks(sense)).map((wall) => wall.segment);
   }
 
-  /** What a token's player would see from where it stands (walls and the player vision limit), whoever is asking. */
-  lineOfSightOf(token: Token): PIXI.Polygon {
-    const dimensions = currentCanvas().dimensions as SceneDimensions;
-    const limit = this.#configuredVisionLimit();
-    const playerLimit = limit > 0 ? limit * dimensions.distancePixels + Math.max(token.w, token.h) / 2 : Infinity;
-    return new PIXI.Polygon(computeVisibilityPolygon(token.center, Math.min(playerLimit, token.visionCap), this.#wallSegments("sight"), dimensions.sceneRect));
+  /**
+   * What a token's player would see from where it stands, whoever is asking: within walls and the player vision limit,
+   * and, when the scene is dark and uses token vision, only what the token's own sight reaches or a light illuminates.
+   */
+  sightOf(token: Token): { contains(x: number, y: number): boolean } {
+    const canvas = currentCanvas();
+    const shapes = this.#tokenShapes(canvas, token, this.#configuredVisionLimit(), this.#wallSegments("sight"));
+    if (this.globalLight || !this.tokenVision) return shapes.lineOfSight;
+    const lights = this.#lightPolygons(canvas).map(({ polygon }) => polygon);
+    return {
+      contains: (x, y) => shapes.sight.contains(x, y) || (shapes.lineOfSight.contains(x, y) && lights.some((polygon) => polygon.contains(x, y))),
+    };
   }
 
   #computeShapes(canvas: any, sightWalls: Segment[]): VisionShapes {
-    const dimensions = canvas.dimensions as SceneDimensions;
-    const bounds = dimensions.sceneRect;
     const visionLimit = this.playerVisionLimit;
     const shapes: VisionShapes = { sight: [], lineOfSight: [], lights: [] };
     for (const token of canvas.tokens.visionSources as Token[]) {
-      const origin = token.center;
-      const playerLimit = visionLimit > 0 ? visionLimit * dimensions.distancePixels + Math.max(token.w, token.h) / 2 : Infinity;
-      const limitRadius = Math.min(playerLimit, token.visionCap);
-      const lineOfSight = computeVisibilityPolygon(origin, limitRadius, sightWalls, bounds);
-      shapes.lineOfSight.push(new PIXI.Polygon(lineOfSight));
-      const tokenRange = this.globalLight ? 0 : token.sightRange;
-      const range = tokenRange > 0 ? Math.min(tokenRange, limitRadius) : limitRadius;
-      shapes.sight.push(new PIXI.Polygon(range === limitRadius ? lineOfSight : computeVisibilityPolygon(origin, range, sightWalls, bounds)));
+      const { sight, lineOfSight } = this.#tokenShapes(canvas, token, visionLimit, sightWalls);
+      shapes.lineOfSight.push(lineOfSight);
+      shapes.sight.push(sight);
     }
     if (!this.globalLight) shapes.lights = this.#lightPolygons(canvas).map(({ polygon }) => polygon);
     return shapes;
+  }
+
+  /** The token's line of sight, and the part of it the token sees without light (all of it when the scene is lit). */
+  #tokenShapes(canvas: any, token: Token, visionLimit: number, sightWalls: Segment[]): { sight: PIXI.Polygon; lineOfSight: PIXI.Polygon } {
+    const dimensions = canvas.dimensions as SceneDimensions;
+    const bounds = dimensions.sceneRect;
+    const origin = token.center;
+    const playerLimit = visionLimit > 0 ? visionLimit * dimensions.distancePixels + Math.max(token.w, token.h) / 2 : Infinity;
+    const limitRadius = Math.min(playerLimit, token.visionCap);
+    const lineOfSight = new PIXI.Polygon(computeVisibilityPolygon(origin, limitRadius, sightWalls, bounds));
+    const tokenRange = this.globalLight ? 0 : token.sightRange;
+    const range = tokenRange > 0 ? Math.min(tokenRange, limitRadius) : limitRadius;
+    const sight = range === limitRadius ? lineOfSight : new PIXI.Polygon(computeVisibilityPolygon(origin, range, sightWalls, bounds));
+    return { sight, lineOfSight };
   }
 
   #lightPolygons(canvas: any): Array<{ light: AmbientLight; polygon: PIXI.Polygon }> {
