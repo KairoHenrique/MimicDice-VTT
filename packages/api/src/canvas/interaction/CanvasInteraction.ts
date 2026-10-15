@@ -7,7 +7,7 @@ import type { PlaceableObject } from "../placeables/PlaceableObject";
 import type { Token } from "../placeables/Token";
 import type { Tile, Wall } from "../placeables/simplePlaceables";
 import { colorToNumber } from "../textures";
-import { CREATION_TOOLS, type CreationTool } from "./creationTools";
+import { CREATION_TOOLS, WALL_SNAP_MODE, type CreationTool } from "./creationTools";
 import { handleCanvasDrop } from "./canvasDrop";
 import { paintCreationPreview } from "./creationPreview";
 import { defaultDrawingColor } from "../hud/drawingFields";
@@ -131,6 +131,11 @@ export class CanvasInteraction {
     this.canvas.hud.cancelMoveConfirmation();
     const layerName = this.canvas.activeLayer?.name ?? "";
     const tool = CREATION_TOOLS[layerName]?.[this.#activeTool()];
+    const selectedEnd = tool?.documentName === "Wall" ? this.#selectedWallEndpoint(world) : null;
+    if (selectedEnd) {
+      this.#session = { kind: "endpoint", ...selectedEnd };
+      return;
+    }
     if (tool && this.#mayCreate(tool.documentName)) {
       const origin = event.shiftKey ? world : this.canvas.grid.getSnappedPoint(world, { mode: tool.snapMode });
       this.#session = { kind: "create", origin, tool, points: [world.x, world.y], startedAt: performance.now() };
@@ -213,6 +218,15 @@ export class CanvasInteraction {
     }
   }
 
+  /** An end of a selected wall under the pointer, even when an unselected wall sharing that point is drawn on top. */
+  #selectedWallEndpoint(world: Point): { wall: Wall; index: 0 | 1 } | null {
+    for (const wall of (this.canvas.walls?.controlled ?? []) as Wall[]) {
+      const index = this.#grabbedEndpoint(wall, world);
+      if (index !== null && wall.canDrag()) return { wall, index };
+    }
+    return null;
+  }
+
   #grabbedEndpoint(wall: Wall, world: Point): 0 | 1 | null {
     if (!wall.controlled) return null;
     const [ax, ay, bx, by] = wall.coords;
@@ -223,7 +237,7 @@ export class CanvasInteraction {
   }
 
   #wallPoint(world: Point, free: boolean): Point {
-    return free ? world : this.canvas.grid.getSnappedPoint(world, { mode: "corner" });
+    return free ? world : this.canvas.grid.getSnappedPoint(world, { mode: WALL_SNAP_MODE });
   }
 
   #endpointCoords(session: Extract<Session, { kind: "endpoint" }>, point: Point): number[] {

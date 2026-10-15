@@ -5,21 +5,22 @@ import { fromUuidSync } from "../../documents/abstract/ClientDatabaseBackend";
 import { currentGame, currentUi } from "../../runtime";
 import { IMAGE_TILE_DROP_TYPE, placeImageTile } from "./imageTileDrop";
 
-/** Token source for an actor centered on (x, y), snapped to the grid, from the actor's prototype token. */
-export function actorTokenData(actor: any, x: number, y: number, canvas: any): PlainObject {
+/** Token source for an actor centered on (x, y) (snapped to the grid when asked), from the actor's prototype token. */
+export function actorTokenData(actor: any, x: number, y: number, canvas: any, snap = true): PlainObject {
   const prototype = (actor._source.prototypeToken ?? {}) as PlainObject;
   const prototypeTexture = (prototype.texture ?? {}) as PlainObject;
   const playerOwned = actor.hasPlayerOwner === true;
   const gridSize = canvas.grid.size;
   const width = Number(prototype.width) || 1;
   const height = Number(prototype.height) || 1;
-  const snapped = canvas.grid.getSnappedPoint({ x: x - (width * gridSize) / 2, y: y - (height * gridSize) / 2 }, { mode: "corner" });
+  const topLeft = { x: x - (width * gridSize) / 2, y: y - (height * gridSize) / 2 };
+  const placed = snap ? canvas.grid.getSnappedPoint(topLeft, { mode: "corner" }) : topLeft;
   return {
     name: (prototype.name as string) || actor.name,
     actorId: actor.id,
     actorLink: prototype.actorLink ?? playerOwned,
-    x: snapped.x,
-    y: snapped.y,
+    x: Math.round(placed.x),
+    y: Math.round(placed.y),
     width,
     height,
     texture: { src: (prototypeTexture.src as string) || actor.img || CONST.DEFAULT_TOKEN },
@@ -65,7 +66,7 @@ export async function handleCanvasDrop(canvas: any, data: PlainObject): Promise<
       currentUi()?.notifications?.warn("Você só pode colocar no mapa personagens que são seus.");
       return;
     }
-    await canvas.scene.createEmbeddedDocuments("Token", [actorTokenData(document, x, y, canvas)]);
+    await canvas.scene.createEmbeddedDocuments("Token", [actorTokenData(document, x, y, canvas, data.free === true)]);
     canvas.tokens?.activate();
     return;
   }

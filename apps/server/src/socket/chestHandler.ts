@@ -7,8 +7,9 @@ import {
   isChestFull,
   movableItemData,
   newChestEntry,
+  perceptionOfCharacters,
   readChest,
-  scenePerceptionScores,
+  readConcealment,
   SOCKET_EVENTS,
   visibleChestEntries,
   type Chest,
@@ -40,8 +41,9 @@ function chestTile(scene: Source, tileId: string): { tile: Source; chest: Chest 
   return { tile, chest };
 }
 
-function perceptionOf(scene: Source, actorId: string): number | null {
-  return scenePerceptionScores(scene.flags?.world)[actorId] ?? null;
+/** Only a roll made while the chest was in the character's sight counts for what is inside it. */
+function perceptionOf(tile: Source, actorId: string): number | null {
+  return perceptionOfCharacters(readConcealment(tile.flags?.world), [actorId]);
 }
 
 /**
@@ -66,7 +68,7 @@ export function attachChestHandler(context: ServerContext, io: Server, socket: S
     const scene = findScene(world, request.sceneId);
     const { tile, chest } = chestTile(scene, request.tileId);
     assertCanReach(world, scene, tile, request.actorId);
-    const noticed = world.users.isGameMaster(userId) ? chest.entries : visibleChestEntries(tile, perceptionOf(scene, request.actorId));
+    const noticed = world.users.isGameMaster(userId) ? chest.entries : visibleChestEntries(tile, perceptionOf(tile, request.actorId));
     const entry = noticed.find((candidate) => candidate.id === request.entryId);
     if (!entry) throw HttpError.notFound("Esse item não está no baú");
     const created = await world.documents.modify({ type: "Item", action: "create", operation: { parentUuid: `Actor.${request.actorId}`, data: [{ ...entry.item }] } }, requester);

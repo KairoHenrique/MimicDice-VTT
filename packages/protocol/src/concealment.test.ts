@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isArmedTrap, isConcealedFrom, parsePerceptionScores, perceptionScoresUpdate, readConcealment, scenePerceptionScores } from "./concealment";
+import { hasPerceptionSecret, improvesPerception, isArmedTrap, isConcealedFrom, parsePerceptionScores, perceptionOfCharacters, perceptionScoresUpdate, readConcealment, scenePerceptionScores } from "./concealment";
 
 describe("scene perception scores", () => {
   it("reads only the scene's own scores", () => {
@@ -39,8 +39,31 @@ describe("isConcealedFrom", () => {
   });
 
   it("ignores malformed flags", () => {
-    expect(readConcealment({ perceptionDc: "x", trap: { name: "" } })).toEqual({ perceptionDc: null, trap: null, revealed: false });
+    expect(readConcealment({ perceptionDc: "x", trap: { name: "" }, perceivedBy: "x" })).toEqual({ perceptionDc: null, trap: null, revealed: false, perceivedBy: {} });
     expect(isConcealedFrom(readConcealment(null), null)).toBe(false);
+  });
+});
+
+describe("rolls made with the object in sight", () => {
+  const concealment = readConcealment({ perceptionDc: 15, perceivedBy: { ana: 16, bia: 9 } });
+
+  it("uses the best roll among the given characters, ignoring those who never saw the object", () => {
+    expect(perceptionOfCharacters(concealment, ["bia", "ana"])).toBe(16);
+    expect(perceptionOfCharacters(concealment, ["bia"])).toBe(9);
+    expect(perceptionOfCharacters(concealment, ["caio"])).toBeNull();
+  });
+
+  it("keeps only rolls that beat the stored one", () => {
+    expect(improvesPerception(concealment, "ana", 12)).toBe(false);
+    expect(improvesPerception(concealment, "bia", 10)).toBe(true);
+    expect(improvesPerception(concealment, "caio", 0)).toBe(true);
+  });
+
+  it("knows which objects a roll can uncover", () => {
+    expect(hasPerceptionSecret(concealment)).toBe(true);
+    expect(hasPerceptionSecret(readConcealment({}))).toBe(false);
+    expect(hasPerceptionSecret(readConcealment({}), true)).toBe(true);
+    expect(hasPerceptionSecret(readConcealment({ perceptionDc: 15, revealed: true }))).toBe(false);
   });
 });
 

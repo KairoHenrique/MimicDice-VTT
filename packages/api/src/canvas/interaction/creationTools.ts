@@ -20,6 +20,8 @@ export interface CreationTool {
 }
 
 const MIN_SHAPE_SIZE = 8;
+/** Wall ends land on square corners, edge middles and square centers. */
+export const WALL_SNAP_MODE: SnapMode = "half";
 
 function rectangleBetween(origin: Point, destination: Point) {
   return {
@@ -34,7 +36,7 @@ function wallTool(door: number): CreationTool {
   return {
     documentName: "Wall",
     minimumDrag: MIN_SHAPE_SIZE,
-    snapMode: "corner",
+    snapMode: WALL_SNAP_MODE,
     requiresHold: true,
     build: (origin, destination) => ({ c: [origin.x, origin.y, destination.x, destination.y].map(Math.round), door, ds: CONST.WALL_DOOR_STATES.CLOSED }),
   };

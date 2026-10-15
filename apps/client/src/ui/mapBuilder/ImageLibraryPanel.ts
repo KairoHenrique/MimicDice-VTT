@@ -2,6 +2,8 @@ import { FilePicker, placeImageTile, type ImageTilePlacement } from "@tabbletop/
 import { h } from "../../views/dom";
 import { FloatingPanelPosition } from "../common/floatingPanel";
 import { IMAGE_FILE_PATTERN, libraryGrid, VIDEO_FILE_PATTERN, type LibraryListing, type LibraryViewHandlers } from "./imageLibraryView";
+import { rememberDpi, rememberedDpi } from "./tileDpi";
+import { askTileDpi } from "./tileUploadDialog";
 
 const PANEL_ID = "image-library-panel";
 const FOLDER_KEY = "mimicdice.imageLibrary.folder";
@@ -44,8 +46,11 @@ export class ImageLibraryPanel {
     return this.#listing?.writable ? this.#listing.folder : DEFAULT_FOLDER;
   }
 
-  placement(): ImageTilePlacement {
-    return { pixelsPerSquare: storedPixelsPerSquare() };
+  /** The image's own DPI (chosen when it was uploaded or resized), otherwise the panel's DPI field. */
+  placement(path?: string): ImageTilePlacement {
+    const own = path ? rememberedDpi(path) : undefined;
+    if (own === null) return {};
+    return { pixelsPerSquare: own ?? storedPixelsPerSquare() };
   }
 
   async setOpen(open: boolean): Promise<void> {
@@ -75,17 +80,22 @@ export class ImageLibraryPanel {
     this.render();
   }
 
+  /** Asks the DPI of each image, uploads them and remembers the DPI so the image keeps its size whenever it is placed. */
   async upload(files: readonly File[]): Promise<string[]> {
     const images = files.filter(isLibraryFile);
     if (images.length === 0) {
       ui.notifications.warn("Solte imagens (png, jpg, webp, gif, svg) ou vídeos (webm, mp4).");
       return [];
     }
+    const dpiByFile = await askTileDpi(images, storedPixelsPerSquare());
+    if (!dpiByFile) return [];
     const folder = this.folder;
     const stored: string[] = [];
     for (const file of images) {
       const result = await FilePicker.upload("data", folder, file, {}, { notify: false });
-      if (result && typeof result === "object") stored.push(result.path);
+      if (!result || typeof result !== "object") continue;
+      rememberDpi(result.path, dpiByFile.get(file) ?? null);
+      stored.push(result.path);
     }
     if (stored.length < images.length) ui.notifications.warn(`${images.length - stored.length} arquivo(s) não foram enviados.`);
     if (this.#listing?.folder === folder) await this.browse(folder);
@@ -108,12 +118,12 @@ export class ImageLibraryPanel {
   #handlers(): LibraryViewHandlers {
     return {
       openFolder: (path) => void this.browse(path),
-      placement: () => this.placement(),
+      placement: (path) => this.placement(path),
       placeAtViewCenter: (path) => {
         const view = canvas.app?.view?.getBoundingClientRect?.();
         if (!view || !canvas.ready) return;
         const center = canvas.stage.toLocal({ x: view.width / 2, y: view.height / 2 });
-        void placeImageTile(canvas, path, center, this.placement());
+        void placeImageTile(canvas, path, center, this.placement(path));
       },
     };
   }
@@ -147,13 +157,13 @@ export class ImageLibraryPanel {
       const body = this.#element?.querySelector(".md-imglib-body");
       if (body && this.#listing) body.replaceChildren(libraryGrid(this.#listing, this.#filter, this.#handlers()));
     });
-    const scale = h("input", { type: "number", min: 1, max: MAX_PIXELS_PER_SQUARE, step: 1, value: storedPixelsPerSquare() ?? "", placeholder: "Original", class: "md-imglib-scale", "aria-label": "Pixels da imagem por quadrado" });
+    const scale = h("input", { type: "number", min: 1, max: MAX_PIXELS_PER_SQUARE, step: 1, value: storedPixelsPerSquare() ?? "", placeholder: "Original", class: "md-imglib-scale", "aria-label": "DPI padrão: pixels da imagem por quadrado" });
     scale.addEventListener("change", () => {
       const value = Math.round(Number(scale.value));
       if (scale.value.trim() === "" || !Number.isFinite(value) || value <= 0) localStorage.removeItem(SCALE_KEY);
       else localStorage.setItem(SCALE_KEY, String(Math.min(value, MAX_PIXELS_PER_SQUARE)));
     });
-    const scaleLabel = h("label", { class: "md-imglib-scale-field", title: "Quantos pixels da imagem formam 1 quadrado do mapa. Ex.: peças feitas para grade de 140 px: digite 140. Vazio: tamanho original." }, "px/quadrado", scale);
+    const scaleLabel = h("label", { class: "md-imglib-scale-field", title: "DPI padrão: quantos pixels da imagem formam 1 quadrado do mapa (1 polegada = 1 quadrado). Ex.: peças feitas para grade de 140 px: digite 140. Imagens enviadas com o próprio DPI usam o delas. Vazio: tamanho original." }, "DPI", scale);
     return h("div", { class: "md-imglib-options" }, filter, scaleLabel);
   }
 

@@ -212,6 +212,11 @@ export class Token extends PlaceableObject {
     return "corner";
   }
 
+  /** Tokens are placed freely. The board asks for snapping unless Shift is held, so for tokens Shift fits them to the grid. */
+  override getMoveUpdate(deltaX: number, deltaY: number, snap: boolean): PlainObject {
+    return super.getMoveUpdate(deltaX, deltaY, !snap);
+  }
+
   override _onClickLeft2(): void {
     const actor = this.actor;
     if (actor?.testUserPermission?.(currentGame()?.user, "LIMITED")) actor.sheet?.render(true);

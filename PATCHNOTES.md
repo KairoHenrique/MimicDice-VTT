@@ -1,5 +1,16 @@
 # Notas de versão
 
+## 1.4.8
+
+- **Percepção pelo campo de visão:** a rolagem de percepção só vale para o que o token de cada personagem está vendo na hora. Objetos, notas, armadilhas e itens de baú à vista com DT igual ou menor aparecem para ele e continuam aparecendo; o resto do mapa fica escondido até rolarem de novo com aquilo à vista. Uma rolagem menor nunca esconde o que já foi achado.
+  - **Anotar percepção** saiu de Paredes e foi para a barra de cima. Os campos começam vazios (cada vez é uma rolagem nova) e mostram a última rolagem como lembrete. Ao anotar, aparece quantos segredos cada um achou.
+  - Controlando o boneco de um jogador, o mestre vê o que ele não percebeu apagado e com um olho cortado.
+  - As rolagens anotadas antes desta versão não revelam mais nada: peça uma rolagem nova.
+- **Paredes no centro do quadrado:** as pontas encaixam nos cantos, no meio dos lados e no centro dos quadrados.
+- **Parede em cima de parede:** começar uma parede em cima de outra cria uma nova. Para mudar a direção, selecione a parede e arraste a ponta.
+- **Tokens livres:** o token fica onde você soltar, sem prender na grade. Shift encaixa no quadrado.
+- **Envio de tiles com DPI:** ao enviar imagens do mapa, aparece cada uma com o DPI lido do arquivo (PNG e JPG) e o tamanho que terá no mapa, com 1 polegada = 1 quadrado. Cada imagem guarda o DPI escolhido. O clique direito no tile tem **Tamanho pelo DPI** para ajustar tiles que já estão no mapa.
+
 ## 1.4.7
 
 - **Importar ficha:** botão **Importar** ao lado de **Exportar** na ficha. Escolha um arquivo `.mimicdice.json` e a ficha do personagem passa a usar aquele layout, mantendo os valores já preenchidos. O mestre pode marcar para salvar também como modelo do mundo.

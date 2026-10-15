@@ -163,3 +163,71 @@
   margin: 0;
   padding: 0 8px 8px;
 }
+
+.md-tile-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.md-tile-upload-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.md-tile-upload-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.md-tile-upload-thumb {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: repeating-conic-gradient(rgb(255 255 255 / 6%) 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+  font-size: 1.6em;
+  color: var(--muted-foreground);
+}
+
+.md-tile-upload-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.md-tile-upload-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.md-tile-upload-size {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.md-tile-upload-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.md-tile-upload-dpi {
+  width: 88px;
+}

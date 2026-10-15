@@ -1,5 +1,6 @@
 import { placeImageTile } from "@tabbletop/api";
 import { ImageLibraryPanel } from "./ImageLibraryPanel";
+import { installTileDpiResize } from "./tileDpiResize";
 
 interface DropPoint {
   x: number;
@@ -22,7 +23,7 @@ async function placeDroppedFiles(library: ImageLibraryPanel, files: File[], poin
   const stored = await library.upload(files);
   const step = (Number(canvas.grid?.size) || 100) / 2;
   for (const [index, path] of stored.entries()) {
-    await placeImageTile(canvas, path, { x: point.x + index * step, y: point.y + index * step }, { ...library.placement(), free: point.free });
+    await placeImageTile(canvas, path, { x: point.x + index * step, y: point.y + index * step }, { ...library.placement(path), free: point.free });
   }
 }
 
@@ -34,6 +35,7 @@ export function installImageLibrary(): void {
     if (game.user.isGM && !library.open && library.wasOpen()) void library.setOpen(true);
   });
   Hooks.on("dropCanvasFiles", (_canvas: unknown, files: File[], point: DropPoint) => void placeDroppedFiles(library, files, point));
+  installTileDpiResize();
   window.addEventListener("resize", () => {
     if (library.open) library.render();
   });

@@ -18,7 +18,7 @@ export interface LibraryListing {
 export interface LibraryViewHandlers {
   openFolder(path: string): void;
   placeAtViewCenter(path: string): void;
-  placement(): ImageTilePlacement;
+  placement(path: string): ImageTilePlacement;
 }
 
 function baseName(path: string): string {
@@ -45,7 +45,7 @@ function imageEntry(path: string, handlers: LibraryViewHandlers): HTMLElement {
     h("span", { class: "md-imglib-name" }, name),
   );
   item.addEventListener("dragstart", (event) => {
-    event.dataTransfer?.setData("text/plain", JSON.stringify(imageTileDragData(path, handlers.placement())));
+    event.dataTransfer?.setData("text/plain", JSON.stringify(imageTileDragData(path, handlers.placement(path))));
     if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
     const thumb = item.querySelector("img");
     if (thumb && event.dataTransfer) event.dataTransfer.setDragImage(thumb, thumb.width / 2, thumb.height / 2);

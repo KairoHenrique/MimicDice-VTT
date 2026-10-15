@@ -212,6 +212,11 @@ export abstract class PlaceableObject extends PIXI.Container {
 
   _onClickRight(_event: PIXI.FederatedPointerEvent): void {}
 
+  /** A left press the board should handle instead (e.g. starting a new object on top of this one). */
+  protected passesPressToBoard(): boolean {
+    return false;
+  }
+
   #setHover(hovered: boolean): void {
     if (this.destroyed || this.hover === hovered) return;
     this.hover = hovered;
@@ -234,7 +239,7 @@ export abstract class PlaceableObject extends PIXI.Container {
       this._onClickRight(event);
       return;
     }
-    if (event.button !== 0) return;
+    if (event.button !== 0 || this.passesPressToBoard()) return;
     event.stopPropagation();
     if (!this.#eraseIfEraserActive()) return;
     const now = performance.now();

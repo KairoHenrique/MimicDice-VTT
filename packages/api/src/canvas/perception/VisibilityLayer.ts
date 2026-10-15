@@ -55,8 +55,12 @@ export class VisibilityLayer extends CanvasLayer {
 
   /** How far players may see, in scene distance units, as set by the GM; 0 means no limit. Limits the GM only through a puppet. */
   get playerVisionLimit(): number {
+    if (!currentGame()?.user || seesEverything()) return 0;
+    return this.#configuredVisionLimit();
+  }
+
+  #configuredVisionLimit(): number {
     const game = currentGame();
-    if (!game?.user || seesEverything()) return 0;
     try {
       const limit = Number(game.settings.get(VISION_LIMIT_NAMESPACE, VISION_LIMIT_KEY));
       return Number.isFinite(limit) && limit > 0 ? limit : 0;
@@ -189,6 +193,14 @@ export class VisibilityLayer extends CanvasLayer {
   #wallSegments(sense: "sight" | "light"): Segment[] {
     const walls = (currentCanvas()?.walls?.placeables ?? []) as Wall[];
     return walls.filter((wall) => wall.blocks(sense)).map((wall) => wall.segment);
+  }
+
+  /** What a token's player would see from where it stands (walls and the player vision limit), whoever is asking. */
+  lineOfSightOf(token: Token): PIXI.Polygon {
+    const dimensions = currentCanvas().dimensions as SceneDimensions;
+    const limit = this.#configuredVisionLimit();
+    const playerLimit = limit > 0 ? limit * dimensions.distancePixels + Math.max(token.w, token.h) / 2 : Infinity;
+    return new PIXI.Polygon(computeVisibilityPolygon(token.center, Math.min(playerLimit, token.visionCap), this.#wallSegments("sight"), dimensions.sceneRect));
   }
 
   #computeShapes(canvas: any, sightWalls: Segment[]): VisionShapes {

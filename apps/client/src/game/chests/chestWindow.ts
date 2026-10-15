@@ -1,7 +1,7 @@
 import { DialogV2, FilePicker } from "@tabbletop/api";
 import { isChestFull, MAX_CHEST_ENTRIES, MAX_PERCEPTION, visibleChestEntries, type Chest, type ChestEntry } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
-import { perceptionScores } from "../concealment/perception";
+import { characterPerceptionOf } from "../concealment/perception";
 import { addItemAsGameMaster, chestOf, ownTokensInReach, putInChest, saveChestAsGameMaster, takeFromChest } from "./chestActions";
 
 const DEFAULT_ITEM_ICON = "icons/svg/item-bag.svg";
@@ -91,7 +91,7 @@ function playerView(tile: any, actors: any[], chosen: { actor: any }, rerender: 
     chosen.actor = actors.find((actor) => actor.id === picker.value) ?? chosen.actor;
     rerender();
   });
-  const entries = visibleChestEntries(tile.document._source, perceptionScores()[chosen.actor.id] ?? null);
+  const entries = visibleChestEntries(tile.document._source, characterPerceptionOf(tile.document, chosen.actor.id));
   const rows = entries.map((entry) => h("li", { class: "md-chest-row" }, itemLabel(entry), button("Pegar", "fa-solid fa-hand-holding", () => takeFromChest(tile, entry.id, chosen.actor))));
   const carried = Array.from(chosen.actor.items?.values?.() ?? []) as any[];
   const storePicker = h("select", { "aria-label": "Item para guardar" }, ...carried.map((item) => h("option", { value: item.id }, item.name)));

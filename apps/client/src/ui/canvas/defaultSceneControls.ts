@@ -1,5 +1,4 @@
 import { ERASE_TOOL } from "@tabbletop/api";
-import { perceptionScoresDialog } from "../../game/concealment/concealmentDialog";
 import { createChest, createTrap, secretsListDialog } from "../../game/concealment/secretsTools";
 import { isGmEditMode, isMapLocked } from "../../game/tableControls";
 import { toggleLayersPanel } from "../layers/LayersPanel";
@@ -112,7 +111,6 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
         select: selectTool(),
         walls: tool("walls", 2, "Parede", "fa-solid fa-bars"),
         door: tool("door", 3, "Porta", "fa-solid fa-door-open"),
-        perception: tool("perception", 4, "Percepção dos jogadores: anote quanto cada um tirou", "fa-solid fa-eye", { button: true, visible: isGM, onChange: () => perceptionScoresDialog() }),
         chest: tool("chest", 5, "Criar baú (guarda itens; cada item pode ter DT de percepção)", "fa-solid fa-box-archive", { button: true, visible: isGM, onChange: () => createChest() }),
         trap: tool("trap", 6, "Criar armadilha (invisível até alguém pisar)", "fa-solid fa-burst", { button: true, visible: isGM, onChange: () => createTrap() }),
         secrets: tool("secrets", 7, "Segredos desta cena: baús, armadilhas e objetos escondidos", "fa-solid fa-user-secret", { button: true, visible: isGM, onChange: () => secretsListDialog() }),

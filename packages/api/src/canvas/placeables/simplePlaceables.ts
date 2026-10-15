@@ -9,6 +9,8 @@ import { colorToNumber, loadTexture } from "../textures";
 import { seesEverything } from "../perception/viewpoint";
 import { DoorControl } from "./DoorControl";
 import { PlaceableObject } from "./PlaceableObject";
+import { createUnseenMarker, unseenMarkerRadius } from "./unseenMarker";
+import { CREATION_TOOLS, WALL_SNAP_MODE } from "../interaction/creationTools";
 import { wallSplitPoint } from "./wallSplit";
 
 /** Whether any character the current user owns carries an item with this name. */
@@ -38,6 +40,21 @@ function isConcealed(rule: ConcealRule | null, document: any): boolean {
   return rule?.(document) === true;
 }
 
+function isGameMaster(): boolean {
+  return currentGame()?.user?.isGM === true;
+}
+
+/** Looking through a player's token, the GM still sees what that player missed, marked with a crossed-out eye. */
+function syncUnseenMarker(owner: PIXI.Container, current: PIXI.Graphics | null, unseen: boolean, position: Point): PIXI.Graphics | null {
+  if (!unseen) {
+    if (current && !current.destroyed) current.destroy();
+    return null;
+  }
+  const marker = current && !current.destroyed ? current : owner.addChild(createUnseenMarker(unseenMarkerRadius(Number(currentCanvas()?.grid?.size) || 100)));
+  marker.position.set(position.x, position.y);
+  return marker;
+}
+
 export class Tile extends PlaceableObject {
   static override embeddedName = "Tile";
   static layerStateRule: ((document: any) => TileLayerState) | null = null;
@@ -53,10 +70,16 @@ export class Tile extends PlaceableObject {
     return (this.constructor as typeof Tile).layerStateRule?.(this.document) ?? null;
   }
 
+  unseenMarker: PIXI.Graphics | null = null;
+
+  get #concealed(): boolean {
+    return isConcealed((this.constructor as typeof Tile).concealRule, this.document);
+  }
+
   /** The current user may see this tile at all (not GM-hidden, its layer is shown, not concealed from them). */
   get isRevealed(): boolean {
     if (!super.isVisible || this.layerState?.visible === false) return false;
-    return seesEverything() || !isConcealed((this.constructor as typeof Tile).concealRule, this.document);
+    return isGameMaster() || !this.#concealed;
   }
 
   override get isVisible(): boolean {
@@ -65,7 +88,7 @@ export class Tile extends PlaceableObject {
 
   /** The GM sees concealed tiles faded, like hidden ones. */
   get #fadedForGameMaster(): boolean {
-    return this.document.hidden === true || (seesEverything() && isConcealed((this.constructor as typeof Tile).concealRule, this.document));
+    return this.document.hidden === true || (isGameMaster() && this.#concealed);
   }
 
   /** A locked layer cannot be clicked, selected or dragged, by anyone. */
@@ -101,6 +124,7 @@ export class Tile extends PlaceableObject {
     this.zIndex = layerState?.order ?? (Number(this.document.sort) || 0);
     this.eventMode = layerState?.locked ? "none" : "static";
     this.alpha = (this.#fadedForGameMaster ? 0.5 : Number(this.document.alpha ?? 1)) * (layerState?.opacity ?? 1);
+    this.unseenMarker = syncUnseenMarker(this, this.unseenMarker, isGameMaster() && !seesEverything() && this.#concealed, { x: width / 2, y: height / 2 });
     this.frame.clear();
     if (this.controlled || (this.hover && this.layer?.active)) this.frame.lineStyle(3, this.controlled ? 0x3b82f6 : 0xffffff, 0.9).drawRect(0, 0, width, height);
     const handle = this.resizable ? this.resizeHandleSize : 0;
@@ -245,11 +269,18 @@ export class Wall extends PlaceableObject {
     return ["door"];
   }
 
-  /** Both ends land on grid corners, so a wall drawn off the grid also ends up on it once moved. */
+  /** With a wall or door tool, an unselected wall ignores the press so a new wall can start on top of it. */
+  protected override passesPressToBoard(): boolean {
+    if (!this.layer?.active || this.controlled) return false;
+    const toolName = currentUi()?.controls?.tool?.name ?? "";
+    return CREATION_TOOLS[this.layer.name ?? ""]?.[toolName]?.documentName === "Wall";
+  }
+
+  /** Both ends land on grid points, so a wall drawn off the grid also ends up on it once moved. */
   override getMoveUpdate(deltaX: number, deltaY: number, snap: boolean): PlainObject {
     const [ax, ay, bx, by] = this.coords;
     const grid = currentCanvas().grid;
-    const place = (x: number, y: number) => (snap ? grid.getSnappedPoint({ x, y }, { mode: "corner" }) : { x, y });
+    const place = (x: number, y: number) => (snap ? grid.getSnappedPoint({ x, y }, { mode: WALL_SNAP_MODE }) : { x, y });
     const start = place(ax + deltaX, ay + deltaY);
     const end = place(bx + deltaX, by + deltaY);
     return { _id: this.id, c: [start.x, start.y, end.x, end.y].map(Math.round) };
@@ -273,7 +304,7 @@ export class Wall extends PlaceableObject {
   /** Cuts this wall in two at the given point; both pieces keep every setting of the original. */
   async splitAt(click: Point): Promise<boolean> {
     const [ax, ay, bx, by] = this.coords;
-    const corner = currentCanvas()?.grid?.getSnappedPoint?.(click, { mode: "corner" }) ?? null;
+    const corner = currentCanvas()?.grid?.getSnappedPoint?.(click, { mode: WALL_SNAP_MODE }) ?? null;
     const cut = wallSplitPoint(this.segment, click, corner);
     const notifications = currentUi()?.notifications;
     if (!cut) {
@@ -434,9 +465,11 @@ export class Note extends PlaceableObject {
     return { x: this.document.x - size / 2, y: this.document.y - size / 2, width: size, height: size };
   }
 
+  unseenMarker: PIXI.Graphics | null = null;
+
   /** The current user may see this note at all: its journal is shared with them and it is not concealed from them. */
   get isRevealed(): boolean {
-    if (seesEverything()) return true;
+    if (isGameMaster()) return true;
     const entry = this.document.entry;
     if (entry && entry.testUserPermission?.(currentGame()?.user, "LIMITED") !== true) return false;
     return !isConcealed((this.constructor as typeof Note).concealRule, this.document);
@@ -460,7 +493,9 @@ export class Note extends PlaceableObject {
   protected override _refresh(): void {
     const size = this.size;
     this.position.set(this.document.x, this.document.y);
-    this.alpha = seesEverything() && isConcealed((this.constructor as typeof Note).concealRule, this.document) ? 0.5 : 1;
+    const concealed = isGameMaster() && isConcealed((this.constructor as typeof Note).concealRule, this.document);
+    this.alpha = concealed ? 0.5 : 1;
+    this.unseenMarker = syncUnseenMarker(this, this.unseenMarker, concealed && !seesEverything(), { x: size / 2, y: -size / 2 });
     if (this.icon) {
       this.icon.width = size;
       this.icon.height = size;

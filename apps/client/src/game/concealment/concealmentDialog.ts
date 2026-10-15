@@ -2,7 +2,7 @@ import { DialogV2 } from "@tabbletop/api";
 import { MAX_PERCEPTION, parseTurnsInput, PERCEPTION_DC_FLAG, readConcealment, TRAP_FLAG, trapSchema, type PerceptionScores, type Trap } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
 import { effectDefinitions } from "../../ui/effects/effectStore";
-import { perceptionScores, playerCharacters, savePerceptionScores } from "./perception";
+import { applyPerceptionRolls, perceptionScores, playerCharacters, type PerceptionFinding } from "./perception";
 
 interface TrapControls {
   enabled: HTMLInputElement;
@@ -44,18 +44,20 @@ function trapSection(trap: Trap | null): { section: HTMLElement; controls: TrapC
   return { section, controls: { enabled, name, message, effect, turns } };
 }
 
-function scoresSection(scores: PerceptionScores): { section: HTMLElement; inputs: Map<string, HTMLInputElement> } {
+function rollsSection(lastRolls: PerceptionScores): { section: HTMLElement; inputs: Map<string, HTMLInputElement> } {
   const inputs = new Map<string, HTMLInputElement>();
   const rows = playerCharacters().map((actor) => {
-    const input = numberInput(`score-${actor.id}`, scores[actor.id] ?? null, `Percepção de ${actor.name}`, MAX_PERCEPTION);
+    const input = numberInput(`score-${actor.id}`, null, `Percepção de ${actor.name}`, MAX_PERCEPTION);
+    const last = lastRolls[actor.id];
+    if (last !== undefined) input.placeholder = `último: ${last}`;
     inputs.set(actor.id, input);
     return h("label", { class: "md-conceal-score" }, h("span", { class: "md-conceal-score-name", title: actor.name }, actor.name), input);
   });
   const section = h(
     "fieldset",
     { class: "md-conceal-section" },
-    h("legend", {}, "Percepção dos personagens"),
-    h("p", { class: "hint" }, "Anote o resultado do teste de percepção de cada um nesta cena. Vazio: ainda não rolou. Cada cena começa sem notas."),
+    h("legend", {}, "Resultado do teste"),
+    h("p", { class: "hint" }, "Digite só de quem rolou agora. Vazio: não rolou."),
     rows.length ? h("div", { class: "md-conceal-scores" }, ...rows) : h("p", { class: "hint" }, "Nenhum personagem de jogador ainda."),
   );
   return { section, inputs };
@@ -96,7 +98,7 @@ export async function concealmentDialog(document: any): Promise<void> {
       { class: "md-conceal-section" },
       h("legend", {}, "Percepção"),
       h("label", { class: "md-conceal-inline" }, "DT de percepção", dc),
-      h("p", { class: "hint" }, "Só quem tiver percepção igual ou maior vê isto no mapa. Vazio ou 0: todos veem. A percepção de cada jogador é anotada uma vez por cena, no olho de Paredes e segredos."),
+      h("p", { class: "hint" }, "Só aparece para quem rolar percepção igual ou maior com isto à vista do token. Vazio ou 0: todos veem. Anote a rolagem em \"Anotar percepção\", na barra de cima."),
     ),
     trap?.section ?? null,
   );
@@ -111,27 +113,42 @@ export async function concealmentDialog(document: any): Promise<void> {
   await document.update(update);
 }
 
-/** GM: writes down each character's perception roll, without picking an object first. */
+/** GM: writes down a perception roll; it uncovers only what each character's token sees right now. */
 export async function perceptionScoresDialog(): Promise<void> {
   if (!game.user.isGM) return;
-  const scores = scoresSection(perceptionScores());
+  if (!canvas?.ready || !canvas.scene) {
+    ui.notifications.warn("Abra uma cena para anotar a percepção.");
+    return;
+  }
+  const rolls = rollsSection(perceptionScores());
   const content = h(
     "div",
     { class: "md-conceal" },
-    scores.section,
-    h("p", { class: "hint" }, "Tiles, notas e itens de baú com DT de percepção só aparecem para quem tiver valor igual ou maior. Mude quando eles rolarem de novo."),
+    rolls.section,
+    h("p", { class: "hint" }, "Vale só para o que o token de cada um está vendo agora: objetos, notas, armadilhas e itens de baú com DT igual ou menor que o resultado aparecem para ele. O resto do mapa continua escondido até rolarem de novo com aquilo à vista."),
   );
-  const confirmed = await DialogV2.prompt({ window: { title: `Percepção dos jogadores: ${canvas.scene?.name ?? "cena"}` }, position: { width: 420 } as any, content, ok: { label: "Salvar", icon: "fa-solid fa-floppy-disk", callback: () => true } });
-  if (confirmed) await savePerceptionScores(mergedScores(perceptionScores(), scores.inputs));
+  const confirmed = await DialogV2.prompt({ window: { title: `Anotar percepção: ${canvas.scene.name ?? "cena"}` }, position: { width: 440 } as any, content, ok: { label: "Anotar", icon: "fa-solid fa-eye", callback: () => true } });
+  if (!confirmed) return;
+  const typed = typedRolls(rolls.inputs);
+  if (Object.keys(typed).length === 0) return;
+  reportFindings(await applyPerceptionRolls(typed));
 }
 
-/** Listed characters take the typed value (a cleared field forgets it); characters not listed keep theirs. */
-function mergedScores(stored: PerceptionScores, inputs: Map<string, HTMLInputElement>): PerceptionScores {
-  const merged: PerceptionScores = { ...stored };
+function typedRolls(inputs: Map<string, HTMLInputElement>): PerceptionScores {
+  const rolls: PerceptionScores = {};
   for (const [actorId, input] of inputs) {
     const value = readScore(input);
-    if (value === null) delete merged[actorId];
-    else merged[actorId] = value;
+    if (value !== null) rolls[actorId] = value;
   }
-  return merged;
+  return rolls;
+}
+
+function findingLine(finding: PerceptionFinding): string {
+  if (!finding.hasToken) return `${finding.actorName}: sem token nesta cena, nada mudou.`;
+  if (finding.inSight === 0) return `${finding.actorName}: nenhum segredo à vista.`;
+  return `${finding.actorName}: achou ${finding.found} de ${finding.inSight} à vista.`;
+}
+
+function reportFindings(findings: PerceptionFinding[]): void {
+  if (findings.length) ui.notifications.info(findings.map(findingLine).join(" "));
 }

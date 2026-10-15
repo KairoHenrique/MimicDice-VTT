@@ -812,6 +812,10 @@ body.sidebar-collapsed .private-message-alerts {
   white-space: nowrap;
 }
 
+.md-conceal-score > .md-conceal-number {
+  width: 104px;
+}
+
 .md-secret-list {
   list-style: none;
   margin: 0;
