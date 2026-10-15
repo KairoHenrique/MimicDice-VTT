@@ -1,5 +1,9 @@
 # Notas de versão
 
+## 1.4.6
+
+- **Ficha de jogador definitiva:** PV e PE com as fórmulas da mesa (o PE arredonda para baixo) e pontos de atributo livres crescendo com `nível ^ 1.2`. Para fichas já criadas, aplique o modelo de novo em **Modelos**.
+
 ## 1.4.5
 
 - **Máximo das barras só pelo mestre:** o jogador não muda mais o máximo de PV, PE e outras barras, nem na ficha nem no painel de status, e não vê o campo de fórmula do máximo no editor. O mestre continua mudando o valor e a fórmula.
