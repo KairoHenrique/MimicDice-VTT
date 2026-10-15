@@ -10,7 +10,7 @@ import { buildBoardView } from "./layout/boardView";
 import { BoardEditor } from "./layout/editor/BoardEditor";
 import { SheetTemplateEditor } from "./layout/editor/SheetTemplateEditor";
 import { allComponents, EMPTY_LAYOUT, readLayout } from "./layout/sheetLayoutRules";
-import { exportActorSheet } from "./layout/sheetExchange";
+import { exportActorSheet, importActorSheet } from "./layout/sheetExchange";
 import { defaultTemplateFor } from "./layout/sheetTemplateStore";
 import { valueRootForActorType } from "./layout/sheetValueRoot";
 import { chooseTemplateDialog, roleSelect, saveTemplateDialog } from "./layout/templateDialogs";
@@ -153,7 +153,12 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
         toolbarButton("fa-solid fa-layer-group", "Modelos do jogador", () => chooseActorVariantsDialog(this.document)),
       );
     }
-    if (this.#canChangeLayout()) toolbar.append(toolbarButton("fa-solid fa-file-export", "Exportar", () => exportActorSheet(this.document.name, role, this.layout)));
+    if (this.#canChangeLayout()) {
+      toolbar.append(
+        toolbarButton("fa-solid fa-file-import", "Importar", () => this.#importSheet(role)),
+        toolbarButton("fa-solid fa-file-export", "Exportar", () => exportActorSheet(this.document.name, role, this.layout)),
+      );
+    }
     return toolbar;
   }
 
@@ -219,6 +224,13 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     if (!template) return;
     await applyTemplateToActor(this.document, template);
     ui.notifications.info(`Modelo "${template.name}" aplicado.`);
+  }
+
+  async #importSheet(role: ActorRole): Promise<void> {
+    const layout = await importActorSheet(this.document.name);
+    if (!layout) return;
+    await applyTemplateToActor(this.document, { id: "imported", name: this.document.name, role, layout });
+    ui.notifications.info("Ficha importada.");
   }
 
   #buildTabs(): HTMLElement {

@@ -1,6 +1,6 @@
 {
   "name": "@tabbletop/i18n",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "private": true,
   "type": "module",
   "main": "src/index.ts",

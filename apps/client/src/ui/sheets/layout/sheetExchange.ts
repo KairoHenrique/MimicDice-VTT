@@ -103,6 +103,42 @@ async function confirmImport(file: SheetExchangeFile): Promise<{ makeDefault: bo
   return confirmed === true ? { makeDefault: makeDefault.checked } : null;
 }
 
+type ExchangeEntry = SheetExchangeFile["templates"][number];
+
+async function confirmActorImport(exchange: SheetExchangeFile, actorName: string): Promise<{ entry: ExchangeEntry; saveAsModel: boolean } | null> {
+  const choice = h("select", { name: "template", "aria-label": "Ficha do arquivo" }, ...exchange.templates.map((template, index) => h("option", { value: String(index) }, `${template.name} (${ROLE_PRESENTATION[template.role].label})`)));
+  const saveAsModel = h("input", { type: "checkbox", name: "saveAsModel" });
+  const content = h(
+    "div",
+    {},
+    exchange.templates.length > 1 ? h("label", { class: "form-group md-dialog-group" }, h("span", {}, "Qual ficha usar"), choice) : h("p", {}, `Ficha: ${exchange.templates[0]?.name ?? exchange.title}`),
+    h("p", {}, `A ficha de ${actorName} passa a ter o layout do arquivo. Os valores já preenchidos (atributos, vida, perícias) continuam.`),
+    game.user.isGM ? h("label", { class: "md-check-row" }, saveAsModel, h("span", {}, "Salvar também como modelo do mundo")) : null,
+  );
+  const confirmed = await DialogV2.prompt({ window: { title: "Importar ficha" }, content, ok: { label: "Importar", icon: "fa-solid fa-file-import", callback: () => true } });
+  if (confirmed !== true) return null;
+  const entry = exchange.templates[Number(choice.value)] ?? exchange.templates[0];
+  return entry ? { entry, saveAsModel: saveAsModel.checked } : null;
+}
+
+/** Reads a .mimicdice.json chosen by the user and returns the layout to put on this actor; null when cancelled or invalid. */
+export async function importActorSheet(actorName: string): Promise<SheetLayout | null> {
+  const file = await pickFile();
+  if (!file) return null;
+  try {
+    const exchange = await readExchangeFile(file);
+    const choice = await confirmActorImport(exchange, actorName);
+    if (!choice) return null;
+    const layout = readLayout(choice.entry.layout);
+    if (!layout) throw new Error("A ficha do arquivo está vazia ou corrompida.");
+    if (choice.saveAsModel && game.user.isGM) await saveSheetTemplate(choice.entry.name, choice.entry.role, layout, choice.entry.description);
+    return layout;
+  } catch (error) {
+    ui.notifications.error(error instanceof Error ? error.message : "Não foi possível importar.");
+    return null;
+  }
+}
+
 /** GM-only: world settings hold the models, so only the GM can store imported ones. */
 export async function importSheetsDialog(): Promise<void> {
   const file = await pickFile();

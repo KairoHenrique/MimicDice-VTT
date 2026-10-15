@@ -1,5 +1,9 @@
 # Notas de versão
 
+## 1.4.7
+
+- **Importar ficha:** botão **Importar** ao lado de **Exportar** na ficha. Escolha um arquivo `.mimicdice.json` e a ficha do personagem passa a usar aquele layout, mantendo os valores já preenchidos. O mestre pode marcar para salvar também como modelo do mundo.
+
 ## 1.4.6
 
 - **Ficha de jogador definitiva:** PV e PE com as fórmulas da mesa (o PE arredonda para baixo) e pontos de atributo livres crescendo com `nível ^ 1.2`. Para fichas já criadas, aplique o modelo de novo em **Modelos**.
