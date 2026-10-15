@@ -1,5 +1,13 @@
 # Notas de versão
 
+## 1.5.0
+
+- **Percepção no mapa todo:** a janela **Anotar percepção** tem o interruptor **Valer para o mapa todo**, ligado por padrão. Ligado, a rolagem vale para todos os objetos, notas, armadilhas e itens de baú da cena; mesmo assim, cada um só aparece quando o token chegar a ver aquele lugar (no escuro ou fora da visão continua escondido). Desligado, vale só para o que o token de cada um está vendo na hora.
+
+## 1.5.9
+
+- **Percepção no mapa todo:** a janela **Anotar percepção** tem o interruptor **Valer para o mapa todo**, ligado por padrão. Ligado, a rolagem vale para todos os objetos do mapa, mas cada um só aparece quando o token chegar a ver aquele lugar: no escuro ou fora da visão continua escondido. Desligado, vale só para o que o token está vendo na hora.
+
 ## 1.4.9
 
 - **Percepção no escuro:** em cena escura, a rolagem só vale para o que está iluminado ou dentro do alcance de visão do token. Um baú num canto escuro, mesmo sem parede no caminho, não é achado até alguém levar luz.

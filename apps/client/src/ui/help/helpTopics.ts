@@ -428,6 +428,8 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     summary: "Anota o teste de percepção e revela só o que cada token está vendo agora.",
     steps: [
       "Digite o resultado só de quem rolou agora. O campo mostra a última rolagem de cada um como lembrete.",
+      "O interruptor \"Valer para o mapa todo\" vem ligado: a rolagem vale para todos os objetos da cena, mas cada um só aparece quando o token chegar a ver aquele lugar. Desligado, vale só para o que o token está vendo agora.",
+      "O interruptor \"Valer para o mapa todo\" vem ligado: a rolagem vale para todo o mapa, mas cada objeto só aparece quando o token chegar a ver aquele lugar. Desligado, vale só para o que o token está vendo agora.",
       "Objetos, notas, armadilhas e itens de baú à vista do token com DT igual ou menor que o resultado aparecem para aquele personagem e continuam aparecendo.",
       "O que estava fora da visão continua escondido até eles rolarem de novo com aquilo à vista. Uma rolagem menor nunca esconde o que já foi achado.",
       "Em cena escura, só conta o que está iluminado ou dentro do alcance de visão do token: um objeto no escuro não é achado.",

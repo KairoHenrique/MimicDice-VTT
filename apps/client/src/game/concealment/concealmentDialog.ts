@@ -2,7 +2,7 @@ import { DialogV2 } from "@tabbletop/api";
 import { MAX_PERCEPTION, parseTurnsInput, PERCEPTION_DC_FLAG, readConcealment, TRAP_FLAG, trapSchema, type PerceptionScores, type Trap } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
 import { effectDefinitions } from "../../ui/effects/effectStore";
-import { applyPerceptionRolls, perceptionScores, playerCharacters, type PerceptionFinding } from "./perception";
+import { applyPerceptionRolls, perceptionScores, playerCharacters, type PerceptionFinding, type PerceptionScope } from "./perception";
 
 interface TrapControls {
   enabled: HTMLInputElement;
@@ -113,7 +113,23 @@ export async function concealmentDialog(document: any): Promise<void> {
   await document.update(update);
 }
 
-/** GM: writes down a perception roll; it uncovers only what each character's token sees right now. */
+const SCOPE_HINTS: Record<PerceptionScope, string> = {
+  map: "Vale para o mapa todo: objetos, notas, armadilhas e itens de baú com DT igual ou menor que o resultado ficam percebidos. Cada um só aparece quando o token chegar a ver aquele lugar; no escuro ou fora da visão continua escondido.",
+  sight: "Vale só para o que o token de cada um está vendo agora. O resto do mapa continua escondido até rolarem de novo com aquilo à vista.",
+};
+
+function scopeSwitch(): { section: HTMLElement; scope: () => PerceptionScope } {
+  const toggle = h("input", { type: "checkbox", role: "switch", name: "wholeMap", checked: true, class: "md-switch-input", "aria-describedby": "md-perception-scope-hint" });
+  const hint = h("p", { class: "hint", id: "md-perception-scope-hint" });
+  const scope = (): PerceptionScope => (toggle.checked ? "map" : "sight");
+  const sync = () => (hint.textContent = SCOPE_HINTS[scope()]);
+  toggle.addEventListener("change", sync);
+  sync();
+  const section = h("div", { class: "md-conceal-scope" }, h("label", { class: "md-switch" }, toggle, h("span", { class: "md-switch-track", "aria-hidden": "true" }), "Valer para o mapa todo"), hint);
+  return { section, scope };
+}
+
+/** GM: writes down a perception roll, for the whole map or only what each character's token sees right now. */
 export async function perceptionScoresDialog(): Promise<void> {
   if (!game.user.isGM) return;
   if (!canvas?.ready || !canvas.scene) {
@@ -121,17 +137,14 @@ export async function perceptionScoresDialog(): Promise<void> {
     return;
   }
   const rolls = rollsSection(perceptionScores());
-  const content = h(
-    "div",
-    { class: "md-conceal" },
-    rolls.section,
-    h("p", { class: "hint" }, "Vale só para o que o token de cada um está vendo agora: objetos, notas, armadilhas e itens de baú com DT igual ou menor que o resultado aparecem para ele. O resto do mapa continua escondido até rolarem de novo com aquilo à vista."),
-  );
+  const scope = scopeSwitch();
+  const content = h("div", { class: "md-conceal" }, rolls.section, scope.section);
   const confirmed = await DialogV2.prompt({ window: { title: `Anotar percepção: ${canvas.scene.name ?? "cena"}` }, position: { width: 440 } as any, content, ok: { label: "Anotar", icon: "fa-solid fa-eye", callback: () => true } });
   if (!confirmed) return;
   const typed = typedRolls(rolls.inputs);
   if (Object.keys(typed).length === 0) return;
-  reportFindings(await applyPerceptionRolls(typed));
+  const chosenScope = scope.scope();
+  reportFindings(await applyPerceptionRolls(typed, chosenScope), chosenScope);
 }
 
 function typedRolls(inputs: Map<string, HTMLInputElement>): PerceptionScores {
@@ -143,12 +156,13 @@ function typedRolls(inputs: Map<string, HTMLInputElement>): PerceptionScores {
   return rolls;
 }
 
-function findingLine(finding: PerceptionFinding): string {
+function findingLine(finding: PerceptionFinding, scope: PerceptionScope): string {
   if (!finding.hasToken) return `${finding.actorName}: sem token nesta cena, nada mudou.`;
+  if (scope === "map") return finding.inSight === 0 ? `${finding.actorName}: nenhum segredo no mapa.` : `${finding.actorName}: achou ${finding.found} de ${finding.inSight} no mapa.`;
   if (finding.inSight === 0) return `${finding.actorName}: nenhum segredo à vista.`;
   return `${finding.actorName}: achou ${finding.found} de ${finding.inSight} à vista.`;
 }
 
-function reportFindings(findings: PerceptionFinding[]): void {
-  if (findings.length) ui.notifications.info(findings.map(findingLine).join(" "));
+function reportFindings(findings: PerceptionFinding[], scope: PerceptionScope): void {
+  if (findings.length) ui.notifications.info(findings.map((finding) => findingLine(finding, scope)).join(" "));
 }

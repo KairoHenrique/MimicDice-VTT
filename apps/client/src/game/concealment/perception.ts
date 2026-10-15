@@ -33,6 +33,9 @@ interface PerceptionTarget {
   concealment: Concealment;
 }
 
+/** Where a roll counts: what each token sees right now, or the whole scene. */
+export type PerceptionScope = "sight" | "map";
+
 export interface PerceptionFinding {
   actorName: string;
   hasToken: boolean;
@@ -129,12 +132,12 @@ function sightsOf(actorId: string): SightShape[] {
   return tokens.map((token) => canvas.visibility.sightOf(token));
 }
 
-/** Records one character's roll on every target in its sight; returns what it saw and found. */
-function recordRoll(actor: any, score: number, targets: PerceptionTarget[], updates: Map<any, Record<string, unknown>>): PerceptionFinding {
+/** Records one character's roll on every target it reaches (in its sight, or anywhere for the whole map); returns what it reached and found. */
+function recordRoll(actor: any, score: number, targets: PerceptionTarget[], updates: Map<any, Record<string, unknown>>, scope: PerceptionScope): PerceptionFinding {
   const sights = sightsOf(actor.id);
-  const finding: PerceptionFinding = { actorName: String(actor.name), hasToken: sights.length > 0, inSight: 0, found: 0 };
+  const finding: PerceptionFinding = { actorName: String(actor.name), hasToken: scope === "map" || sights.length > 0, inSight: 0, found: 0 };
   for (const target of targets) {
-    if (!sights.some((sight) => seesArea(sight, target.area))) continue;
+    if (scope === "sight" && !sights.some((sight) => seesArea(sight, target.area))) continue;
     finding.inSight += 1;
     if (findsSomething(target, score)) finding.found += 1;
     if (!improvesPerception(target.concealment, actor.id, score)) continue;
@@ -154,10 +157,11 @@ async function saveRecordedRolls(scene: any, updates: Map<any, Record<string, un
 }
 
 /**
- * GM: applies new perception rolls. Each roll only counts for the objects its character's tokens see right now, so
- * the rest of the map stays hidden until they roll again with it in sight. A lower roll never hides what was found.
+ * GM: applies new perception rolls. With the "sight" scope each roll only counts for the objects its character's tokens
+ * see right now; with "map" it counts for every object on the scene, which still only shows once it comes into the
+ * token's view (fog and darkness keep hiding it). A lower roll never hides what was found.
  */
-export async function applyPerceptionRolls(rolls: PerceptionScores): Promise<PerceptionFinding[]> {
+export async function applyPerceptionRolls(rolls: PerceptionScores, scope: PerceptionScope): Promise<PerceptionFinding[]> {
   const scene = canvas?.scene;
   if (!game.user.isGM || !scene || !canvas.ready) return [];
   const targets = perceptionTargets(scene);
@@ -165,7 +169,7 @@ export async function applyPerceptionRolls(rolls: PerceptionScores): Promise<Per
   const findings: PerceptionFinding[] = [];
   for (const [actorId, score] of Object.entries(rolls)) {
     const actor = game.actors?.get(actorId);
-    if (actor) findings.push(recordRoll(actor, score, targets, updates));
+    if (actor) findings.push(recordRoll(actor, score, targets, updates, scope));
   }
   await saveRecordedRolls(scene, updates);
   await rememberLastRolls(rolls);
