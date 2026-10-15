@@ -3,6 +3,7 @@
 ## 1.4.9
 
 - **Percepção no escuro:** em cena escura, a rolagem só vale para o que está iluminado ou dentro do alcance de visão do token. Um baú num canto escuro, mesmo sem parede no caminho, não é achado até alguém levar luz.
+- **Tokens sempre livres:** o token nunca encaixa na grade, nem segurando Shift, ao mover ou ao soltar no mapa.
 
 ## 1.4.8
 

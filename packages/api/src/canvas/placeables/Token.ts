@@ -212,9 +212,9 @@ export class Token extends PlaceableObject {
     return "corner";
   }
 
-  /** Tokens are placed freely. The board asks for snapping unless Shift is held, so for tokens Shift fits them to the grid. */
-  override getMoveUpdate(deltaX: number, deltaY: number, snap: boolean): PlainObject {
-    return super.getMoveUpdate(deltaX, deltaY, !snap);
+  /** Tokens are always placed freely, never fitted to the grid. */
+  override getMoveUpdate(deltaX: number, deltaY: number, _snap: boolean): PlainObject {
+    return super.getMoveUpdate(deltaX, deltaY, false);
   }
 
   override _onClickLeft2(): void {

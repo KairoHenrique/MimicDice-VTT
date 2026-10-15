@@ -1442,7 +1442,7 @@
   "O servidor foi encerrado inesperadamente. Veja o log em": "El servidor se cerró inesperadamente. Consulta el registro en",
   "O servidor não conseguiu iniciar": "El servidor no pudo iniciarse",
   "O texto não pode ficar vazio.": "El texto no puede quedar vacío.",
-  "O token fica exatamente onde você soltar, sem prender na grade. Segure Shift ao soltar para encaixar no quadrado.": "El token queda exactamente donde lo sueltas, sin ajustarse a la cuadrícula. Mantén Shift al soltar para encajarlo en la casilla.",
+  "O token fica exatamente onde você soltar, sem prender na grade.": "El token queda exactamente donde lo sueltes, sin ajustarse a la cuadrícula.",
   "O zip contém um pacote diferente do manifesto": "El zip contiene un paquete distinto al del manifiesto",
   "O zip não contém {0}": "El zip no contiene {0}",
   "Object": "Object",

@@ -5,8 +5,8 @@ import { fromUuidSync } from "../../documents/abstract/ClientDatabaseBackend";
 import { currentGame, currentUi } from "../../runtime";
 import { IMAGE_TILE_DROP_TYPE, placeImageTile } from "./imageTileDrop";
 
-/** Token source for an actor centered on (x, y) (snapped to the grid when asked), from the actor's prototype token. */
-export function actorTokenData(actor: any, x: number, y: number, canvas: any, snap = true): PlainObject {
+/** Token source for an actor centered on (x, y), placed freely, from the actor's prototype token. */
+export function actorTokenData(actor: any, x: number, y: number, canvas: any): PlainObject {
   const prototype = (actor._source.prototypeToken ?? {}) as PlainObject;
   const prototypeTexture = (prototype.texture ?? {}) as PlainObject;
   const playerOwned = actor.hasPlayerOwner === true;
@@ -14,13 +14,12 @@ export function actorTokenData(actor: any, x: number, y: number, canvas: any, sn
   const width = Number(prototype.width) || 1;
   const height = Number(prototype.height) || 1;
   const topLeft = { x: x - (width * gridSize) / 2, y: y - (height * gridSize) / 2 };
-  const placed = snap ? canvas.grid.getSnappedPoint(topLeft, { mode: "corner" }) : topLeft;
   return {
     name: (prototype.name as string) || actor.name,
     actorId: actor.id,
     actorLink: prototype.actorLink ?? playerOwned,
-    x: Math.round(placed.x),
-    y: Math.round(placed.y),
+    x: Math.round(topLeft.x),
+    y: Math.round(topLeft.y),
     width,
     height,
     texture: { src: (prototypeTexture.src as string) || actor.img || CONST.DEFAULT_TOKEN },
@@ -66,7 +65,7 @@ export async function handleCanvasDrop(canvas: any, data: PlainObject): Promise<
       currentUi()?.notifications?.warn("Você só pode colocar no mapa personagens que são seus.");
       return;
     }
-    await canvas.scene.createEmbeddedDocuments("Token", [actorTokenData(document, x, y, canvas, data.free === true)]);
+    await canvas.scene.createEmbeddedDocuments("Token", [actorTokenData(document, x, y, canvas)]);
     canvas.tokens?.activate();
     return;
   }

@@ -46,7 +46,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     summary: "Mover personagens e ver a ficha.",
     steps: [
       "Arraste o token para mover. Todos veem o movimento ao vivo enquanto você arrasta.",
-      "O token fica exatamente onde você soltar, sem prender na grade. Segure Shift ao soltar para encaixar no quadrado.",
+      "O token fica exatamente onde você soltar, sem prender na grade.",
       "W, A, S e D andam um quadrado por vez com o token selecionado (ou com o seu personagem). As paredes bloqueiam.",
       "Segure Ctrl ao arrastar para ver o caminho e confirmar antes de mover.",
       "Clique direito no token para abrir a ficha. O mestre também pode ocultar, travar a posição e colocar em combate.",
