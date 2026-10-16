@@ -140,6 +140,55 @@
   border: 1px solid var(--border);
 }
 
+.md-portrait-drop {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.md-portrait-drop .md-c-image.portrait {
+  pointer-events: none;
+}
+
+.md-portrait-drop-hint {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #fff;
+  background: color-mix(in srgb, #000 55%, transparent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.md-portrait-drop:hover .md-portrait-drop-hint,
+.md-portrait-drop:focus-visible .md-portrait-drop-hint,
+.md-portrait-drop.is-drop-target .md-portrait-drop-hint {
+  opacity: 1;
+}
+
+.md-portrait-drop.is-drop-target {
+  outline: 2px dashed var(--color-accent, #4aa3ff);
+  outline-offset: -2px;
+}
+
+.md-portrait-drop:focus-visible {
+  outline: 2px solid var(--color-accent, #4aa3ff);
+  outline-offset: 2px;
+}
+
 .md-c-image.placeholder {
   display: grid;
   place-items: center;

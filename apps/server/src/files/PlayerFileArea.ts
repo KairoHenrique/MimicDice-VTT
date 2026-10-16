@@ -1,15 +1,17 @@
 import type { FileBrowseResult } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
-import { parseTarget, UPLOADS_ROOT, type FileStorage } from "./FileStorage";
+import { parseTarget, TABLE_SHARED_PATH, UPLOADS_ROOT, type FileStorage } from "./FileStorage";
 import type { PlayerFolderSharing } from "./PlayerFolderSharing";
 
 export const PLAYER_UPLOADS_FOLDER = "players";
 const GROUP_ROOT: readonly string[] = [UPLOADS_ROOT, PLAYER_UPLOADS_FOLDER];
 const GROUP_PATH = GROUP_ROOT.join("/");
+const TABLE_SHARED_SEGMENTS: readonly string[] = TABLE_SHARED_PATH.split("/");
 const USER_ID_PATTERN = /^[A-Za-z0-9]{1,32}$/;
 const OWN_FOLDER_LABEL = "Minha pasta";
 const SHARED_FOLDERS_LABEL = "Pastas compartilhadas";
 const PLAYER_FOLDERS_LABEL = "Pastas dos jogadores";
+const TABLE_SHARED_LABEL = "Pasta do mestre";
 
 /** Player names for folder labels; never exposes anything but the display name. */
 export type PlayerNameLookup = (userId: string) => string | null;
@@ -24,8 +26,8 @@ function ownRoot(userId: string): string[] {
 }
 
 /**
- * What a player may reach in the uploads area: their own folder (read-write) and the top-level folders other
- * players chose to share (read-only). The GM's files are never listed. The GM keeps full access elsewhere.
+ * What a player may reach in the uploads area: their own folder (read-write), the GM's shared handout folder
+ * (read-only), and the top-level folders other players chose to share (read-only).
  */
 export class PlayerFileArea {
   constructor(
@@ -35,15 +37,17 @@ export class PlayerFileArea {
   ) {}
 
   async browse(userId: string, target: string, extensions: ReadonlySet<string> | null): Promise<FileBrowseResult> {
+    await this.storage.ensureTableSharedFolder();
     const segments = parseTarget(target);
     const root = ownRoot(userId);
     if (startsWith(segments, root)) return this.#browseOwn(userId, segments, extensions);
+    if (startsWith(segments, TABLE_SHARED_SEGMENTS)) return this.#browseTableShared(userId, segments, extensions);
     if (segments.length === GROUP_ROOT.length && startsWith(segments, GROUP_ROOT)) return this.#browseGroup(userId);
     if (await this.#isSharedWithGroup(segments, userId)) return this.#browseShared(segments, extensions);
     return this.#browseOwn(userId, root, extensions);
   }
 
-  /** Uploads and new folders always land in the player's own folder. */
+  /** Uploads and new folders always land in the player's own folder (including nested subfolders). */
   writableTarget(userId: string, target: string): string {
     const segments = parseTarget(target);
     const root = ownRoot(userId);
@@ -58,10 +62,11 @@ export class PlayerFileArea {
     return segments.join("/");
   }
 
-  /** A player reads notes in their own folder (and may edit them) or in folders the group shared (read-only). */
+  /** A player reads notes in their own folder (and may edit them) or in shared folders (read-only). */
   async noteAccess(userId: string, target: string): Promise<{ segments: string[]; writable: boolean }> {
     const segments = parseTarget(target);
     if (startsWith(segments, ownRoot(userId)) && segments.length > ownRoot(userId).length) return { segments, writable: true };
+    if (startsWith(segments, TABLE_SHARED_SEGMENTS) && segments.length > TABLE_SHARED_SEGMENTS.length) return { segments, writable: false };
     if (await this.#isSharedWithGroup(segments, userId)) return { segments, writable: false };
     throw HttpError.forbidden("Sem acesso a esta nota");
   }
@@ -74,9 +79,10 @@ export class PlayerFileArea {
     return segments.join("/");
   }
 
+  /** New folders may be nested anywhere under the player's own folder (not at the folder root path itself). */
   newFolderTarget(userId: string, target: string): string {
     const segments = parseTarget(target);
-    if (!startsWith(segments, ownRoot(userId)) || segments.length === ownRoot(userId).length) throw HttpError.badRequest("Crie a pasta dentro da sua pasta");
+    if (!startsWith(segments, ownRoot(userId)) || segments.length <= ownRoot(userId).length) throw HttpError.badRequest("Crie a pasta dentro da sua pasta");
     return segments.join("/");
   }
 
@@ -88,14 +94,27 @@ export class PlayerFileArea {
     await this.sharing.setShared(userId, segments[root.length] as string, shared);
   }
 
-  /** The GM sees every player's folder (and may write in it) under "Pastas dos jogadores", each named after its owner. */
+  /** The GM sees every player's folder and the table shared folder under friendly labels. */
   async labelPlayerFolders(result: FileBrowseResult): Promise<FileBrowseResult> {
+    await this.storage.ensureTableSharedFolder();
     if (result.target === UPLOADS_ROOT) {
-      const dirs = result.dirs.includes(GROUP_PATH) ? result.dirs : [GROUP_PATH, ...result.dirs];
-      if (!result.dirs.includes(GROUP_PATH)) await this.storage.listFolder(GROUP_ROOT, null);
-      return { ...result, dirs, labels: { ...result.labels, [GROUP_PATH]: PLAYER_FOLDERS_LABEL } };
+      const dirs = [...result.dirs];
+      if (!dirs.includes(TABLE_SHARED_PATH)) dirs.unshift(TABLE_SHARED_PATH);
+      if (!dirs.includes(GROUP_PATH)) {
+        dirs.push(GROUP_PATH);
+        await this.storage.listFolder(GROUP_ROOT, null);
+      }
+      return {
+        ...result,
+        dirs,
+        labels: { ...result.labels, [GROUP_PATH]: PLAYER_FOLDERS_LABEL, [TABLE_SHARED_PATH]: TABLE_SHARED_LABEL },
+      };
     }
-    const labels: Record<string, string> = { ...result.labels };
+    const labels: Record<string, string> = { ...result.labels, [TABLE_SHARED_PATH]: TABLE_SHARED_LABEL };
+    if (result.target === TABLE_SHARED_PATH || result.target.startsWith(`${TABLE_SHARED_PATH}/`)) {
+      labels[TABLE_SHARED_PATH] = TABLE_SHARED_LABEL;
+      return { ...result, labels };
+    }
     if (result.target === GROUP_PATH) {
       labels[GROUP_PATH] = PLAYER_FOLDERS_LABEL;
       for (const directory of result.dirs) {
@@ -113,11 +132,33 @@ export class PlayerFileArea {
     const listing = await this.storage.listFolder(segments, extensions);
     const root = ownRoot(userId);
     const atRoot = segments.length === root.length;
-    const labels: Record<string, string> = { [root.join("/")]: OWN_FOLDER_LABEL, [GROUP_PATH]: SHARED_FOLDERS_LABEL };
+    const labels: Record<string, string> = {
+      [root.join("/")]: OWN_FOLDER_LABEL,
+      [GROUP_PATH]: SHARED_FOLDERS_LABEL,
+      [TABLE_SHARED_PATH]: TABLE_SHARED_LABEL,
+    };
     if (!atRoot) return { ...listing, writable: true, parent: segments.slice(0, -1).join("/"), labels };
     const shared = await this.sharing.sharedFoldersOf(userId);
     const shareable = Object.fromEntries(listing.dirs.map((directory) => [directory, shared.has(directory.split("/").pop() ?? "")]));
-    return { ...listing, dirs: [GROUP_PATH, ...listing.dirs], writable: true, parent: null, labels, shareable };
+    return {
+      ...listing,
+      dirs: [TABLE_SHARED_PATH, GROUP_PATH, ...listing.dirs],
+      writable: true,
+      parent: null,
+      labels,
+      shareable,
+    };
+  }
+
+  async #browseTableShared(userId: string, segments: readonly string[], extensions: ReadonlySet<string> | null): Promise<FileBrowseResult> {
+    const listing = await this.storage.listFolder(segments, extensions);
+    const atRoot = segments.length === TABLE_SHARED_SEGMENTS.length;
+    return {
+      ...listing,
+      writable: false,
+      parent: atRoot ? ownRoot(userId).join("/") : segments.slice(0, -1).join("/"),
+      labels: { [TABLE_SHARED_PATH]: TABLE_SHARED_LABEL },
+    };
   }
 
   async #browseGroup(userId: string): Promise<FileBrowseResult> {

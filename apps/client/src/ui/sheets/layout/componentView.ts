@@ -1,4 +1,5 @@
 import type { SheetComponent } from "@tabbletop/protocol";
+import { buildPortraitControl } from "../../actors/appearances";
 import { h } from "../../../views/dom";
 import type { BoardContext } from "./boardContext";
 import { storesValue } from "./componentCatalog";
@@ -20,7 +21,7 @@ function staticContent(context: BoardContext, component: SheetComponent): HTMLEl
     case "image":
       return component.src ? h("img", { class: "md-c-image", src: component.src, alt: component.label ?? "", loading: "lazy", decoding: "async" }) : h("div", { class: "md-c-image placeholder" }, h("i", { class: "fa-solid fa-image" }));
     case "portrait":
-      return h("img", { class: "md-c-image portrait", src: context.actor.img, alt: context.actor.name, loading: "lazy", decoding: "async" });
+      return buildPortraitControl(context.actor, context.editable);
     case "computed": {
       const value = component.key ? context.derived[component.key] : undefined;
       return h("output", { class: "md-c-computed", title: component.formula ?? "" }, formatDerived(value));

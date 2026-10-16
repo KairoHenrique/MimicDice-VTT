@@ -86,6 +86,7 @@ export class HostToolbar extends DomApplication {
         this.#button("fas fa-puzzle-piece", "Módulos", () => new ModuleManagement().render({ force: true }), "icon", "toolbar:modules"),
         this.#button("fas fa-users", "Jogadores", () => new UserManagement().render({ force: true }), "icon", "toolbar:users"),
         this.#button("fas fa-folder-open", "Arquivos", () => window.open("/rpgs", "_blank", "noopener"), "icon", "toolbar:files"),
+        this.#sharedFolderButton(),
       ),
     ];
   }
@@ -100,11 +101,29 @@ export class HostToolbar extends DomApplication {
     return button;
   }
 
+  #sharedFolderButton(): HTMLButtonElement {
+    const button = this.#button(
+      "fas fa-share-nodes",
+      "Pasta do mestre",
+      () =>
+        new FilePicker({
+          type: "any",
+          browseOnly: true,
+          current: "uploads/compartilhado",
+          window: { title: "Pasta do mestre", icon: "fa-solid fa-share-nodes" } as ApplicationConfiguration["window"],
+        }).render({ force: true }),
+      "icon",
+      "toolbar:shared-folder",
+    );
+    button.title = "Pasta do mestre: os jogadores veem o que você colocar aqui. Arraste arquivos ou pastas do Windows; dá para criar subpastas e apagar.";
+    return button;
+  }
+
   #playerGroups(): HTMLElement[] {
     const sessionBadge = isTableSessionOpen() ? null : h("span", { class: "map-locked-badge", title: "O mestre ainda não iniciou a sessão" }, h("i", { class: "fas fa-moon" }), " Sessão fechada");
     const badge = isMapLocked() ? h("span", { class: "map-locked-badge", title: "O mestre travou o mapa" }, h("i", { class: "fas fa-lock" }), " Mapa travado") : null;
     const folders = this.#button("fas fa-folder-open", "Minhas pastas", () => new FilePicker({ type: "any", browseOnly: true, window: { title: "Minhas pastas", icon: "fa-solid fa-folder-open" } as ApplicationConfiguration["window"] }).render({ force: true }), "compact", "toolbar:player-files");
-    folders.title = "Sua pasta de arquivos e as pastas que o grupo compartilhou.";
+    folders.title = "Sua pasta, a pasta do mestre e as pastas que o grupo compartilhou.";
     return [this.#group("Personagem", this.#characterButton(), playersSeeStatusPanel() ? this.#statusButton() : null, folders, sessionBadge, badge)];
   }
 

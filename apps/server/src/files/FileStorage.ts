@@ -6,6 +6,11 @@ import { HttpError } from "../errors/HttpError";
 import { contentMatchesExtension, isAllowedUploadExtension, isPlainText, NOTE_FILE_EXTENSIONS, uploadExtension } from "./uploadFileTypes";
 
 export const UPLOADS_ROOT = "uploads";
+/** Table-wide handout folder: the GM writes here; every player can browse it read-only. */
+export const TABLE_SHARED_FOLDER = "compartilhado";
+export const TABLE_SHARED_PATH = `${UPLOADS_ROOT}/${TABLE_SHARED_FOLDER}`;
+const PLAYER_UPLOADS_FOLDER = "players";
+const PROTECTED_UPLOAD_FOLDERS = new Set([PLAYER_UPLOADS_FOLDER, TABLE_SHARED_FOLDER]);
 const BROWSABLE_ROOTS: readonly string[] = [UPLOADS_ROOT, "modules", "systems"];
 const MAX_LISTED_ENTRIES = 2000;
 const MAX_PATH_DEPTH = 12;
@@ -127,9 +132,16 @@ export class FileStorage {
     return segments.join("/");
   }
 
+  /** Creates the table shared folder if it is missing so the GM and players always see it. */
+  async ensureTableSharedFolder(): Promise<string> {
+    await mkdir(this.#resolve([UPLOADS_ROOT, TABLE_SHARED_FOLDER]), { recursive: true });
+    return TABLE_SHARED_PATH;
+  }
+
   /**
-   * Removes files or folders under uploads. The uploads root itself cannot be deleted. Missing paths are skipped.
-   * Deeper paths are removed first so a folder is emptied before it is removed. Returns what was actually erased.
+   * Removes files or folders under uploads. The uploads root, the players root and the table shared root cannot be
+   * deleted (their contents can). Missing paths are skipped. Deeper paths are removed first so a folder is emptied
+   * before it is removed. Returns what was actually erased.
    */
   async deletePaths(targets: readonly string[]): Promise<string[]> {
     const unique = [...new Set(targets.map((target) => target.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "")).filter(Boolean))];
@@ -138,6 +150,9 @@ export class FileStorage {
     for (const target of unique) {
       const segments = writableSegments(target);
       if (segments.length < 2) throw HttpError.badRequest("Não é possível apagar a pasta uploads");
+      if (segments.length === 2 && PROTECTED_UPLOAD_FOLDERS.has(segments[1] as string)) {
+        throw HttpError.badRequest("Não é possível apagar esta pasta do sistema");
+      }
       const resolved = this.#resolve(segments);
       try {
         await stat(resolved);

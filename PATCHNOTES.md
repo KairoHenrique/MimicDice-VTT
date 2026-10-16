@@ -1,5 +1,11 @@
 # Notas de versão
 
+## 1.5.5
+
+- **Pasta do mestre:** pasta compartilhada (`uploads/compartilhado`) que os jogadores veem. No seletor de arquivos há atalho **Pasta do mestre**; o mestre também abre pelo botão na barra.
+- **Arquivos como no Windows:** arraste arquivos ou pastas do Explorer para o seletor (subpastas são recriadas), envie uma pasta inteira, crie subpastas e apague itens.
+- **Retrato na ficha:** clique ou arraste uma imagem na foto do personagem para trocar a aparência (ficha e token no mapa).
+
 ## 1.5.4
 
 - **Ficha de criatura:** os modelos padrão de NPC e inimigo passam a ser **Criatura (NPC)** e **Criatura (inimigo)**, com a planilha da mesa (atributos, PV, defesa, perícias, habilidades melee/ranged/físico/mágico, loot). PV, machucado, defesa e testes seguem o mesmo estilo de cálculos da ficha de jogador. Em fichas já criadas, reaplique o modelo em **Modelos**.

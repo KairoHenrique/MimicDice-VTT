@@ -1,9 +1,11 @@
-import { DialogV2, FilePicker, type MenuEntry } from "@tabbletop/api";
+import { DialogV2, FilePicker, normalizeDataPath, type MenuEntry } from "@tabbletop/api";
 import { ACTIVE_APPEARANCE_FLAG, APPEARANCES_FLAG, appearancesSchema, MAX_APPEARANCES, type ActorAppearance } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
 import { MIMICDICE_FLAG_SCOPE } from "./actorRoles";
 
 const FLAG_PATH = `flags.${MIMICDICE_FLAG_SCOPE}`;
+const PORTRAIT_IMAGE_PATTERN = /\.(png|jpe?g|webp|gif|avif|svg)$/i;
+const GM_PORTRAIT_FOLDER = "uploads/personagens";
 
 export function actorAppearances(actor: any): ActorAppearance[] {
   const parsed = appearancesSchema.safeParse(actor?.getFlag?.(MIMICDICE_FLAG_SCOPE, APPEARANCES_FLAG) ?? []);
@@ -43,9 +45,138 @@ export async function applyAppearance(actor: any, appearance: ActorAppearance): 
 
 function pickImage(current: string): Promise<string | null> {
   return new Promise((resolve) => {
-    const picker = new FilePicker.implementation({ type: "image", current, callback: (path: string) => resolve(path) });
+    const picker = new FilePicker.implementation({
+      type: "image",
+      current: current || "uploads/compartilhado",
+      callback: (path: string) => resolve(path),
+    });
     void picker.render({ force: true });
   });
+}
+
+function portraitFolder(): string {
+  return game.user.isGM ? GM_PORTRAIT_FOLDER : `uploads/players/${game.user.id}`;
+}
+
+function imagePathFromDrop(dataTransfer: DataTransfer): string | null {
+  const text = dataTransfer.getData("text/plain")?.trim();
+  if (!text) return null;
+  try {
+    const parsed = JSON.parse(text) as { texture?: { src?: unknown }; src?: unknown };
+    const candidate = parsed?.texture?.src ?? parsed?.src ?? null;
+    if (typeof candidate === "string") {
+      const path = normalizeDataPath(candidate);
+      return PORTRAIT_IMAGE_PATTERN.test(path) ? path : null;
+    }
+  } catch {
+    /* plain path */
+  }
+  const path = normalizeDataPath(text);
+  return PORTRAIT_IMAGE_PATTERN.test(path) ? path : null;
+}
+
+/** Sets the character picture (sheet + tokens). Updates the active appearance when there is one. */
+export async function setActorPortrait(actor: any, img: string): Promise<void> {
+  if (!canChangeAppearance(actor)) return;
+  const path = normalizeDataPath(img);
+  if (!PORTRAIT_IMAGE_PATTERN.test(path)) {
+    ui.notifications.warn("Escolha uma imagem (png, jpg, webp, gif, svg).");
+    return;
+  }
+  const appearances = actorAppearances(actor);
+  const activeId = activeAppearanceId(actor);
+  const active = appearances.find((appearance) => appearance.id === activeId);
+  if (active) {
+    await saveAppearances(
+      actor,
+      appearances.map((appearance) => (appearance.id === activeId ? { ...appearance, img: path } : appearance)),
+      activeId,
+    );
+    await applyAppearance(actor, { ...active, img: path });
+    return;
+  }
+  await actor.update({ img: path, "prototypeToken.texture.src": path });
+  const scenes: any[] = game.scenes?.contents ?? [];
+  const results = await Promise.allSettled(
+    scenes.map((scene) => {
+      const updates = (scene.tokens?.contents ?? [])
+        .filter((token: any) => token.actorId === actor.id && token.texture?.src !== path)
+        .map((token: any) => ({ _id: token.id, "texture.src": path }));
+      return updates.length > 0 ? scene.updateEmbeddedDocuments("Token", updates) : Promise.resolve([]);
+    }),
+  );
+  if (results.some((result) => result.status === "rejected")) {
+    ui.notifications.warn("A ficha mudou, mas algum token no mapa não pôde ser trocado agora (mapa travado ou sessão fechada).");
+  }
+}
+
+async function uploadPortraitFile(actor: any, file: File): Promise<void> {
+  if (!PORTRAIT_IMAGE_PATTERN.test(file.name)) {
+    ui.notifications.warn("Solte uma imagem (png, jpg, webp, gif, svg).");
+    return;
+  }
+  const folder = portraitFolder();
+  try {
+    await FilePicker.createDirectory("data", folder);
+  } catch {
+    /* already exists */
+  }
+  const result = await FilePicker.upload("data", folder, file, {}, { notify: true });
+  if (!result || typeof result !== "object") return;
+  await setActorPortrait(actor, result.path);
+}
+
+export async function pickAndSetPortrait(actor: any): Promise<void> {
+  if (!canChangeAppearance(actor)) return;
+  const path = await pickImage(actor.img ?? "");
+  if (path) await setActorPortrait(actor, path);
+}
+
+/** Sheet portrait: click to pick, or drag an image from Windows / the file picker. */
+export function buildPortraitControl(actor: any, editable: boolean): HTMLElement {
+  const canEdit = editable && canChangeAppearance(actor);
+  const image = h("img", {
+    class: "md-c-image portrait",
+    src: actor.img || "",
+    alt: actor.name || "Retrato",
+    loading: "lazy",
+    decoding: "async",
+    draggable: "false",
+  });
+  if (!canEdit) return image;
+  const button = h(
+    "button",
+    {
+      type: "button",
+      class: "md-portrait-drop",
+      title: "Clique para escolher ou arraste uma imagem do Windows / da pasta do mestre",
+      "aria-label": `Trocar retrato de ${actor.name || "personagem"}`,
+    },
+    image,
+    h("span", { class: "md-portrait-drop-hint", "aria-hidden": "true" }, h("i", { class: "fa-solid fa-image" }), " Arraste uma foto"),
+  );
+  button.addEventListener("click", () => void pickAndSetPortrait(actor).catch(() => ui.notifications.warn("Não foi possível trocar o retrato.")));
+  button.addEventListener("dragover", (event) => {
+    const transfer = event.dataTransfer;
+    if (!transfer || ![...transfer.types].some((type) => type === "Files" || type === "text/plain")) return;
+    event.preventDefault();
+    button.classList.add("is-drop-target");
+  });
+  button.addEventListener("dragleave", () => button.classList.remove("is-drop-target"));
+  button.addEventListener("drop", (event) => {
+    event.preventDefault();
+    button.classList.remove("is-drop-target");
+    const transfer = event.dataTransfer;
+    if (!transfer) return;
+    const file = transfer.files?.[0];
+    if (file) {
+      void uploadPortraitFile(actor, file).catch(() => ui.notifications.warn("Não foi possível enviar o retrato."));
+      return;
+    }
+    const path = imagePathFromDrop(transfer);
+    if (path) void setActorPortrait(actor, path).catch(() => ui.notifications.warn("Não foi possível trocar o retrato."));
+  });
+  return button;
 }
 
 /** The current picture becomes the first look, so switching back to it is always possible. */

@@ -30,24 +30,39 @@ describe("PlayerFileArea", () => {
   it("lets the GM see every upload folder, with the players' folders named after them", async () => {
     const uploads = await area.labelPlayerFolders(await storage.browse("uploads", null));
     expect(uploads.dirs).toContain("uploads/mapas");
+    expect(uploads.dirs[0]).toBe("uploads/compartilhado");
+    expect(uploads.labels?.["uploads/compartilhado"]).toBe("Pasta do mestre");
     expect(uploads.labels?.["uploads/players"]).toBe("Pastas dos jogadores");
     const players = await area.labelPlayerFolders(await storage.browse("uploads/players", null));
     expect(players.labels?.["uploads/players/bia"]).toBe("Pasta de Bia");
   });
 
-  it("never shows the GM's folders to a player", async () => {
+  it("keeps a player in their own folder and shows the GM handout folder", async () => {
     for (const target of ["", "uploads", "uploads/mapas", "modules", "uploads/players/bia/retratos"]) {
       const listing = await area.browse("ana", target, null);
       expect(listing.target).toBe("uploads/players/ana");
       expect(listing.files).toEqual([]);
-      expect(listing.dirs).toEqual(["uploads/players"]);
+      expect(listing.dirs).toEqual(["uploads/compartilhado", "uploads/players"]);
+      expect(listing.labels?.["uploads/compartilhado"]).toBe("Pasta do mestre");
     }
+  });
+
+  it("lets a player browse the GM handout folder read-only", async () => {
+    await storage.upload("uploads/compartilhado/mapas", "mesa.png", PNG_HEADER);
+    const shared = await area.browse("ana", "uploads/compartilhado", null);
+    expect(shared.target).toBe("uploads/compartilhado");
+    expect(shared.writable).toBe(false);
+    expect(shared.dirs).toContain("uploads/compartilhado/mapas");
+    const nested = await area.browse("ana", "uploads/compartilhado/mapas", null);
+    expect(nested.files).toEqual(["uploads/compartilhado/mapas/mesa.png"]);
+    expect(nested.writable).toBe(false);
+    expect(area.writableTarget("ana", "uploads/compartilhado")).toBe("uploads/players/ana");
   });
 
   it("shows only the folders another player shared, read-only", async () => {
     await area.setShared("bia", "uploads/players/bia/retratos", true);
     const own = await area.browse("ana", "", null);
-    expect(own.dirs).toEqual(["uploads/players"]);
+    expect(own.dirs).toEqual(["uploads/compartilhado", "uploads/players"]);
     expect(own.labels?.["uploads/players"]).toBe("Pastas compartilhadas");
     const group = await area.browse("ana", "uploads/players", null);
     expect(group.dirs).toEqual(["uploads/players/bia/retratos"]);
@@ -62,7 +77,7 @@ describe("PlayerFileArea", () => {
   it("marks the owner's shareable folders and keeps writes in their folder", async () => {
     await area.setShared("bia", "uploads/players/bia/retratos", true);
     const own = await area.browse("bia", "uploads/players/bia", null);
-    expect(own.dirs).toEqual(["uploads/players", "uploads/players/bia/rascunhos", "uploads/players/bia/retratos"]);
+    expect(own.dirs).toEqual(["uploads/compartilhado", "uploads/players", "uploads/players/bia/rascunhos", "uploads/players/bia/retratos"]);
     expect(own.shareable).toEqual({ "uploads/players/bia/rascunhos": false, "uploads/players/bia/retratos": true });
     expect(area.writableTarget("ana", "uploads/players/bia/retratos")).toBe("uploads/players/ana");
     expect(() => area.newFolderTarget("ana", "uploads/novapasta")).toThrow();
@@ -99,10 +114,19 @@ describe("FileStorage.deletePaths", () => {
     expect((await storage.browse("uploads/mapas", null)).dirs).toEqual([]);
   });
 
-  it("skips missing paths and refuses the uploads root or outside it", async () => {
+  it("skips missing paths and refuses protected roots or paths outside uploads", async () => {
     expect(await storage.deletePaths(["uploads/mapas/nao-existe.png"])).toEqual([]);
     await expect(storage.deletePaths(["uploads"])).rejects.toThrow();
+    await expect(storage.deletePaths(["uploads/players"])).rejects.toThrow();
+    await expect(storage.deletePaths(["uploads/compartilhado"])).rejects.toThrow();
     await expect(storage.deletePaths(["modules/x"])).rejects.toThrow();
     await expect(storage.deletePaths(["uploads/../config"])).rejects.toThrow();
+  });
+
+  it("creates the table shared folder and allows deleting its contents", async () => {
+    expect(await storage.ensureTableSharedFolder()).toBe("uploads/compartilhado");
+    await storage.upload("uploads/compartilhado/sala", "a.png", PNG_HEADER);
+    expect(await storage.deletePaths(["uploads/compartilhado/sala/a.png"])).toEqual(["uploads/compartilhado/sala/a.png"]);
+    expect(await storage.deletePaths(["uploads/compartilhado/sala"])).toEqual(["uploads/compartilhado/sala"]);
   });
 });

@@ -1,7 +1,9 @@
 import { currentConfig, currentUi } from "../../runtime";
 import { parseS3URL } from "../../utils/routes";
 import { ApplicationV2, type ApplicationConfiguration, type RenderOptions } from "../ApplicationV2";
+import { DialogV2 } from "../DialogV2";
 import { createFilePickerView, type FilePickerViewModel } from "./filePickerView";
+import { joinUploadFolder, MAX_FOLDER_UPLOAD_FILES, relativeUploadsFromDataTransfer, relativeUploadsFromFileList, trimFolderUpload, type RelativeUpload } from "./folderUpload";
 import { NoteFileEditor } from "./NoteFileEditor";
 
 const NOTE_FILE_PATTERN = /\.(md|txt)$/i;
@@ -272,7 +274,10 @@ export class FilePicker extends ApplicationV2 {
         else void this._onSubmit(new Event("submit"));
       },
       upload: (files) => void this.#uploadFiles(files),
+      uploadRelative: (files) => void this.#uploadRelative(relativeUploadsFromFileList(files)),
+      uploadDataTransfer: (dataTransfer) => void relativeUploadsFromDataTransfer(dataTransfer).then((uploads) => this.#uploadRelative(uploads)),
       createFolder: (name) => void this.#createFolder(name),
+      deletePaths: (paths) => void this.#deletePaths(paths),
       share: (path, shared) => void this.#share(path, shared),
       createNote: () => this.#openNoteEditor(),
     });
@@ -350,13 +355,58 @@ export class FilePicker extends ApplicationV2 {
   }
 
   async #uploadFiles(files: readonly File[]): Promise<void> {
-    let lastUploaded: string | null = null;
-    for (const file of files) {
-      const response = await FilePicker.implementation.upload("data", this.target, file, {}, { notify: true });
-      if (response) lastUploaded = response.path;
+    await this.#uploadRelative(files.map((file) => ({ file, relativeDir: "" })));
+  }
+
+  /** Uploads files into the current folder, recreating relative subfolders like Windows Explorer. */
+  async #uploadRelative(uploads: RelativeUpload[]): Promise<void> {
+    const { uploads: trimmed, truncated } = trimFolderUpload(uploads);
+    if (trimmed.length === 0) return;
+    if (truncated) currentUi()?.notifications?.warn(`Só os primeiros ${MAX_FOLDER_UPLOAD_FILES} arquivos serão enviados.`);
+    const dirs = new Set(trimmed.map((entry) => entry.relativeDir).filter(Boolean));
+    for (const relativeDir of [...dirs].sort((left, right) => left.split("/").length - right.split("/").length)) {
+      try {
+        await FilePicker.createDirectory("data", joinUploadFolder(this.target, relativeDir));
+      } catch {
+        /* parent may already exist */
+      }
     }
+    let stored = 0;
+    let lastUploaded: string | null = null;
+    for (const { file, relativeDir } of trimmed) {
+      const response = await FilePicker.implementation.upload("data", joinUploadFolder(this.target, relativeDir), file, {}, { notify: false });
+      if (!response || typeof response !== "object") continue;
+      stored += 1;
+      lastUploaded = response.path;
+    }
+    if (stored < trimmed.length) currentUi()?.notifications?.warn(`${trimmed.length - stored} arquivo(s) não foram enviados.`);
+    else if (stored) currentUi()?.notifications?.info(stored === 1 ? "1 arquivo enviado." : `${stored} arquivos enviados.`);
     await this.browse(this.target);
     if (lastUploaded) this.#select(lastUploaded);
+  }
+
+  async #deletePaths(paths: readonly string[]): Promise<void> {
+    const targets = paths.length > 0 ? [...paths] : this.selectedPath ? [this.selectedPath] : [];
+    const deletable = targets.filter((path) => path && path !== this.target && path.startsWith("uploads/"));
+    if (deletable.length === 0) {
+      currentUi()?.notifications?.warn("Selecione um arquivo ou pasta para apagar.");
+      return;
+    }
+    const label = deletable.length === 1 ? deletable[0]!.split("/").pop() : `${deletable.length} itens`;
+    const confirmed = await DialogV2.confirm({
+      window: { title: "Apagar" },
+      content: `<p>Apagar <strong>${label}</strong>? Isso não pode ser desfeito.</p>`,
+      yes: { label: "Apagar", icon: "fa-solid fa-trash" },
+      no: { label: "Cancelar" },
+    });
+    if (confirmed !== true) return;
+    try {
+      const deleted = await FilePicker.delete(deletable);
+      if (deleted.includes(this.selectedPath)) this.selectedPath = "";
+      await this.browse(this.target);
+    } catch {
+      /* FilePicker.delete already notifies */
+    }
   }
 
   async #createFolder(name: string): Promise<void> {

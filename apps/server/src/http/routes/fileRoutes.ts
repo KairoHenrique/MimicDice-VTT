@@ -64,6 +64,7 @@ export function createFileRoutes(context: ServerContext, storage: FileStorage): 
     const query = parseQuery(browseFilesQuerySchema, request);
     const extensions = parseExtensionFilter(query.extensions);
     const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
+    await storage.ensureTableSharedFolder();
     response.json(isGameMaster ? await area.labelPlayerFolders(await storage.browse(query.target, extensions)) : await area.browse(userId, query.target, extensions));
   });
 

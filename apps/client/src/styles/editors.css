@@ -81,6 +81,31 @@
   position: relative;
 }
 
+.file-picker-delete {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-danger, #c0392b);
+}
+
+.file-picker-entry.file {
+  position: relative;
+}
+
+.file-picker-button.danger {
+  color: var(--color-danger, #c0392b);
+}
+
+.file-picker-toolbar {
+  flex-wrap: wrap;
+}
+
 .file-picker-share {
   position: absolute;
   top: 4px;

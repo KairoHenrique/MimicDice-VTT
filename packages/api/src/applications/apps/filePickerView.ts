@@ -16,7 +16,11 @@ export interface FilePickerViewHandlers {
   select(path: string): void;
   confirm(path: string): void;
   upload(files: readonly File[]): void;
+  /** Files/folders from Windows (or a folder picker), keeping relative subfolders. */
+  uploadRelative(files: FileList | readonly File[], fromFolderPicker?: boolean): void;
+  uploadDataTransfer(dataTransfer: DataTransfer): void;
   createFolder(name: string): void;
+  deletePaths(paths: readonly string[]): void;
   share(path: string, shared: boolean): void;
   createNote(): void;
 }
@@ -34,8 +38,8 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, className?: stri
   return created;
 }
 
-function iconButton(icon: string, label: string, onClick: () => void): HTMLButtonElement {
-  const button = element("button", "file-picker-button");
+function iconButton(icon: string, label: string, onClick: () => void, className = "file-picker-button"): HTMLButtonElement {
+  const button = element("button", className);
   button.type = "button";
   button.append(element("i", icon), document.createTextNode(` ${label}`));
   button.addEventListener("click", onClick);
@@ -45,6 +49,9 @@ function iconButton(icon: string, label: string, onClick: () => void): HTMLButto
 function baseName(path: string): string {
   return path.split("/").pop() ?? path;
 }
+
+const UPLOADS_ROOT = "uploads";
+const TABLE_SHARED_PATH = "uploads/compartilhado";
 
 function buildToolbar(model: FilePickerViewModel, handlers: FilePickerViewHandlers): HTMLElement {
   const toolbar = element("div", "file-picker-toolbar");
@@ -56,6 +63,16 @@ function buildToolbar(model: FilePickerViewModel, handlers: FilePickerViewHandle
   const breadcrumb = element("span", "file-picker-path", label ?? `/${target}`);
   breadcrumb.title = `/${target}`;
   toolbar.append(upButton, breadcrumb);
+  // Quick jumps so "Selecionar arquivo" always reaches the GM handout folder and the uploads root.
+  if (target.startsWith(UPLOADS_ROOT) || target === "") {
+    const shared = iconButton("fa-solid fa-share-nodes", "Pasta do mestre", () => handlers.navigate(TABLE_SHARED_PATH), "file-picker-button file-picker-jump");
+    shared.title = "Abrir a pasta do mestre (arquivos compartilhados com a mesa)";
+    shared.disabled = target === TABLE_SHARED_PATH || target.startsWith(`${TABLE_SHARED_PATH}/`);
+    const uploads = iconButton("fa-solid fa-hard-drive", "Uploads", () => handlers.navigate(UPLOADS_ROOT), "file-picker-button file-picker-jump");
+    uploads.title = "Voltar à raiz de uploads";
+    uploads.disabled = target === UPLOADS_ROOT;
+    toolbar.append(shared, uploads);
+  }
   return toolbar;
 }
 
@@ -76,13 +93,39 @@ function shareToggle(path: string, shared: boolean, handlers: FilePickerViewHand
   return button;
 }
 
+function deleteEntryButton(path: string, handlers: FilePickerViewHandlers): HTMLButtonElement {
+  const button = element("button", "file-picker-delete");
+  button.type = "button";
+  button.title = "Apagar";
+  button.setAttribute("aria-label", `Apagar ${baseName(path)}`);
+  button.append(element("i", "fa-solid fa-trash"));
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    handlers.deletePaths([path]);
+  });
+  return button;
+}
+
 function buildDirectoryEntry(path: string, model: FilePickerViewModel, handlers: FilePickerViewHandlers): HTMLElement {
   const entry = element("li", "file-picker-entry directory");
   entry.title = path;
+  entry.dataset.filePath = path;
+  entry.classList.toggle("selected", path === model.selectedPath);
   entry.append(element("i", "fa-solid fa-folder"), element("span", "file-picker-name", model.result.labels?.[path] ?? baseName(path)));
   const shared = model.result.shareable?.[path];
   if (shared !== undefined) entry.append(shareToggle(path, shared, handlers));
-  entry.addEventListener("click", () => handlers.navigate(path));
+  if (model.canUpload) entry.append(deleteEntryButton(path, handlers));
+  entry.addEventListener("click", (event) => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey) {
+      handlers.select(path);
+      return;
+    }
+    handlers.navigate(path);
+  });
+  entry.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    handlers.select(path);
+  });
   return entry;
 }
 
@@ -112,6 +155,7 @@ function buildFileEntry(path: string, model: FilePickerViewModel, handlers: File
   entry.title = path;
   entry.classList.toggle("selected", path === model.selectedPath);
   entry.append(buildFilePreview(path, model), element("span", "file-picker-name", baseName(path)));
+  if (model.canUpload) entry.append(deleteEntryButton(path, handlers));
   entry.addEventListener("click", () => handlers.select(path));
   entry.addEventListener("dblclick", () => handlers.confirm(path));
   if (IMAGE_PATTERN.test(path) || VIDEO_PATTERN.test(path)) {
@@ -135,7 +179,7 @@ function buildListing(model: FilePickerViewModel, handlers: FilePickerViewHandle
   const list = element("ul", "file-picker-listing");
   for (const directory of model.result.dirs) list.append(buildDirectoryEntry(directory, model, handlers));
   if (model.type !== "folder") for (const file of model.result.files) list.append(buildFileEntry(file, model, handlers));
-  if (list.childElementCount === 0) list.append(element("li", "file-picker-empty", "Pasta vazia."));
+  if (list.childElementCount === 0) list.append(element("li", "file-picker-empty", "Pasta vazia. Arraste arquivos ou pastas do Windows para cá."));
   return list;
 }
 
@@ -147,6 +191,17 @@ function buildUploadControls(handlers: FilePickerViewHandlers): HTMLElement {
   fileInput.hidden = true;
   fileInput.addEventListener("change", () => {
     if (fileInput.files?.length) handlers.upload(Array.from(fileInput.files));
+    fileInput.value = "";
+  });
+  const folderPicker = element("input");
+  folderPicker.type = "file";
+  folderPicker.multiple = true;
+  folderPicker.hidden = true;
+  folderPicker.setAttribute("webkitdirectory", "");
+  folderPicker.setAttribute("directory", "");
+  folderPicker.addEventListener("change", () => {
+    if (folderPicker.files?.length) handlers.uploadRelative(folderPicker.files, true);
+    folderPicker.value = "";
   });
   const folderInput = element("input", "file-picker-folder-name");
   folderInput.type = "text";
@@ -154,10 +209,13 @@ function buildUploadControls(handlers: FilePickerViewHandlers): HTMLElement {
   folderInput.placeholder = "Nova pasta";
   controls.append(
     fileInput,
+    folderPicker,
     iconButton("fa-solid fa-upload", "Enviar arquivo", () => fileInput.click()),
+    iconButton("fa-solid fa-folder-open", "Enviar pasta", () => folderPicker.click()),
     iconButton("fa-solid fa-file-pen", "Nova nota", () => handlers.createNote()),
     folderInput,
     iconButton("fa-solid fa-folder-plus", "Criar", () => handlers.createFolder(folderInput.value)),
+    iconButton("fa-solid fa-trash", "Apagar", () => handlers.deletePaths([]), "file-picker-button danger"),
   );
   return controls;
 }
@@ -187,10 +245,9 @@ function enableDropUpload(root: HTMLElement, handlers: FilePickerViewHandlers): 
   root.addEventListener("dragleave", () => root.classList.remove("drop-target"));
   root.addEventListener("drop", (event) => {
     root.classList.remove("drop-target");
-    const files = event.dataTransfer?.files;
-    if (!files?.length) return;
+    if (!event.dataTransfer?.files?.length) return;
     event.preventDefault();
-    handlers.upload(Array.from(files));
+    handlers.uploadDataTransfer(event.dataTransfer);
   });
 }
 
@@ -200,6 +257,8 @@ export function createFilePickerView(model: FilePickerViewModel, handlers: FileP
   if (model.canUpload) {
     root.append(buildUploadControls(handlers));
     enableDropUpload(root, handlers);
+    const hint = element("p", "file-picker-hint hint", "Arraste arquivos ou pastas do Windows para cá. Subpastas são recriadas. Delete apaga o item selecionado.");
+    root.append(hint);
   }
   if (model.browseOnly) root.append(element("p", "file-picker-hint hint", "Clique duas vezes num arquivo para abrir: notas abrem para editar, PDFs e imagens em outra janela."));
   else root.append(buildFooter(model, handlers));
