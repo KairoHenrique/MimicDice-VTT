@@ -91,12 +91,32 @@ export class FunctionTerm extends RollTerm {
   }
 
   override async _evaluateAsync(options: RollTermEvaluateOptions): Promise<void> {
+    if (this.fn === "if" && this.terms.length >= 2) {
+      const conditionRoll = rollFactory().create(this.terms[0]!);
+      await conditionRoll.evaluate(options);
+      const branch = Number(conditionRoll.total) !== 0 ? this.terms[1]! : (this.terms[2] ?? "0");
+      const valueRoll = rollFactory().create(branch);
+      await valueRoll.evaluate(options);
+      this.rolls = [conditionRoll, valueRoll];
+      this.result = Number(valueRoll.total);
+      return;
+    }
     this.rolls = this.terms.map((term) => rollFactory().create(term));
     for (const roll of this.rolls) await roll.evaluate(options);
     this.#applyFunction();
   }
 
   override _evaluateSync(options: RollTermEvaluateOptions): void {
+    if (this.fn === "if" && this.terms.length >= 2) {
+      const conditionRoll = rollFactory().create(this.terms[0]!);
+      conditionRoll.evaluateSync(options);
+      const branch = Number(conditionRoll.total) !== 0 ? this.terms[1]! : (this.terms[2] ?? "0");
+      const valueRoll = rollFactory().create(branch);
+      valueRoll.evaluateSync(options);
+      this.rolls = [conditionRoll, valueRoll];
+      this.result = Number(valueRoll.total);
+      return;
+    }
     this.rolls = this.terms.map((term) => rollFactory().create(term));
     for (const roll of this.rolls) roll.evaluateSync(options);
     this.#applyFunction();

@@ -32,10 +32,12 @@ function derivedFor(overrides: Record<string, unknown> = {}): Record<string, num
   return { ...derived, pv_maximo: barMaximum("pv") };
 }
 
-describe("creature sheet model", () => {
-  it("ships valid NPC and enemy models with the same board", () => {
+describe("NPC / Inimigo sheet model", () => {
+  it("ships matching default NPC and enemy models", () => {
     const npc = creatureNpcPreset();
     const enemy = creatureEnemyPreset();
+    expect(npc.name).toBe("NPC");
+    expect(enemy.name).toBe("Inimigo");
     expect(sheetTemplateSchema.safeParse(npc).success).toBe(true);
     expect(sheetTemplateSchema.safeParse(enemy).success).toBe(true);
     expect(npc.layout).toEqual(enemy.layout);
@@ -44,6 +46,9 @@ describe("creature sheet model", () => {
         expect(evaluate(component.formula, {}), component.key).not.toBeNull();
       }
     }
+    const agility = allComponents(npc.layout).find((component) => component.key === "agilidade");
+    expect(agility?.formula).toContain("2d20kl");
+    expect(agility?.formula).toContain("d20kh");
   });
 
   it("matches the creature spreadsheet for a new level 1 creature", () => {
@@ -52,10 +57,8 @@ describe("creature sheet model", () => {
     expect(derived.machucado).toBe(4);
     expect(derived.defesa).toBe(11);
     expect(derived.pontos_de_pericia).toBe(15);
-    expect(derived.pontos_de_atributo).toBe(0);
-    expect(derived.dados_do_teste).toBe(1);
-    expect(derived.bonus_de_acerto).toBe(0);
-    expect(derived.dados_extras_de_dano).toBe(0);
+    expect(derived.bloqueio).toBe(0);
+    expect(derived.esquiva).toBe(0);
   });
 
   it("scales PV, machucado and defense with vigor, level and skills", () => {
@@ -64,10 +67,6 @@ describe("creature sheet model", () => {
       vigor: 2,
       intelecto: 2,
       defesa_bonus: 1,
-      melee: true,
-      dano_mais: true,
-      hab_forca: true,
-      forca: 3,
       pericias: { luta: 5, reflexos: 2, fortitude: 4 },
     });
     expect(mid.pv_maximo).toBe((7 + 2) * 3);
@@ -75,9 +74,6 @@ describe("creature sheet model", () => {
     expect(mid.defesa).toBe(10 + 2 + 1);
     expect(mid.bloqueio).toBe(4);
     expect(mid.esquiva).toBe(mid.defesa);
-    expect(mid.dados_do_teste).toBe(3);
-    expect(mid.bonus_de_acerto).toBe(5);
-    expect(mid.dados_extras_de_dano).toBe(1);
     expect(mid.pontos_de_pericia).toBe(15 - 11);
   });
 });

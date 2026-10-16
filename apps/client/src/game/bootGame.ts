@@ -28,6 +28,7 @@ import { installNoteViewer } from "../ui/notes/NoteViewer";
 import { registerContextHelp } from "../ui/help/contextHelp";
 import { installScenePause } from "./scenePause";
 import { installTableSession } from "./tableSession";
+import { installTabSyncGuard } from "./tabSync";
 import { registerPuppetControl } from "./puppetControl";
 import { installTokenDragRule } from "./tableRules";
 import { installCombatTurnBanner } from "../ui/combat/combatTurnBanner";
@@ -115,6 +116,7 @@ export async function bootGame(root: HTMLElement): Promise<void> {
     return;
   }
   socket.on(SOCKET_EVENTS.WORLD_RELOADED, () => window.location.reload());
+  installTabSyncGuard(socket);
   const snapshot = await requestWorldSnapshot(socket);
   prepareGameLayout(root);
 

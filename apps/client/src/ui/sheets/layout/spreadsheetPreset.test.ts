@@ -32,18 +32,20 @@ function derivedFor(overrides: Record<string, unknown> = {}): Record<string, num
   return { ...derived, pv_maximo: barMaximum("pv"), pe_maximo: barMaximum("pe") };
 }
 
-describe("spreadsheet sheet model", () => {
-  it("is a valid model whose formulas all fit", () => {
+describe("Player sheet model", () => {
+  it("is the default player model with valid formulas", () => {
     const template = spreadsheetPreset();
+    expect(template.name).toBe("Player");
+    expect(template.role).toBe("player");
     expect(sheetTemplateSchema.safeParse(template).success).toBe(true);
     for (const component of allComponents(template.layout)) {
       if (component.formula && (component.kind === "computed" || component.kind === "resource")) expect(evaluate(component.formula, {}), component.key).not.toBeNull();
     }
   });
 
-  it("matches the spreadsheet for a new level 1 Brutamonte", () => {
+  it("matches the Player spreadsheet for a new level 1 Brutamonte", () => {
     const derived = derivedFor();
-    expect(derived.pontos_de_atributo).toBe(6);
+    expect(derived.pontos_de_atributo).toBe(4);
     expect(derived.inventario_maximo).toBe(20);
     expect(derived.pv_maximo).toBe(16);
     expect(derived.pe_maximo).toBe(6);

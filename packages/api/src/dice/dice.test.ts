@@ -62,6 +62,20 @@ describe("Roll", () => {
     expect(roll.dice[0].results.find((result) => result.result === 4)?.discarded).toBe(true);
   });
 
+  it("attribute 0 rolls two dice and keeps the lowest; otherwise keeps the highest", async () => {
+    withFaces(20, [3, 18]);
+    const atZero = await new Roll("if(eq(@agilidade, 0), 2d20kl, (@agilidade)d20kh) + @pericias.luta", { agilidade: 0, pericias: { luta: 2 } }).evaluate();
+    expect(atZero.total).toBe(5);
+    expect(atZero.dice).toHaveLength(1);
+    expect(atZero.dice[0].results).toHaveLength(2);
+
+    withFaces(20, [4, 17, 9]);
+    const withPoints = await new Roll("if(eq(@agilidade, 0), 2d20kl, (@agilidade)d20kh) + @pericias.luta", { agilidade: 3, pericias: { luta: 1 } }).evaluate();
+    expect(withPoints.total).toBe(18);
+    expect(withPoints.dice).toHaveLength(1);
+    expect(withPoints.dice[0].results).toHaveLength(3);
+  });
+
   it("explodes, rerolls and counts successes", async () => {
     withFaces(6, [6, 2, 3]);
     expect((await new Roll("1d6x").evaluate()).total).toBe(8);

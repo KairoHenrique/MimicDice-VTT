@@ -14,13 +14,13 @@ function creaturePreset(id: string, name: string, role: ActorRole, description: 
   };
 }
 
-/** Default NPC sheet: the table's creature spreadsheet, same layout as the enemy model. */
+/** Default NPC sheet: same board as the enemy model. */
 export function creatureNpcPreset(): SheetTemplate {
   return creaturePreset(
     CREATURE_NPC_PRESET_ID,
-    "Criatura (NPC)",
+    "NPC",
     "npc",
-    "Ficha da planilha de criatura: tipo, atributos, PV, defesa, perícias, habilidades (melee/ranged/físico/mágico), loot e descrição.",
+    "Ficha padrão de NPC: tipo, atributos (0 = 2d20 menor, 1+ = Nd20 maior), PV, defesa, perícias, habilidades, loot e descrição.",
   );
 }
 
@@ -28,8 +28,8 @@ export function creatureNpcPreset(): SheetTemplate {
 export function creatureEnemyPreset(): SheetTemplate {
   return creaturePreset(
     CREATURE_ENEMY_PRESET_ID,
-    "Criatura (inimigo)",
+    "Inimigo",
     "enemy",
-    "Ficha da planilha de criatura: tipo, atributos, PV, defesa, perícias, habilidades (melee/ranged/físico/mágico), loot e descrição.",
+    "Ficha padrão de inimigo: tipo, atributos (0 = 2d20 menor, 1+ = Nd20 maior), PV, defesa, perícias, habilidades, loot e descrição.",
   );
 }

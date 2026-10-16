@@ -1,124 +1,418 @@
 import type { SheetPage } from "@tabbletop/protocol";
 
-/**
- * Ficha de criatura/NPC/inimigo alinhada à planilha da mesa e ao padrão da ficha de jogador
- * (atributos Nd20, PV por vigor×nível, perícias, teste/dano de habilidade).
- */
+/** Default NPC/enemy sheet: creature board from the table spreadsheet. */
 export const CREATURE_SHEET_PAGES: readonly SheetPage[] = [
   {
-    id: "page1",
-    title: "Criatura",
-    components: [
-      { id: "cp1", kind: "portrait", x: 0, y: 0, w: 3, h: 4 },
-      { id: "cp2", kind: "text", x: 3, y: 0, w: 5, h: 2, key: "tipo_de_criatura", label: "Tipo de criatura" },
-      { id: "cp3", kind: "number", x: 8, y: 0, w: 2, h: 2, key: "nivel", label: "Nível", min: 0, initial: 1, rollable: false },
-      { id: "cp4", kind: "number", x: 10, y: 0, w: 2, h: 2, key: "movimento", label: "Mov", min: 0, initial: 9, rollable: false },
-      { id: "cp5", kind: "text", x: 3, y: 2, w: 5, h: 2, key: "fraqueza", label: "Fraqueza" },
-      { id: "cp6", kind: "text", x: 8, y: 2, w: 3, h: 2, key: "sentidos", label: "Sentidos", initial: "especial" },
-      { id: "cp7", kind: "checkbox", x: 11, y: 2, w: 1, h: 2, key: "especial", label: "Esp." },
-
-      { id: "cp8", kind: "title", x: 0, y: 4, w: 12, h: 1, content: "Atributos" },
-      { id: "cp9", kind: "number", x: 0, y: 5, w: 2, h: 2, key: "agilidade", label: "Agilidade", formula: "(max(@agilidade, 1))d20", min: 0, initial: 1, hint: "Rola um d20 por ponto e fica com o maior", rollMode: "highest" },
-      { id: "cp10", kind: "number", x: 2, y: 5, w: 2, h: 2, key: "forca", label: "Força", formula: "(max(@forca, 1))d20", min: 0, initial: 1, hint: "Rola um d20 por ponto e fica com o maior", rollMode: "highest" },
-      { id: "cp11", kind: "number", x: 4, y: 5, w: 2, h: 2, key: "intelecto", label: "Intelecto", formula: "(max(@intelecto, 1))d20", min: 0, initial: 1, hint: "Rola um d20 por ponto e fica com o maior", rollMode: "highest" },
-      { id: "cp12", kind: "number", x: 6, y: 5, w: 2, h: 2, key: "presenca", label: "Presença", formula: "(max(@presenca, 1))d20", min: 0, initial: 1, hint: "Rola um d20 por ponto e fica com o maior", rollMode: "highest" },
-      { id: "cp13", kind: "number", x: 8, y: 5, w: 2, h: 2, key: "vigor", label: "Vigor", formula: "(max(@vigor, 1))d20", min: 0, initial: 1, hint: "Rola um d20 por ponto e fica com o maior", rollMode: "highest" },
-      { id: "cp14", kind: "computed", x: 10, y: 5, w: 2, h: 2, key: "pontos_de_atributo", label: "Pontos livres", formula: "floor(@nivel ** 1.2 + 4 - (@agilidade + @forca + @intelecto + @presenca + @vigor))", style: { size: "sm" } },
-
-      { id: "cp15", kind: "title", x: 0, y: 7, w: 12, h: 1, content: "Status" },
-      { id: "cp16", kind: "resource", x: 0, y: 8, w: 6, h: 2, key: "pv", label: "PV", formula: "floor((7 + @vigor) * @nivel)", min: 0, style: { accent: "#c0392b" }, initial: 8 },
-      { id: "cp17", kind: "computed", x: 6, y: 8, w: 3, h: 2, key: "machucado", label: "Machucado", formula: "floor(((7 + @vigor) * @nivel) / 2)", hint: "Metade do PV máximo" },
-      { id: "cp18", kind: "number", x: 9, y: 8, w: 3, h: 2, key: "dano_recebido", label: "Dano recebido", min: 0, initial: 0, rollable: false },
-      { id: "cp19", kind: "computed", x: 0, y: 10, w: 3, h: 2, key: "defesa", label: "Defesa", formula: "10 + @intelecto + @defesa_bonus" },
-      { id: "cp20", kind: "number", x: 3, y: 10, w: 3, h: 2, key: "defesa_bonus", label: "DEF bônus", min: 0, initial: 0, rollable: false },
-      { id: "cp21", kind: "computed", x: 6, y: 10, w: 3, h: 2, key: "bloqueio", label: "Bloqueio", formula: "@pericias.fortitude", hint: "0 = sem bloqueio" },
-      { id: "cp22", kind: "computed", x: 9, y: 10, w: 3, h: 2, key: "esquiva", label: "Esquiva", formula: "if(gt(@pericias.reflexos, 0), @defesa, 0)", hint: "0 = sem esquiva" },
-      { id: "cp23", kind: "text", x: 0, y: 12, w: 4, h: 2, key: "resistencia", label: "Resistência" },
-      { id: "cp24", kind: "text", x: 4, y: 12, w: 4, h: 2, key: "imunidade", label: "Imunidade" },
-      { id: "cp25", kind: "text", x: 8, y: 12, w: 4, h: 2, key: "vulneravel", label: "Vulnerável" },
-
-      { id: "cp26", kind: "title", x: 0, y: 14, w: 12, h: 1, content: "Perícias" },
-      { id: "cp27", kind: "computed", x: 9, y: 15, w: 3, h: 2, key: "pontos_de_pericia", label: "Pontos livres", formula: "15 - @pericias_total" },
-      { id: "cp28", kind: "roll", x: 9, y: 17, w: 3, h: 2, label: "Percepção", formula: "1d20 + @pericias.percepcao" },
-      { id: "cp29", kind: "roll", x: 9, y: 19, w: 3, h: 2, label: "Iniciativa", formula: "1d20 + @pericias.iniciativa" },
+    "id": "6o09a0n9u",
+    "title": "Criatura",
+    "components": [
       {
-        id: "cp30",
-        kind: "skills",
-        x: 0,
-        y: 15,
-        w: 9,
-        h: 10,
-        key: "pericias",
-        label: "Perícias",
-        formula: "1d20 + @valor",
-        min: 0,
-        initial: 0,
-        skills: [
-          { key: "atletismo", label: "Atletismo" },
-          { key: "fortitude", label: "Fortitude" },
-          { key: "furtividade", label: "Furtividade" },
-          { key: "iniciativa", label: "Iniciativa" },
-          { key: "luta", label: "Luta" },
-          { key: "ocultismo", label: "Ocultismo" },
-          { key: "percepcao", label: "Percepção" },
-          { key: "pontaria", label: "Pontaria" },
-          { key: "reflexos", label: "Reflexos" },
-          { key: "religiao", label: "Religião" },
-          { key: "vontade", label: "Vontade" },
-        ],
-        skillColumns: 2,
-        skillStyle: "number",
+        "id": "mizrilw85",
+        "kind": "portrait",
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 6
       },
-    ],
+      {
+        "id": "rlm6nn09e",
+        "kind": "text",
+        "x": 3,
+        "y": 2,
+        "w": 5,
+        "h": 2,
+        "key": "tipo_de_criatura",
+        "label": "Tipo de criatura"
+      },
+      {
+        "id": "5owkgd8mn",
+        "kind": "number",
+        "x": 8,
+        "y": 2,
+        "w": 2,
+        "h": 2,
+        "key": "nivel",
+        "label": "Nível",
+        "min": 0,
+        "initial": 1,
+        "rollable": false
+      },
+      {
+        "id": "5r9ktez5f",
+        "kind": "number",
+        "x": 10,
+        "y": 2,
+        "w": 2,
+        "h": 2,
+        "key": "movimento",
+        "label": "Mov",
+        "min": 0,
+        "initial": 9,
+        "rollable": false
+      },
+      {
+        "id": "2bm4wdra1",
+        "kind": "text",
+        "x": 3,
+        "y": 4,
+        "w": 5,
+        "h": 2,
+        "key": "fraqueza",
+        "label": "Fraqueza"
+      },
+      {
+        "id": "1r590qu0k",
+        "kind": "text",
+        "x": 8,
+        "y": 4,
+        "w": 2,
+        "h": 2,
+        "key": "sentidos",
+        "label": "Sentidos",
+        "initial": "especial"
+      },
+      {
+        "id": "mmj82n6v2",
+        "kind": "number",
+        "x": 1,
+        "y": 6,
+        "w": 2,
+        "h": 2,
+        "key": "agilidade",
+        "label": "Agilidade",
+        "formula": "if(eq(@agilidade, 0), 2d20kl, (@agilidade)d20kh)",
+        "min": 0,
+        "initial": 1,
+        "hint": "Com 0: 2d20 e fica com o menor. Com 1+: um d20 por ponto e fica com o maior."
+      },
+      {
+        "id": "m2d9lzc40",
+        "kind": "number",
+        "x": 3,
+        "y": 6,
+        "w": 2,
+        "h": 2,
+        "key": "forca",
+        "label": "Força",
+        "formula": "if(eq(@forca, 0), 2d20kl, (@forca)d20kh)",
+        "min": 0,
+        "initial": 1,
+        "hint": "Com 0: 2d20 e fica com o menor. Com 1+: um d20 por ponto e fica com o maior."
+      },
+      {
+        "id": "m6qyd63iy",
+        "kind": "number",
+        "x": 5,
+        "y": 6,
+        "w": 2,
+        "h": 2,
+        "key": "intelecto",
+        "label": "Intelecto",
+        "formula": "if(eq(@intelecto, 0), 2d20kl, (@intelecto)d20kh)",
+        "min": 0,
+        "initial": 1,
+        "hint": "Com 0: 2d20 e fica com o menor. Com 1+: um d20 por ponto e fica com o maior."
+      },
+      {
+        "id": "rayuq2116",
+        "kind": "number",
+        "x": 7,
+        "y": 6,
+        "w": 2,
+        "h": 2,
+        "key": "presenca",
+        "label": "Presença",
+        "formula": "if(eq(@presenca, 0), 2d20kl, (@presenca)d20kh)",
+        "min": 0,
+        "initial": 1,
+        "hint": "Com 0: 2d20 e fica com o menor. Com 1+: um d20 por ponto e fica com o maior."
+      },
+      {
+        "id": "1n5n3kmxf",
+        "kind": "number",
+        "x": 9,
+        "y": 6,
+        "w": 2,
+        "h": 2,
+        "key": "vigor",
+        "label": "Vigor",
+        "formula": "if(eq(@vigor, 0), 2d20kl, (@vigor)d20kh)",
+        "min": 0,
+        "initial": 1,
+        "hint": "Com 0: 2d20 e fica com o menor. Com 1+: um d20 por ponto e fica com o maior."
+      },
+      {
+        "id": "gerrlvpk5",
+        "kind": "resource",
+        "x": 0,
+        "y": 8,
+        "w": 9,
+        "h": 2,
+        "key": "pv",
+        "label": "PV",
+        "formula": "floor((7 + @vigor) * @nivel)",
+        "min": 0,
+        "initial": 8,
+        "style": {
+          "accent": "#c0392b"
+        }
+      },
+      {
+        "id": "g0go5ofwx",
+        "kind": "computed",
+        "x": 9,
+        "y": 8,
+        "w": 3,
+        "h": 2,
+        "key": "machucado",
+        "label": "Machucado",
+        "formula": "floor(((7 + @vigor) * @nivel) / 2)",
+        "hint": "Metade do PV máximo"
+      },
+      {
+        "id": "t2dj895ht",
+        "kind": "computed",
+        "x": 0,
+        "y": 10,
+        "w": 3,
+        "h": 2,
+        "key": "defesa",
+        "label": "Defesa",
+        "formula": "10 + @intelecto + @defesa_bonus"
+      },
+      {
+        "id": "a0e9l4c0e",
+        "kind": "number",
+        "x": 3,
+        "y": 10,
+        "w": 3,
+        "h": 2,
+        "key": "defesa_bonus",
+        "label": "DEF bônus",
+        "min": 0,
+        "initial": 0,
+        "rollable": false
+      },
+      {
+        "id": "dw7r21dks",
+        "kind": "computed",
+        "x": 6,
+        "y": 10,
+        "w": 3,
+        "h": 2,
+        "key": "bloqueio",
+        "label": "Bloqueio",
+        "formula": "@pericias.fortitude",
+        "hint": "0 = sem bloqueio"
+      },
+      {
+        "id": "yndjsfn36",
+        "kind": "computed",
+        "x": 9,
+        "y": 10,
+        "w": 3,
+        "h": 2,
+        "key": "esquiva",
+        "label": "Esquiva",
+        "formula": "if(gt(@pericias.reflexos, 0), @defesa, 0)",
+        "hint": "0 = sem esquiva"
+      },
+      {
+        "id": "e3f1pcjzr",
+        "kind": "text",
+        "x": 0,
+        "y": 12,
+        "w": 4,
+        "h": 2,
+        "key": "resistencia",
+        "label": "Resistência"
+      },
+      {
+        "id": "xyq8aladk",
+        "kind": "text",
+        "x": 4,
+        "y": 12,
+        "w": 4,
+        "h": 2,
+        "key": "imunidade",
+        "label": "Imunidade"
+      },
+      {
+        "id": "f57lrp10t",
+        "kind": "text",
+        "x": 8,
+        "y": 12,
+        "w": 4,
+        "h": 2,
+        "key": "vulneravel",
+        "label": "Vulnerável"
+      },
+      {
+        "id": "angagvhgj",
+        "kind": "title",
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 1,
+        "content": "Perícias"
+      },
+      {
+        "id": "08d2z99mh",
+        "kind": "computed",
+        "x": 9,
+        "y": 15,
+        "w": 3,
+        "h": 2,
+        "key": "pontos_de_pericia",
+        "label": "Pontos livres",
+        "formula": "15 - @pericias_total"
+      },
+      {
+        "id": "u604izxnj",
+        "kind": "roll",
+        "x": 9,
+        "y": 19,
+        "w": 3,
+        "h": 2,
+        "label": "Percepção",
+        "formula": "if(eq(@presenca, 0), 2d20kl, (@presenca)d20kh) + @pericias.percepcao"
+      },
+      {
+        "id": "u7ygt52sb",
+        "kind": "skills",
+        "x": 0,
+        "y": 15,
+        "w": 9,
+        "h": 10,
+        "key": "pericias",
+        "label": "Perícias",
+        "formula": "1d20 + @valor",
+        "min": 0,
+        "initial": 0,
+        "skills": [
+          {
+            "key": "atletismo",
+            "label": "Atletismo"
+          },
+          {
+            "key": "fortitude",
+            "label": "Fortitude"
+          },
+          {
+            "key": "furtividade",
+            "label": "Furtividade"
+          },
+          {
+            "key": "iniciativa",
+            "label": "Iniciativa"
+          },
+          {
+            "key": "luta",
+            "label": "Luta"
+          },
+          {
+            "key": "ocultismo",
+            "label": "Ocultismo"
+          },
+          {
+            "key": "percepcao",
+            "label": "Percepção"
+          },
+          {
+            "key": "pontaria",
+            "label": "Pontaria"
+          },
+          {
+            "key": "reflexos",
+            "label": "Reflexos"
+          },
+          {
+            "key": "religiao",
+            "label": "Religião"
+          },
+          {
+            "key": "vontade",
+            "label": "Vontade"
+          }
+        ],
+        "skillColumns": 2
+      },
+      {
+        "id": "sh30somou",
+        "kind": "text",
+        "x": 10,
+        "y": 4,
+        "w": 2,
+        "h": 2,
+        "key": "sentidos_2",
+        "label": "Sentidos",
+        "initial": "especial"
+      },
+      {
+        "id": "4tcybxiqw",
+        "kind": "text",
+        "x": 3,
+        "y": 0,
+        "w": 9,
+        "h": 2,
+        "key": "nome",
+        "label": "Nome"
+      },
+      {
+        "id": "h2x30h8xr",
+        "kind": "roll",
+        "x": 9,
+        "y": 17,
+        "w": 3,
+        "h": 2,
+        "label": "Iniciativa",
+        "formula": "if(eq(@agilidade, 0), 2d20kl, (@agilidade)d20kh) + @pericias.iniciativa"
+      }
+    ]
   },
   {
-    id: "page2",
-    title: "Habilidades e loot",
-    components: [
-      { id: "ch1", kind: "title", x: 0, y: 0, w: 12, h: 1, content: "Habilidades" },
-      { id: "ch2", kind: "checkbox", x: 0, y: 1, w: 2, h: 1, key: "melee", label: "Melee" },
-      { id: "ch3", kind: "checkbox", x: 2, y: 1, w: 2, h: 1, key: "ranged", label: "Ranged" },
-      { id: "ch4", kind: "checkbox", x: 4, y: 1, w: 2, h: 1, key: "fisico", label: "Físico" },
-      { id: "ch5", kind: "checkbox", x: 6, y: 1, w: 2, h: 1, key: "magico", label: "Mágico" },
-      { id: "ch6", kind: "checkbox", x: 8, y: 1, w: 2, h: 1, key: "cura", label: "Cura" },
-      { id: "ch7", kind: "checkbox", x: 0, y: 2, w: 2, h: 1, key: "hab_agilidade", label: "Agilidade", hint: "Usa agilidade no teste" },
-      { id: "ch8", kind: "checkbox", x: 2, y: 2, w: 2, h: 1, key: "hab_forca", label: "Força", hint: "Usa força no teste" },
-      { id: "ch9", kind: "checkbox", x: 4, y: 2, w: 2, h: 1, key: "dano", label: "Dano" },
-      { id: "ch10", kind: "checkbox", x: 6, y: 2, w: 2, h: 1, key: "dano_mais", label: "Dano+" },
-      { id: "ch11", kind: "checkbox", x: 8, y: 2, w: 2, h: 1, key: "dano_mais_mais", label: "Dano++" },
-      { id: "ch12", kind: "select", x: 0, y: 3, w: 4, h: 2, key: "atributo_do_teste", label: "Atributo do teste", options: ["Agilidade", "Força", "Intelecto"], initial: "Força" },
-      { id: "ch13", kind: "text", x: 4, y: 3, w: 4, h: 2, key: "dano_da_habilidade", label: "Dano base", initial: "1d6", hint: "Ex.: 1d8" },
-      { id: "ch14", kind: "number", x: 8, y: 3, w: 4, h: 2, key: "dano_fixo", label: "Dano fixo", initial: 0, rollable: false },
+    "id": "sa0ntxzsl",
+    "title": "Habilidades e loot",
+    "components": [
       {
-        id: "ch15",
-        kind: "computed",
-        x: 0,
-        y: 5,
-        w: 3,
-        h: 2,
-        key: "dados_do_teste",
-        label: "Dados do teste",
-        formula: "max(if(@hab_agilidade, @agilidade, 0) + if(@hab_forca, @forca, 0) + if(eq(@hab_agilidade + @hab_forca, 0), choose(@atributo_do_teste_n, @agilidade, @forca, @intelecto), 0), 1)",
+        "id": "8jf5h07to",
+        "kind": "longtext",
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4,
+        "key": "descricao_habilidade",
+        "label": "Descrição da habilidade"
       },
       {
-        id: "ch16",
-        kind: "computed",
-        x: 3,
-        y: 5,
-        w: 3,
-        h: 2,
-        key: "bonus_de_acerto",
-        label: "Bônus de acerto",
-        formula: "if(@melee, @pericias.luta, 0) + if(@ranged, @pericias.pontaria, 0) + if(@fisico, @pericias.atletismo, 0) + if(@magico, @pericias.ocultismo, 0) + if(@cura, @pericias.religiao, 0)",
+        "id": "nco0v89i9",
+        "kind": "title",
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 1,
+        "content": "Loot e notas"
       },
-      { id: "ch17", kind: "computed", x: 6, y: 5, w: 3, h: 2, key: "dados_extras_de_dano", label: "Dados extras", formula: "if(@dano_mais_mais, 2, if(@dano_mais, 1, 0))" },
-      { id: "ch18", kind: "roll", x: 0, y: 7, w: 4, h: 2, label: "Teste", formula: "(@dados_do_teste)d20 + @bonus_de_acerto", rollMode: "highest" },
-      { id: "ch19", kind: "roll", x: 4, y: 7, w: 4, h: 2, label: "Dano", formula: "@dano_da_habilidade + @dano_fixo + (@dados_extras_de_dano)d6" },
-      { id: "ch20", kind: "roll", x: 8, y: 7, w: 4, h: 2, label: "Cura", formula: "@dano_da_habilidade + @dano_fixo + (@dados_extras_de_dano)d6" },
-      { id: "ch21", kind: "longtext", x: 0, y: 9, w: 12, h: 4, key: "descricao_habilidade", label: "Descrição da habilidade" },
-      { id: "ch22", kind: "title", x: 0, y: 13, w: 12, h: 1, content: "Loot e notas" },
-      { id: "ch23", kind: "longtext", x: 0, y: 14, w: 6, h: 5, key: "loot", label: "Loot" },
-      { id: "ch24", kind: "longtext", x: 6, y: 14, w: 6, h: 5, key: "descricao", label: "Descrição" },
-    ],
-  },
-];
+      {
+        "id": "owvd3mfo0",
+        "kind": "longtext",
+        "x": 0,
+        "y": 5,
+        "w": 6,
+        "h": 5,
+        "key": "loot",
+        "label": "Loot"
+      },
+      {
+        "id": "cvxzfzfp9",
+        "kind": "longtext",
+        "x": 6,
+        "y": 5,
+        "w": 6,
+        "h": 5,
+        "key": "descricao",
+        "label": "Descrição"
+      }
+    ]
+  }
+] as SheetPage[];

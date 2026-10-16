@@ -518,7 +518,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     steps: [
       "Abra a ficha na aba Habilidades e clique em + Habilidade.",
       "Dê um nome e escreva a descrição. Arraste o canto da caixa de texto para aumentá-la.",
-      "Cada habilidade pode ter até 10 rolagens com o nome que você quiser. Ex.: Golpe com Acerto: (@forca)d20kh + @pericias.luta e Efeito: 1d8 + 2.",
+      "Cada habilidade pode ter até 10 rolagens com o nome que você quiser. Ex.: Acerto: if(eq(@agilidade, 0), 2d20kl, (@agilidade)d20kh) + @pericias.luta e Efeito: 1d8 + 2.",
       "Use + Rolagem para adicionar outra e o X para remover. O dado ao lado de cada rolagem testa a fórmula.",
       "No chat a rolagem aparece como Habilidade: Rolagem, por exemplo Golpe: Efeito.",
       "Quem pode editar a ficha (o dono, o mestre ou quem recebeu Ver e editar) cria e muda as habilidades. Quem só vê a ficha lê a descrição e as fórmulas, sem rolar.",
@@ -535,6 +535,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       "Atalho @: dê um atalho a um componente (ex.: forca) e use @forca em qualquer fórmula da ficha. Atalhos usam só a-z, 0-9 e _ e começam com letra.",
       "Dados: 1d20 rola um dado de 20 lados; 2d6 + 3 soma dois d6 e 3; (@nivel)d8 rola tantos d8 quanto o nível.",
       "Manter e descartar: 4d6kh3 mantém os 3 maiores, 2d20kl mantém o menor, 4d6dl1 descarta o menor.",
+      "Atributo 0 = desvantagem: if(eq(@agilidade, 0), 2d20kl, (@agilidade)d20kh) + @pericias.luta — com 0 rola 2 e fica com o menor; com 1+ rola um d20 por ponto e fica com o maior.",
       "Resultado da rolagem: no componente de rolagem escolha Somar todos os dados, Só o maior dado ou Só o menor dado. Ex.: (@agilidade)d20 com Só o maior dado rola vários d20 e fica com o melhor.",
       "Cálculo: o componente Cálculo mostra um número sem rolar dados, ex.: floor((@forca - 10) / 2). Outro componente pode usar o atalho do Cálculo.",
       "Funções de cálculo: floor (arredonda para baixo), ceil (para cima), round (mais próximo), abs, min, max, clamp(valor, mínimo, máximo), sqrt e pow. Ex.: max(1, @vigor * 2).",

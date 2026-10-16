@@ -1,5 +1,11 @@
 # Notas de versão
 
+## 1.5.10
+
+- **Fichas padrão:** o modelo de jogador passa a se chamar **Player** (layout Ash). NPC e inimigo usam a ficha **NPC** / **Inimigo** com as mesmas regras de dado.
+- **Testes de atributo:** com atributo 0 rola 2d20 e fica com o menor; com 1+ rola um d20 por ponto e fica com o maior (`kh`/`kl` na fórmula).
+- **Aba em segundo plano:** se o jogador ficar fora da aba ~12s (ou a conexão cair e voltar), a página recarrega sozinha para não ficar dessincronizado.
+
 ## 1.5.9
 
 - **Retrato:** o enquadramento (arrastar para centralizar) vale em PC, NPC e inimigo, e a mesma posição aparece na miniatura da ficha, na lista de Atores, no Status e no combate.
