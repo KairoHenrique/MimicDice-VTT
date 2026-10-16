@@ -1,11 +1,39 @@
 import { DialogV2, FilePicker, normalizeDataPath, type MenuEntry } from "@tabbletop/api";
-import { ACTIVE_APPEARANCE_FLAG, APPEARANCES_FLAG, appearancesSchema, MAX_APPEARANCES, type ActorAppearance } from "@tabbletop/protocol";
+import {
+  ACTIVE_APPEARANCE_FLAG,
+  APPEARANCES_FLAG,
+  appearancesSchema,
+  DEFAULT_PORTRAIT_FOCUS,
+  MAX_APPEARANCES,
+  PORTRAIT_FOCUS_FLAG,
+  portraitFocusSchema,
+  type ActorAppearance,
+  type PortraitFocus,
+} from "@tabbletop/protocol";
 import { h } from "../../views/dom";
 import { MIMICDICE_FLAG_SCOPE } from "./actorRoles";
 
 const FLAG_PATH = `flags.${MIMICDICE_FLAG_SCOPE}`;
 const PORTRAIT_IMAGE_PATTERN = /\.(png|jpe?g|webp|gif|avif|svg)$/i;
 const GM_PORTRAIT_FOLDER = "uploads/personagens";
+const PAN_CLICK_THRESHOLD_PX = 6;
+
+function clampFocus(value: number): number {
+  return Math.min(100, Math.max(0, Math.round(value * 10) / 10));
+}
+
+export function actorPortraitFocus(actor: any): PortraitFocus {
+  const parsed = portraitFocusSchema.safeParse(actor?.getFlag?.(MIMICDICE_FLAG_SCOPE, PORTRAIT_FOCUS_FLAG));
+  return parsed.success ? parsed.data : DEFAULT_PORTRAIT_FOCUS;
+}
+
+async function savePortraitFocus(actor: any, focus: PortraitFocus): Promise<void> {
+  await actor.update({ [`${FLAG_PATH}.${PORTRAIT_FOCUS_FLAG}`]: portraitFocusSchema.parse(focus) });
+}
+
+function applyFocusStyle(image: HTMLImageElement, focus: PortraitFocus): void {
+  image.style.objectPosition = `${focus.x}% ${focus.y}%`;
+}
 
 export function actorAppearances(actor: any): ActorAppearance[] {
   const parsed = appearancesSchema.safeParse(actor?.getFlag?.(MIMICDICE_FLAG_SCOPE, APPEARANCES_FLAG) ?? []);
@@ -86,16 +114,18 @@ export async function setActorPortrait(actor: any, img: string): Promise<void> {
   const appearances = actorAppearances(actor);
   const activeId = activeAppearanceId(actor);
   const active = appearances.find((appearance) => appearance.id === activeId);
+  const focusReset = { [`${FLAG_PATH}.${PORTRAIT_FOCUS_FLAG}`]: DEFAULT_PORTRAIT_FOCUS };
   if (active) {
     await saveAppearances(
       actor,
       appearances.map((appearance) => (appearance.id === activeId ? { ...appearance, img: path } : appearance)),
       activeId,
     );
+    await actor.update(focusReset);
     await applyAppearance(actor, { ...active, img: path });
     return;
   }
-  await actor.update({ img: path, "prototypeToken.texture.src": path });
+  await actor.update({ img: path, "prototypeToken.texture.src": path, ...focusReset });
   const scenes: any[] = game.scenes?.contents ?? [];
   const results = await Promise.allSettled(
     scenes.map((scene) => {
@@ -132,9 +162,10 @@ export async function pickAndSetPortrait(actor: any): Promise<void> {
   if (path) await setActorPortrait(actor, path);
 }
 
-/** Sheet portrait: click to pick, or drag an image from Windows / the file picker. */
+/** Sheet portrait: drag inside the frame to center the character; click (without drag) to change the image. */
 export function buildPortraitControl(actor: any, editable: boolean): HTMLElement {
   const canEdit = editable && canChangeAppearance(actor);
+  const focus = actorPortraitFocus(actor);
   const image = h("img", {
     class: "md-c-image portrait",
     src: actor.img || "",
@@ -142,30 +173,87 @@ export function buildPortraitControl(actor: any, editable: boolean): HTMLElement
     loading: "lazy",
     decoding: "async",
     draggable: "false",
-  });
-  if (!canEdit) return image;
-  const button = h(
-    "button",
+  }) as HTMLImageElement;
+  applyFocusStyle(image, focus);
+
+  const frame = h(
+    "div",
     {
-      type: "button",
-      class: "md-portrait-drop",
-      title: "Clique para escolher ou arraste uma imagem do Windows / da pasta do mestre",
-      "aria-label": `Trocar retrato de ${actor.name || "personagem"}`,
+      class: canEdit ? "md-portrait-frame is-editable" : "md-portrait-frame",
+      title: canEdit ? "Arraste para centralizar. Clique (sem arrastar) para trocar a imagem." : undefined,
+      "aria-label": canEdit ? `Retrato de ${actor.name || "personagem"}: arraste para enquadrar` : actor.name || "Retrato",
     },
     image,
-    h("span", { class: "md-portrait-drop-hint", "aria-hidden": "true" }, h("i", { class: "fa-solid fa-image" }), " Arraste uma foto"),
+  ) as HTMLElement;
+
+  if (!canEdit) return frame;
+
+  frame.append(
+    h("span", { class: "md-portrait-drop-hint", "aria-hidden": "true" }, h("i", { class: "fa-solid fa-up-down-left-right" }), " Arraste para centralizar"),
   );
-  button.addEventListener("click", () => void pickAndSetPortrait(actor).catch(() => ui.notifications.warn("Não foi possível trocar o retrato.")));
-  button.addEventListener("dragover", (event) => {
+
+  let pointerId: number | null = null;
+  let startClientX = 0;
+  let startClientY = 0;
+  let startFocus = focus;
+  let moved = false;
+  let liveFocus = focus;
+
+  frame.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    pointerId = event.pointerId;
+    startClientX = event.clientX;
+    startClientY = event.clientY;
+    startFocus = { ...liveFocus };
+    moved = false;
+    frame.classList.add("is-panning");
+    frame.setPointerCapture(event.pointerId);
+  });
+
+  frame.addEventListener("pointermove", (event) => {
+    if (pointerId !== event.pointerId) return;
+    const dx = event.clientX - startClientX;
+    const dy = event.clientY - startClientY;
+    if (!moved && Math.hypot(dx, dy) < PAN_CLICK_THRESHOLD_PX) return;
+    moved = true;
+    const rect = frame.getBoundingClientRect();
+    liveFocus = {
+      x: clampFocus(startFocus.x - (dx / Math.max(rect.width, 1)) * 100),
+      y: clampFocus(startFocus.y - (dy / Math.max(rect.height, 1)) * 100),
+    };
+    applyFocusStyle(image, liveFocus);
+  });
+
+  const endPan = (event: PointerEvent) => {
+    if (pointerId !== event.pointerId) return;
+    frame.classList.remove("is-panning");
+    try {
+      frame.releasePointerCapture(event.pointerId);
+    } catch {
+      /* already released */
+    }
+    pointerId = null;
+    if (!moved) {
+      void pickAndSetPortrait(actor).catch(() => ui.notifications.warn("Não foi possível trocar o retrato."));
+      return;
+    }
+    const saved = liveFocus;
+    void savePortraitFocus(actor, saved).catch(() => ui.notifications.warn("Não foi possível salvar o enquadramento."));
+  };
+
+  frame.addEventListener("pointerup", endPan);
+  frame.addEventListener("pointercancel", endPan);
+
+  frame.addEventListener("dragover", (event) => {
     const transfer = event.dataTransfer;
     if (!transfer || ![...transfer.types].some((type) => type === "Files" || type === "text/plain")) return;
     event.preventDefault();
-    button.classList.add("is-drop-target");
+    frame.classList.add("is-drop-target");
   });
-  button.addEventListener("dragleave", () => button.classList.remove("is-drop-target"));
-  button.addEventListener("drop", (event) => {
+  frame.addEventListener("dragleave", () => frame.classList.remove("is-drop-target"));
+  frame.addEventListener("drop", (event) => {
     event.preventDefault();
-    button.classList.remove("is-drop-target");
+    frame.classList.remove("is-drop-target");
     const transfer = event.dataTransfer;
     if (!transfer) return;
     const file = transfer.files?.[0];
@@ -176,7 +264,8 @@ export function buildPortraitControl(actor: any, editable: boolean): HTMLElement
     const path = imagePathFromDrop(transfer);
     if (path) void setActorPortrait(actor, path).catch(() => ui.notifications.warn("Não foi possível trocar o retrato."));
   });
-  return button;
+
+  return frame;
 }
 
 /** The current picture becomes the first look, so switching back to it is always possible. */

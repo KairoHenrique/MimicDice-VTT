@@ -32,6 +32,11 @@ describe("refusedActorChange", () => {
     expect(refusedActorChange({ ...player, before: {}, after: actorWith({ appearances: [{ id: "a1", name: "Look", img: "javascript:alert(1)" }] }) })).toMatch(/Aparências/);
   });
 
+  it("lets owners save portrait framing and rejects bad values", () => {
+    expect(refusedActorChange({ ...player, before: actorWith({}), after: actorWith({ portraitFocus: { x: 40, y: 20 } }) })).toBeNull();
+    expect(refusedActorChange({ ...player, before: actorWith({}), after: actorWith({ portraitFocus: { x: -1, y: 50 } }) })).toMatch(/Enquadramento/);
+  });
+
   it("only lets the GM apply or remove effects", () => {
     const poison = { id: "e1", definitionId: "envenenado", name: "Envenenado", description: "", icon: "fa-solid fa-skull-crossbones", color: "#3fa34d", damagePerTurn: 2, damageResourceId: "vida", actsLast: false, visionLimit: null, turnsLeft: 3 };
     expect(refusedActorChange({ ...player, before: actorWith({ effects: [poison] }), after: actorWith({ effects: [] }) })).toMatch(/efeitos/);

@@ -1,5 +1,9 @@
 # Notas de versão
 
+## 1.5.8
+
+- **Retrato:** arraste a foto na ficha para centralizar o personagem no quadro (enquadramento salvo). Clique sem arrastar (ou solte um arquivo) para trocar a imagem.
+
 ## 1.5.7
 
 - **Sync:** o servidor responde na hora (sem esperar a auditoria de habilidades) e o token arrastado não “pula” de volta no soltar enquanto a posição salva chega.

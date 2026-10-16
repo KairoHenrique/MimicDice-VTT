@@ -10,6 +10,8 @@ export const SHEET_LAYOUT_FLAG = "sheetLayout";
 export const SHEET_VARIANTS_FLAG = "sheetVariants";
 export const APPEARANCES_FLAG = "appearances";
 export const ACTIVE_APPEARANCE_FLAG = "activeAppearance";
+/** Where the sheet portrait is framed: `object-position` percentages (0–100). */
+export const PORTRAIT_FOCUS_FLAG = "portraitFocus";
 
 /** Who else may open the sheet: `all` or a user id, mapped to view or edit. Only the GM sets it. */
 export const SHEET_SHARE_FLAG = "sheetShare";
@@ -46,6 +48,13 @@ export type SheetVariant = z.infer<typeof sheetVariantsSchema>[number];
 
 export const appearancesSchema = z.array(z.object({ id: localIdSchema, name: nameSchema, img: imagePathSchema })).max(MAX_APPEARANCES);
 export type ActorAppearance = z.infer<typeof appearancesSchema>[number];
+
+export const portraitFocusSchema = z.object({
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+});
+export type PortraitFocus = z.infer<typeof portraitFocusSchema>;
+export const DEFAULT_PORTRAIT_FOCUS: PortraitFocus = { x: 50, y: 35 };
 
 function worldFlags(source: unknown): Record<string, unknown> {
   const scope = (source as { flags?: { world?: unknown } } | null | undefined)?.flags?.world;
@@ -96,6 +105,9 @@ export function refusedActorChange({ isGameMaster, playerEditingAllowed, before,
   const previous = worldFlags(before);
   const next = worldFlags(after);
   if (!appearancesSchema.safeParse(next[APPEARANCES_FLAG] ?? []).success) return "Aparências inválidas";
+  if (next[PORTRAIT_FOCUS_FLAG] !== undefined && !portraitFocusSchema.safeParse(next[PORTRAIT_FOCUS_FLAG]).success) {
+    return "Enquadramento do retrato inválido";
+  }
   if (isGameMaster) return refusedGameMasterChange(next);
   if (!isSameJson(previous[SHEET_VARIANTS_FLAG], next[SHEET_VARIANTS_FLAG])) return "Só o mestre escolhe os modelos de ficha";
   if (!isSameJson(previous[ACTOR_EFFECTS_FLAG], next[ACTOR_EFFECTS_FLAG])) return "Só o mestre aplica ou remove efeitos";

@@ -137,24 +137,34 @@
 
 .md-c-image.portrait {
   object-fit: cover;
-  border: 1px solid var(--border);
+  border: 0;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-.md-portrait-drop {
+.md-portrait-frame {
   position: relative;
   display: block;
   width: 100%;
   height: 100%;
   padding: 0;
   margin: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
+  border: 1px solid var(--border);
+  background: #000;
   border-radius: var(--radius-md);
   overflow: hidden;
+  touch-action: none;
 }
 
-.md-portrait-drop .md-c-image.portrait {
+.md-portrait-frame.is-editable {
+  cursor: grab;
+}
+
+.md-portrait-frame.is-panning {
+  cursor: grabbing;
+}
+
+.md-portrait-frame .md-c-image.portrait {
   pointer-events: none;
 }
 
@@ -171,22 +181,18 @@
   background: color-mix(in srgb, #000 55%, transparent);
   opacity: 0;
   transition: opacity 0.15s ease;
+  pointer-events: none;
 }
 
-.md-portrait-drop:hover .md-portrait-drop-hint,
-.md-portrait-drop:focus-visible .md-portrait-drop-hint,
-.md-portrait-drop.is-drop-target .md-portrait-drop-hint {
+.md-portrait-frame.is-editable:hover .md-portrait-drop-hint,
+.md-portrait-frame.is-panning .md-portrait-drop-hint,
+.md-portrait-frame.is-drop-target .md-portrait-drop-hint {
   opacity: 1;
 }
 
-.md-portrait-drop.is-drop-target {
+.md-portrait-frame.is-drop-target {
   outline: 2px dashed var(--color-accent, #4aa3ff);
   outline-offset: -2px;
-}
-
-.md-portrait-drop:focus-visible {
-  outline: 2px solid var(--color-accent, #4aa3ff);
-  outline-offset: 2px;
 }
 
 .md-c-image.placeholder {
