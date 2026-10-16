@@ -22,6 +22,8 @@ export function actorTokenData(actor: any, x: number, y: number, canvas: any): P
     y: Math.round(topLeft.y),
     width,
     height,
+    /** Always starts hidden so the GM reveals it when ready (player or enemy). */
+    hidden: true,
     texture: { src: (prototypeTexture.src as string) || actor.img || CONST.DEFAULT_TOKEN },
     disposition: prototype.disposition ?? (playerOwned ? CONST.TOKEN_DISPOSITIONS.FRIENDLY : CONST.TOKEN_DISPOSITIONS.HOSTILE),
     displayName: prototype.displayName ?? CONST.TOKEN_DISPLAY_MODES.OWNER_HOVER,

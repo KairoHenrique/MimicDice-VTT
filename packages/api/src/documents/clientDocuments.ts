@@ -304,8 +304,9 @@ export class Combat extends ClientDocumentMixin(BaseCombat) {
   }
 
   /**
-   * Adds tokens that are not in the encounter yet. NPCs and enemies join hidden; joining a running encounter puts
-   * the newcomer at the end of the current round, and from the next round on it follows its initiative.
+   * Adds tokens that are not in the encounter yet. Combat visibility matches the token on the map
+   * (hidden token → hidden combatant; visible token → visible combatant). Joining a running encounter
+   * puts the newcomer at the end of the current round; from the next round on it follows its initiative.
    */
   async addTokens(tokens: readonly any[]): Promise<Combatant[]> {
     const present = new Set(Array.from(this.combatants?.values() ?? [], (combatant: any) => combatant.tokenId));
@@ -319,7 +320,7 @@ export class Combat extends ClientDocumentMixin(BaseCombat) {
         actorId: token.document.actorId ?? null,
         name: String(token.document.name ?? token.actor?.name ?? "Token"),
         img: token.document.texture?.src ?? token.actor?.img ?? null,
-        hidden: token.document.hidden === true || !token.actor?.hasPlayerOwner,
+        hidden: token.document.hidden === true,
         ...(this.started ? { flags: { [ORDER_FLAG_SCOPE]: { [JOINED_ROUND_FLAG]: this.round } } } : {}),
       }));
     if (additions.length === 0) return [];

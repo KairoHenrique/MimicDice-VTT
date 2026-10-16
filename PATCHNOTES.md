@@ -1,5 +1,10 @@
 # Notas de versão
 
+## 1.6.1
+
+- **Tokens na cena:** player ou inimigo colocado no mapa começa **oculto**; o mestre revela quando quiser.
+- **Combate:** a visibilidade do combatente segue a do token (visível no mapa → visível no combate; oculto → oculto).
+
 ## 1.6.0
 
 - **Perícias:** ao clicar no nome, abre um modal para escolher o atributo (com o número da ficha). Atributo 0 → 2d20 e fica com o menor; 1+ → Nd20 e fica com o maior; depois soma os pontos da perícia.
