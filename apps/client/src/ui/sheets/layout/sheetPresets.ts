@@ -1,4 +1,5 @@
 import type { ActorRole, LegacySheetField as SheetField, LegacySheetFieldType as SheetFieldType, LegacySheetSection as SheetSection, SheetTemplate } from "@tabbletop/protocol";
+import { CREATURE_ENEMY_PRESET_ID, CREATURE_NPC_PRESET_ID, creatureEnemyPreset, creatureNpcPreset } from "./creaturePreset";
 import { migrateLegacyLayout } from "./legacyLayoutMigration";
 import { keyFromLabel } from "./sheetLayoutRules";
 import { SPREADSHEET_PRESET_ID, spreadsheetPreset } from "./spreadsheetPreset";
@@ -35,24 +36,6 @@ function template(id: string, name: string, role: ActorRole, description: string
   return { id, name, role, description, layout: migrateLegacyLayout({ version: 1, sections }) };
 }
 
-function quickEnemy(): SheetTemplate {
-  const b = new PresetBuilder("qe");
-  return template("preset-enemy", "Inimigo rápido", "enemy", "Só o que o mestre precisa em combate: vida, defesa, ataque e dano.", [
-    b.section("Combate", 2, [
-      b.field("Vida", "resource", { initial: 12, color: "#c0392b" }),
-      b.field("Defesa", "number", { initial: 12 }),
-      b.field("Ameaça", "select", { options: ["Lacaio", "Comum", "Elite", "Chefe"], initial: "Comum" }),
-      b.field("Deslocamento", "text", { initial: "9 m" }),
-    ]),
-    b.section("Ações", 3, [
-      b.field("Bônus de ataque", "number", { initial: 3, formula: "1d20 + @bonus_de_ataque" }),
-      b.field("Dano", "roll", { formula: "1d6 + @bonus_de_ataque" }),
-      b.field("Especial", "roll", { formula: "2d6" }),
-    ]),
-    b.section("Comportamento", 1, [b.field("Táticas", "longtext"), b.field("Saque", "longtext")]),
-  ]);
-}
-
 function bossEnemy(): SheetTemplate {
   const b = new PresetBuilder("bo");
   return template("preset-boss", "Chefe", "enemy", "Inimigo com fases, ações extras, fraquezas e resistências.", [
@@ -71,29 +54,15 @@ function bossEnemy(): SheetTemplate {
   ]);
 }
 
-function standardNpc(): SheetTemplate {
-  const b = new PresetBuilder("np");
-  return template("preset-npc", "NPC padrão", "npc", "Aliados, comerciantes e figurantes: vida, atitude, testes rápidos e anotações do mestre.", [
-    b.section("Quem é", 2, [
-      b.field("Ocupação", "text"),
-      b.field("Atitude", "select", { options: ["Amigável", "Neutro", "Desconfiado", "Hostil"], initial: "Neutro" }),
-      b.field("Local", "text"),
-      b.field("Facção", "text"),
-    ]),
-    b.section("Em jogo", 3, [
-      b.field("Vida", "resource", { initial: 8, color: "#c0392b" }),
-      b.field("Defesa", "number", { initial: 10 }),
-      b.field("Teste", "number", { initial: 2, formula: "1d20 + @teste", hint: "Rola 1d20 + bônus" }),
-    ]),
-    b.section("Para o mestre", 1, [b.field("Personalidade e voz", "longtext"), b.field("O que sabe", "longtext")]),
-  ]);
-}
-
-/** The table's player sheet plus temporary NPC and enemy models, until each role gets its own sheet. */
-export const SHEET_PRESETS: readonly SheetTemplate[] = Object.freeze([spreadsheetPreset(), standardNpc(), quickEnemy(), bossEnemy()]);
+/** Player spreadsheet plus the creature board for NPC/enemy (and the optional boss model). */
+export const SHEET_PRESETS: readonly SheetTemplate[] = Object.freeze([spreadsheetPreset(), creatureNpcPreset(), creatureEnemyPreset(), bossEnemy()]);
 
 /** Built-in fallback when the GM has not chosen a default model for the role (or the chosen one no longer exists). */
-export const BUILT_IN_DEFAULT_TEMPLATE_IDS: Readonly<Record<ActorRole, string>> = Object.freeze({ player: SPREADSHEET_PRESET_ID, npc: "preset-npc", enemy: "preset-enemy" });
+export const BUILT_IN_DEFAULT_TEMPLATE_IDS: Readonly<Record<ActorRole, string>> = Object.freeze({
+  player: SPREADSHEET_PRESET_ID,
+  npc: CREATURE_NPC_PRESET_ID,
+  enemy: CREATURE_ENEMY_PRESET_ID,
+});
 
 export function isPresetId(templateId: string): boolean {
   return templateId.startsWith("preset-");

@@ -1,5 +1,9 @@
 # Notas de versão
 
+## 1.5.4
+
+- **Ficha de criatura:** os modelos padrão de NPC e inimigo passam a ser **Criatura (NPC)** e **Criatura (inimigo)**, com a planilha da mesa (atributos, PV, defesa, perícias, habilidades melee/ranged/físico/mágico, loot). PV, machucado, defesa e testes seguem o mesmo estilo de cálculos da ficha de jogador. Em fichas já criadas, reaplique o modelo em **Modelos**.
+
 ## 1.5.3
 
 - **Apagar vários arquivos:** corrigido o erro "Dados inválidos" ao excluir mais de um item de uma vez na biblioteca de imagens e em Arquivos do Mestre.
