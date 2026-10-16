@@ -12,7 +12,7 @@ export class BoardContext {
 
   constructor(
     readonly actor: any,
-    layout: SheetLayout,
+    readonly layout: SheetLayout,
     readonly editable: boolean,
   ) {
     this.store = new SheetValueStore(actor);

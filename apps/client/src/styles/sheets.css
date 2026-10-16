@@ -58,6 +58,7 @@
 .md-toolbar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
@@ -71,6 +72,54 @@
   background: var(--primary);
   border-color: var(--primary);
   color: var(--primary-foreground);
+}
+
+.md-toolbar-menu {
+  position: relative;
+}
+
+.md-toolbar-more {
+  min-width: 34px;
+  padding-inline: 8px;
+}
+
+.md-toolbar-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+}
+
+.md-toolbar-dropdown[hidden] {
+  display: none;
+}
+
+.md-toolbar-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  box-shadow: none;
+  color: var(--foreground);
+  font-size: 0.9em;
+  text-align: left;
+}
+
+.md-toolbar-dropdown button:hover {
+  background: var(--muted);
 }
 
 .md-tabs {

@@ -137,8 +137,7 @@ function skillsFields(component: SheetComponent, patch: ComponentPatch): HTMLEle
     numberRow("Pontos máximos (vazio = sem limite)", component.pointsMax, "pointsMax", (value) => patch({ pointsMax: value && value > 0 ? Math.min(MAX_SKILL_POINTS, Math.round(value)) : undefined }), { min: 0, max: MAX_SKILL_POINTS, step: 1, hint: "Aparece no topo como \"máx\". O total fica vermelho se passar." }),
     maxFormulaRow(component, patch, "Pontos máximos (fórmula)", "Opcional: troca o número fixo, ex.: (@intelecto + 6) * 5. Muda sozinho quando os valores mudam."),
     initialNumberRow(component, patch, "Pontos iniciais de cada perícia"),
-    formulaRow(component, patch, "roll", "Opcional: o nome da perícia vira botão de rolar. Use @valor para os pontos dela, ex.: 1d20 + @valor"),
-    rollModeRow(component, patch),
+    h("p", { class: "hint" }, "Ao clicar no nome da perícia, o jogador escolhe o atributo (Agilidade, Força…). Com atributo 0 rola 2d20 e fica com o menor; com 1+ rola Nd20 e fica com o maior; depois soma os pontos da perícia."),
   );
   if (component.key && skills[0]) rows.push(h("p", { class: "hint" }, `Em outras fórmulas: @${component.key}.${skills[0].key} (pontos de ${skills[0].label}).`));
   return rows;

@@ -39,6 +39,13 @@ describe("safeEvalArithmetic", () => {
     expect(safeEvalArithmetic("floor(7 / 2) + max(1, 4, 2)")).toBe(7);
   });
 
+  it("accepts ** and ^ as power", () => {
+    expect(safeEvalArithmetic("2 ** 3")).toBe(8);
+    expect(safeEvalArithmetic("2 ^ 3")).toBe(8);
+    expect(safeEvalArithmetic("floor(1 ^ 1.2 + 8 - 5)")).toBe(4);
+    expect(safeEvalArithmetic("pow(2, 4)")).toBe(16);
+  });
+
   it("rejects anything that is not arithmetic", () => {
     expect(() => safeEvalArithmetic("alert(1)")).toThrow();
     expect(() => safeEvalArithmetic("constructor")).toThrow();

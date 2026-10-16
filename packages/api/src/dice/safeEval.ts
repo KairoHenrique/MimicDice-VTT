@@ -1,6 +1,7 @@
 /**
  * Arithmetic evaluator for roll totals. It never calls eval/Function: formulas come from other players,
- * so only numbers, + - * / % **, parentheses, commas and whitelisted functions are understood.
+ * so only numbers, + - * / % ** ^, parentheses, commas and whitelisted functions are understood.
+ * `^` is the same as `**` (power), like in spreadsheets.
  * Conditions are numbers too (0 is false, anything else is true), like in a spreadsheet.
  */
 
@@ -72,7 +73,7 @@ type Token = { kind: "number"; value: number } | { kind: "identifier"; value: st
 
 function tokenize(expression: string): Token[] {
   const tokens: Token[] = [];
-  const pattern = /\s*(?:(\d+(?:\.\d+)?|\.\d+)|([A-Za-z_][A-Za-z0-9_]*)|(\*\*|[-+*/%(),]))/y;
+  const pattern = /\s*(?:(\d+(?:\.\d+)?|\.\d+)|([A-Za-z_][A-Za-z0-9_]*)|(\*\*|\^|[-+*/%(),]))/y;
   let position = 0;
   while (position < expression.length) {
     if (/^\s*$/.test(expression.slice(position))) break;
@@ -143,7 +144,8 @@ class ExpressionParser {
 
   #power(): number {
     const base = this.#primary();
-    if (this.#peekSymbol() !== "**") return base;
+    const symbol = this.#peekSymbol();
+    if (symbol !== "**" && symbol !== "^") return base;
     this.#index += 1;
     return base ** this.#nested(() => this.#unary());
   }

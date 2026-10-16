@@ -560,6 +560,58 @@ button.md-skill-roll {
   text-align: left;
 }
 
+.md-skill-attr-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.md-skill-attr-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.md-skill-attr-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.md-skill-attr-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.md-skill-attr-name {
+  font-weight: 600;
+}
+
+.md-skill-attr-meta {
+  color: var(--muted-foreground);
+  font-size: 0.8em;
+}
+
+.md-skill-attr-value {
+  flex: none;
+  min-width: 2ch;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 1.25em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
 button.md-skill-roll:hover:not(:disabled) {
   background: rgb(59 130 246 / 12%);
 }

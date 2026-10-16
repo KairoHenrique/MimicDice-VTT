@@ -35,6 +35,8 @@ const TABS: ReadonlyArray<{ id: SheetTab; label: string; icon: string }> = [
   { id: "items", label: "Itens", icon: "fa-solid fa-suitcase" },
 ];
 
+type ToolbarAction = { icon: string; label: string; onClick: () => unknown };
+
 function toolbarButton(icon: string, label: string, onClick: () => unknown, active = false): HTMLButtonElement {
   const button = h("button", { type: "button", class: `md-toolbar-button${active ? " active" : ""}` }, h("i", { class: icon }), ` ${label}`);
   button.addEventListener("click", (event) => {
@@ -42,6 +44,53 @@ function toolbarButton(icon: string, label: string, onClick: () => unknown, acti
     void Promise.resolve(onClick()).catch((error: Error) => ui.notifications.warn(error.message));
   });
   return button;
+}
+
+function toolbarMenu(actions: ToolbarAction[]): HTMLElement | null {
+  if (actions.length === 0) return null;
+  const wrap = h("div", { class: "md-toolbar-menu" });
+  const trigger = h(
+    "button",
+    { type: "button", class: "md-toolbar-button md-toolbar-more", title: "Mais opções da ficha", "aria-label": "Mais opções da ficha", "aria-haspopup": "menu", "aria-expanded": "false" },
+    h("i", { class: "fa-solid fa-ellipsis-vertical", "aria-hidden": "true" }),
+  );
+  const panel = h("div", { class: "md-toolbar-dropdown", role: "menu", hidden: "true" });
+  let dismiss: ((event: MouseEvent) => void) | null = null;
+  const close = () => {
+    panel.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    if (dismiss) {
+      document.removeEventListener("click", dismiss);
+      dismiss = null;
+    }
+  };
+  const open = () => {
+    panel.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    dismiss = (event) => {
+      if (!wrap.contains(event.target as Node)) close();
+    };
+    setTimeout(() => {
+      if (dismiss) document.addEventListener("click", dismiss);
+    }, 0);
+  };
+  for (const action of actions) {
+    const item = h("button", { type: "button", role: "menuitem" }, h("i", { class: action.icon, "aria-hidden": "true" }), ` ${action.label}`);
+    item.addEventListener("click", (event) => {
+      event.preventDefault();
+      close();
+      void Promise.resolve(action.onClick()).catch((error: Error) => ui.notifications.warn(error.message));
+    });
+    panel.append(item);
+  }
+  trigger.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (panel.hidden) open();
+    else close();
+  });
+  wrap.append(trigger, panel);
+  return wrap;
 }
 
 /** MimicDice sheet: the layout (sections and typed fields) lives in the actor, so each actor can be shaped freely. */
@@ -138,27 +187,32 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
 
   #buildToolbar(role: ActorRole): HTMLElement {
     const toolbar = h("div", { class: "md-toolbar" });
+    const actions: ToolbarAction[] = [];
     if (this.#canChangeLayout()) {
-      toolbar.append(
-        toolbarButton(this.#editing ? "fa-solid fa-check" : "fa-solid fa-pen-ruler", this.#editing ? "Concluir edição" : "Editar ficha", () => this.#toggleEditing(), this.#editing),
-        toolbarButton("fa-solid fa-wand-magic-sparkles", "Modelos", () => this.#applyTemplate(role)),
-      );
+      if (this.#editing) {
+        toolbar.append(toolbarButton("fa-solid fa-check", "Concluir edição", () => this.#toggleEditing(), true));
+      } else {
+        actions.push({ icon: "fa-solid fa-pen-ruler", label: "Editar ficha", onClick: () => this.#toggleEditing() });
+      }
+      actions.push({ icon: "fa-solid fa-wand-magic-sparkles", label: "Modelos", onClick: () => this.#applyTemplate(role) });
     } else if (actorVariants(this.document).length > 0) {
-      toolbar.append(toolbarButton("fa-solid fa-repeat", "Trocar modelo", () => chooseVariantDialog(this.document)));
+      actions.push({ icon: "fa-solid fa-repeat", label: "Trocar modelo", onClick: () => chooseVariantDialog(this.document) });
     }
     if (game.user.isGM) {
-      toolbar.append(
-        toolbarButton("fa-solid fa-floppy-disk", "Salvar como modelo", () => saveTemplateDialog(this.layout, role, this.document.name)),
-        toolbarButton("fa-solid fa-file-circle-plus", "Novo modelo do zero", () => SheetTemplateEditor.open(role)),
-        toolbarButton("fa-solid fa-layer-group", "Modelos do jogador", () => chooseActorVariantsDialog(this.document)),
+      actions.push(
+        { icon: "fa-solid fa-floppy-disk", label: "Salvar como modelo", onClick: () => saveTemplateDialog(this.layout, role, this.document.name) },
+        { icon: "fa-solid fa-file-circle-plus", label: "Novo modelo do zero", onClick: () => SheetTemplateEditor.open(role) },
+        { icon: "fa-solid fa-layer-group", label: "Modelos do jogador", onClick: () => chooseActorVariantsDialog(this.document) },
       );
     }
     if (this.#canChangeLayout()) {
-      toolbar.append(
-        toolbarButton("fa-solid fa-file-import", "Importar", () => this.#importSheet(role)),
-        toolbarButton("fa-solid fa-file-export", "Exportar", () => exportActorSheet(this.document.name, role, this.layout)),
+      actions.push(
+        { icon: "fa-solid fa-file-import", label: "Importar", onClick: () => this.#importSheet(role) },
+        { icon: "fa-solid fa-file-export", label: "Exportar", onClick: () => exportActorSheet(this.document.name, role, this.layout) },
       );
     }
+    const menu = toolbarMenu(actions);
+    if (menu) toolbar.append(menu);
     return toolbar;
   }
 

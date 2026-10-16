@@ -1,5 +1,11 @@
 # Notas de versão
 
+## 1.6.0
+
+- **Perícias:** ao clicar no nome, abre um modal para escolher o atributo (com o número da ficha). Atributo 0 → 2d20 e fica com o menor; 1+ → Nd20 e fica com o maior; depois soma os pontos da perícia.
+- **Toolbar da ficha:** Modelos, importar, exportar etc. ficam no menu **⋮** (menos bagunça na tela).
+- **Fórmulas:** aceitam expoente com `^` ou `**` (ex.: `@nivel ^ 1.2`).
+
 ## 1.5.10
 
 - **Fichas padrão:** o modelo de jogador passa a se chamar **Player** (layout Ash). NPC e inimigo usam a ficha **NPC** / **Inimigo** com as mesmas regras de dado (atalho de agilidade no NPC: `@agili`).

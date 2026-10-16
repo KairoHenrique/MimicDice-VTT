@@ -1,22 +1,34 @@
-import { MAX_PIPS, MAX_SKILL_COLUMNS, MAX_SKILL_POINTS, type SheetComponent, type SheetSkill } from "@tabbletop/protocol";
+import { MAX_PIPS, MAX_SKILL_COLUMNS, MAX_SKILL_POINTS, type SheetComponent, type SheetLayout, type SheetSkill } from "@tabbletop/protocol";
 import { h } from "../../../views/dom";
-import { rollFromSheet } from "../sheetRoll";
 import type { BoardContext } from "./boardContext";
 import { clampNumber } from "./sheetLayoutRules";
+import { rollSkillWithAttribute } from "./skillAttributeRoll";
 import { readSkillValues, skillPointsTotal } from "./skillList";
 
 interface SkillRowContext {
   readonly context: BoardContext;
+  readonly layout: SheetLayout;
   readonly component: SheetComponent;
   readonly path: string;
-  readonly formula: string | null;
+  readonly rollable: boolean;
 }
 
 function skillName(row: SkillRowContext, skill: SheetSkill, value: number): HTMLElement {
-  if (!row.formula) return h("span", { class: "md-skill-name", title: skill.label }, skill.label);
-  const formula = row.formula;
-  const button = h("button", { type: "button", class: "md-skill-name md-skill-roll", title: `Rolar ${skill.label}: ${formula}`, disabled: !row.context.actor.canEditSheet() }, h("i", { class: "fa-solid fa-dice-d20", "aria-hidden": "true" }), ` ${skill.label}`);
-  button.addEventListener("click", () => rollFromSheet(row.context.actor, formula, skill.label, { ...row.context.extraRollData(), valor: value }, row.component.rollMode));
+  if (!row.rollable) return h("span", { class: "md-skill-name", title: skill.label }, skill.label);
+  const button = h(
+    "button",
+    {
+      type: "button",
+      class: "md-skill-name md-skill-roll",
+      title: `Rolar ${skill.label}: escolha o atributo`,
+      disabled: !row.context.actor.canEditSheet(),
+    },
+    h("i", { class: "fa-solid fa-dice-d20", "aria-hidden": "true" }),
+    ` ${skill.label}`,
+  );
+  button.addEventListener("click", () => {
+    void rollSkillWithAttribute(row.context, row.layout, skill.label, value).catch((error: Error) => ui.notifications.warn(error.message));
+  });
   return button;
 }
 
@@ -61,7 +73,13 @@ export function buildSkillsControl(context: BoardContext, component: SheetCompon
   const skills = component.skills ?? [];
   if (!key || skills.length === 0) return h("p", { class: "hint" }, "Nenhuma perícia. Adicione os nomes no editor da ficha.");
   const values = readSkillValues(context.store.read(key), skills, typeof component.initial === "number" ? component.initial : 0);
-  const row: SkillRowContext = { context, component, path: context.store.pathOf(key), formula: component.formula?.trim() || null };
+  const row: SkillRowContext = {
+    context,
+    layout: context.layout,
+    component,
+    path: context.store.pathOf(key),
+    rollable: component.rollable !== false,
+  };
   const columns = clampNumber(component.skillColumns ?? 1, 1, MAX_SKILL_COLUMNS);
   const list = h("ul", { class: "md-skills-list", style: `--md-skill-columns:${columns}`, role: "list" });
   for (const skill of skills) {
