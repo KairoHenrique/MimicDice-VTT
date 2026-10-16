@@ -1,7 +1,7 @@
 {
   "name": "@tabbletop/desktop",
   "productName": "MimicDice VTT",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "private": true,
   "description": "MimicDice VTT - mesa virtual para jogar com os amigos",
   "main": "dist/main.cjs",

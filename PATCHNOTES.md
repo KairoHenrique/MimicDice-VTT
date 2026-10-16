@@ -1,5 +1,9 @@
 # Notas de versão
 
+## 1.5.3
+
+- **Apagar vários arquivos:** corrigido o erro "Dados inválidos" ao excluir mais de um item de uma vez na biblioteca de imagens e em Arquivos do Mestre.
+
 ## 1.5.2
 
 - **Biblioteca de imagens:** clique, Ctrl, Shift ou arraste uma caixa para selecionar; **Excluir**, Delete e o menu do botão direito apagam vários de uma vez.

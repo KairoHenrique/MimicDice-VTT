@@ -181,9 +181,27 @@ export class RpgFileManager {
 
   /** Deletes several entries; folders deeper in the tree are removed first so parents go last. */
   async removeMany(entryPaths: readonly string[]): Promise<void> {
-    const unique = [...new Set(entryPaths.map((entryPath) => parseRpgPath(entryPath).join("/")).filter(Boolean))];
-    unique.sort((left, right) => right.split("/").length - left.split("/").length || right.localeCompare(left));
-    for (const entryPath of unique) await this.remove(entryPath);
+    const unique: string[] = [];
+    for (const entryPath of entryPaths) {
+      try {
+        const normalized = parseRpgPath(entryPath).join("/");
+        if (normalized) unique.push(normalized);
+      } catch {
+        /* skip paths the client can no longer reach */
+      }
+    }
+    const ordered = [...new Set(unique)].sort((left, right) => right.split("/").length - left.split("/").length || right.localeCompare(left));
+    if (ordered.length === 0) throw HttpError.badRequest("Nenhum arquivo válido para apagar");
+    const failures: string[] = [];
+    for (const entryPath of ordered) {
+      try {
+        await this.remove(entryPath);
+      } catch (error) {
+        if (error instanceof HttpError && error.statusCode === 404) continue;
+        failures.push(entryPath);
+      }
+    }
+    if (failures.length === ordered.length) throw HttpError.badRequest("Não foi possível apagar os itens selecionados");
   }
 
   /** Location of a file for streaming to the browser, as a root plus a path relative to it. */

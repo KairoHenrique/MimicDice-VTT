@@ -129,14 +129,21 @@ export class FileStorage {
 
   /**
    * Removes files or folders under uploads. The uploads root itself cannot be deleted. Missing paths are skipped.
-   * Returns the paths that were actually removed.
+   * Deeper paths are removed first so a folder is emptied before it is removed. Returns what was actually erased.
    */
   async deletePaths(targets: readonly string[]): Promise<string[]> {
+    const unique = [...new Set(targets.map((target) => target.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "")).filter(Boolean))];
+    unique.sort((left, right) => right.split("/").length - left.split("/").length || right.localeCompare(left));
     const deleted: string[] = [];
-    for (const target of targets) {
+    for (const target of unique) {
       const segments = writableSegments(target);
       if (segments.length < 2) throw HttpError.badRequest("Não é possível apagar a pasta uploads");
       const resolved = this.#resolve(segments);
+      try {
+        await stat(resolved);
+      } catch {
+        continue;
+      }
       try {
         await rm(resolved, { recursive: true, force: false });
         deleted.push(segments.join("/"));
@@ -150,9 +157,10 @@ export class FileStorage {
   }
 
   #resolve(segments: readonly string[]): string {
-    const rootDirectory = path.join(this.#dataPath, segments[0] as string);
+    const rootDirectory = path.resolve(path.join(this.#dataPath, segments[0] as string));
     const resolved = path.resolve(rootDirectory, ...segments.slice(1));
-    if (resolved !== rootDirectory && !resolved.startsWith(rootDirectory + path.sep)) throw HttpError.badRequest("Caminho inválido");
+    const relative = path.relative(rootDirectory, resolved);
+    if (relative.startsWith("..") || path.isAbsolute(relative)) throw HttpError.badRequest("Caminho inválido");
     return resolved;
   }
 }

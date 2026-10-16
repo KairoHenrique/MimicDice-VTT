@@ -53,6 +53,24 @@ export const rpgsApi = {
   move: (entryPath: string, destination: string) => sendRpgJson<{ path: string }>("POST", "/move", { path: entryPath, destination }),
   copy: (entryPath: string, destination: string) => sendRpgJson<{ path: string }>("POST", "/copy", { path: entryPath, destination }),
   remove: (entryPath: string) => sendRpgJson<void>("POST", "/delete", { path: entryPath }),
-  removeMany: (paths: readonly string[]) => sendRpgJson<void>("POST", "/delete-many", { paths }),
+  /** Deletes several entries; deeper paths go first so a folder is emptied before it is removed. */
+  async removeMany(paths: readonly string[]): Promise<void> {
+    const unique = [...new Set(paths.filter((path) => path.length > 0))];
+    unique.sort((left, right) => right.split("/").length - left.split("/").length || right.localeCompare(left));
+    try {
+      await sendRpgJson<void>("POST", "/delete-many", { paths: unique });
+    } catch {
+      const failures: string[] = [];
+      for (const path of unique) {
+        try {
+          await sendRpgJson<void>("POST", "/delete", { path });
+        } catch (error) {
+          failures.push(error instanceof Error ? error.message : path);
+        }
+      }
+      if (failures.length === unique.length) throw new ApiError(400, failures[0] ?? "Não foi possível apagar");
+      if (failures.length) throw new ApiError(400, `${failures.length} item(ns) não puderam ser apagados`);
+    }
+  },
   uploadFile,
 };

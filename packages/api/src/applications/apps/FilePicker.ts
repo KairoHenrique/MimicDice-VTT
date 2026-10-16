@@ -146,19 +146,36 @@ export class FilePicker extends ApplicationV2 {
 
   /** Removes files or folders under uploads; returns the paths that were erased. */
   static async delete(paths: readonly string[], { notify = true }: { notify?: boolean } = {}): Promise<string[]> {
+    const normalized = [...new Set(paths.map((path) => normalizeDataPath(path)).filter((path) => path.length > 0))];
+    if (normalized.length === 0) return [];
+    const deleted = await this.#deletePathsRequest(normalized);
+    if (notify && deleted.length) currentUi()?.notifications?.info(deleted.length === 1 ? "1 arquivo apagado." : `${deleted.length} arquivos apagados.`);
+    if (deleted.length < normalized.length && notify) {
+      currentUi()?.notifications?.warn(`${normalized.length - deleted.length} arquivo(s) não puderam ser apagados.`);
+    }
+    return deleted;
+  }
+
+  static async #deletePathsRequest(paths: readonly string[]): Promise<string[]> {
     const response = await fetch("/api/files/delete", {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paths: paths.map((path) => normalizeDataPath(path)) }),
+      body: JSON.stringify({ paths: [...paths] }),
     });
-    if (!response.ok) {
-      const message = await readErrorMessage(response);
-      if (notify) currentUi()?.notifications?.error(message);
-      throw new Error(message);
+    if (response.ok) return ((await response.json()) as { deleted: string[] }).deleted;
+    const message = await readErrorMessage(response);
+    if (paths.length === 1) throw new Error(message);
+    // Batch rejected (old server or bad payload): erase one by one with the same endpoint.
+    const deleted: string[] = [];
+    for (const path of paths) {
+      try {
+        deleted.push(...(await this.#deletePathsRequest([path])));
+      } catch {
+        /* keep going so the rest still disappear */
+      }
     }
-    const { deleted } = (await response.json()) as { deleted: string[] };
-    if (notify && deleted.length) currentUi()?.notifications?.info(deleted.length === 1 ? "1 arquivo apagado." : `${deleted.length} arquivos apagados.`);
+    if (deleted.length === 0) throw new Error(message);
     return deleted;
   }
 

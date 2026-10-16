@@ -106,7 +106,7 @@ export function createHttpApp(context: ServerContext): express.Express {
   const apiRouter = express.Router();
   apiRouter.use(rateLimit({ windowMs: 60_000, limit: 600, standardHeaders: "draft-7", legacyHeaders: false }));
   apiRouter.use("/rpgs", createRpgRoutes(context));
-  apiRouter.use(express.json({ limit: "64kb" }));
+  apiRouter.use(express.json({ limit: "1mb" }));
   apiRouter.use(createAuthRoutes(context));
   apiRouter.use("/users", createUserRoutes(context));
   apiRouter.use("/worlds", createWorldRoutes(context));

@@ -170,8 +170,9 @@ export type CreateDirectoryRequest = z.infer<typeof createDirectoryRequestSchema
 
 /** Paths under uploads the user may erase (files or folders). */
 export const MAX_DELETE_PATHS = 100;
+const deletePathSchema = z.string().trim().min(1).max(512);
 export const deleteFilesRequestSchema = z.object({
-  paths: z.array(filePathSchema.min(1)).min(1).max(MAX_DELETE_PATHS),
+  paths: z.preprocess((value) => (Array.isArray(value) ? value : value == null ? [] : [value]), z.array(deletePathSchema).min(1).max(MAX_DELETE_PATHS)),
 });
 export type DeleteFilesRequest = z.infer<typeof deleteFilesRequestSchema>;
 
@@ -228,7 +229,7 @@ export const rpgCopyRequestSchema = z.object({ path: rpgEntryPathSchema, destina
 /** Several entries to erase in one go (Arquivos do Mestre). */
 export const MAX_RPG_DELETE_PATHS = 100;
 export const rpgDeleteManyRequestSchema = z.object({
-  paths: z.array(rpgEntryPathSchema).min(1).max(MAX_RPG_DELETE_PATHS),
+  paths: z.preprocess((value) => (Array.isArray(value) ? value : value == null ? [] : [value]), z.array(rpgEntryPathSchema).min(1).max(MAX_RPG_DELETE_PATHS)),
 });
 export const rpgWriteTextRequestSchema = z.object({ path: rpgEntryPathSchema, content: z.string().max(MAX_RPG_TEXT_FILE_CHARACTERS) });
 
