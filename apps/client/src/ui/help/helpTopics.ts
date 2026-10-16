@@ -119,7 +119,7 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
       "Para montar o mapa como quebra-cabeça, abra a biblioteca de imagens (ferramenta Tiles): use as abas Mapas, Personagens e Props. Arraste cada imagem para o mapa (Shift: livre).",
       "Ao enviar arquivos ou pastas (botões de upload, ou soltando no painel ou no mapa), aparece o tamanho na grade (ex.: 2×1) e o DPI. DPI é quantos pixels formam 1 quadrado. Cada imagem guarda o DPI escolhido.",
       "O campo \"DPI\" do painel vale para imagens sem DPI próprio. Vazio usa o tamanho original da imagem.",
-      "Marque uma ou várias imagens (ou pastas) e use Excluir para apagá-las da biblioteca. Tiles já no mapa não somem.",
+      "Clique para selecionar (Ctrl e Shift como no Windows, ou arraste uma caixa). Excluir, Delete ou o menu do botão direito apagam da biblioteca. Tiles já no mapa não somem.",
       "Arquivos soltos direto no mapa são enviados e colocados onde caíram.",
       "Clique direito num tile e escolha \"Tamanho pelo DPI\" para ajustar um tile que já está no mapa.",
       "Arraste o canto inferior direito de um tile selecionado para mudar o tamanho. O tile acompanha o mouse enquanto você arrasta.",
@@ -464,7 +464,11 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     icon: "fa-solid fa-folder-open",
     audience: "gm",
     summary: "Suas imagens, mapas e músicas.",
-    steps: ["Abre o gerenciador de arquivos da sala numa nova aba.", "Envie imagens para usar como mapas, tokens e retratos."],
+    steps: [
+      "Abre o gerenciador de arquivos da sala numa nova aba.",
+      "Selecione como no Windows: clique, Ctrl, Shift ou arraste uma caixa. Ctrl+A seleciona tudo.",
+      "Corte (Ctrl+X), copie (Ctrl+C), cole (Ctrl+V), mova arrastando ou pelo menu, e apague vários de uma vez (Delete).",
+    ],
   },
   {
     id: "toolbar:player-files",

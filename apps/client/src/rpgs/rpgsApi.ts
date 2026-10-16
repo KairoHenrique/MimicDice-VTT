@@ -51,6 +51,8 @@ export const rpgsApi = {
   createFolder: (folderPath: string, name: string) => sendRpgJson<{ path: string }>("POST", "/folder", { path: folderPath, name }),
   rename: (entryPath: string, newName: string) => sendRpgJson<{ path: string }>("POST", "/rename", { path: entryPath, newName }),
   move: (entryPath: string, destination: string) => sendRpgJson<{ path: string }>("POST", "/move", { path: entryPath, destination }),
+  copy: (entryPath: string, destination: string) => sendRpgJson<{ path: string }>("POST", "/copy", { path: entryPath, destination }),
   remove: (entryPath: string) => sendRpgJson<void>("POST", "/delete", { path: entryPath }),
+  removeMany: (paths: readonly string[]) => sendRpgJson<void>("POST", "/delete-many", { paths }),
   uploadFile,
 };

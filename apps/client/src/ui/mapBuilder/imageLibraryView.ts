@@ -21,8 +21,9 @@ export interface LibraryViewHandlers {
   placeAtViewCenter(path: string): void;
   placement(path: string): ImageTilePlacement;
   selected: ReadonlySet<string>;
-  toggleSelected(path: string, options?: { exclusive?: boolean; range?: boolean }): void;
+  selectWithModifiers(path: string, event: MouseEvent): void;
   isSelected(path: string): boolean;
+  onContextMenu(path: string, event: MouseEvent): void;
 }
 
 function baseName(path: string): string {
@@ -35,15 +36,16 @@ function folderEntry(path: string, label: string, handlers: LibraryViewHandlers)
   button.addEventListener("click", (event) => {
     if (event.ctrlKey || event.metaKey || event.shiftKey) {
       event.preventDefault();
-      handlers.toggleSelected(path, { exclusive: false, range: event.shiftKey });
+      handlers.selectWithModifiers(path, event);
       return;
     }
     handlers.openFolder(path);
   });
-  const check = h("input", { type: "checkbox", class: "md-imglib-check", checked: selected, "aria-label": `Selecionar pasta ${label}` });
-  check.addEventListener("click", (event) => event.stopPropagation());
-  check.addEventListener("change", () => handlers.toggleSelected(path, { exclusive: false }));
-  const item = h("li", { class: selected ? "md-imglib-folder-wrap is-selected" : "md-imglib-folder-wrap" }, check, button);
+  button.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    handlers.onContextMenu(path, event);
+  });
+  const item = h("li", { class: selected ? "md-imglib-folder-wrap is-selected" : "md-imglib-folder-wrap", "data-path": path }, button);
   return item;
 }
 
@@ -55,43 +57,44 @@ function preview(path: string): HTMLElement {
 function imageEntry(path: string, handlers: LibraryViewHandlers): HTMLElement {
   const name = baseName(path);
   const selected = handlers.isSelected(path);
-  const check = h("input", { type: "checkbox", class: "md-imglib-check", checked: selected, "aria-label": `Selecionar ${name}` });
-  check.addEventListener("click", (event) => event.stopPropagation());
-  check.addEventListener("change", () => handlers.toggleSelected(path, { exclusive: false }));
   const item = h(
     "li",
     {
       class: selected ? "md-imglib-image is-selected" : "md-imglib-image",
       draggable: "true",
       tabIndex: 0,
-      title: `${name}\nArraste para o mapa (duplo clique: coloca no centro). Ctrl+clique seleciona.`,
-      "aria-label": `${name}: arraste para o mapa ou aperte Enter para colocar no centro`,
+      "data-path": path,
+      title: `${name}\nClique para selecionar. Arraste para o mapa. Delete apaga.`,
+      "aria-label": `${name}: clique para selecionar, Enter coloca no centro, Delete apaga`,
       "aria-selected": selected ? "true" : "false",
     },
-    check,
     preview(path),
     h("span", { class: "md-imglib-name" }, name),
   );
   item.addEventListener("click", (event) => {
-    if (event.ctrlKey || event.metaKey || event.shiftKey) {
-      event.preventDefault();
-      handlers.toggleSelected(path, { exclusive: !(event.ctrlKey || event.metaKey), range: event.shiftKey });
-    }
+    event.preventDefault();
+    handlers.selectWithModifiers(path, event);
+  });
+  item.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    handlers.onContextMenu(path, event);
   });
   item.addEventListener("dragstart", (event) => {
-    if (handlers.selected.size > 0 && !handlers.isSelected(path)) return;
+    if (handlers.selected.size > 0 && !handlers.isSelected(path)) {
+      event.preventDefault();
+      return;
+    }
     event.dataTransfer?.setData("text/plain", JSON.stringify(imageTileDragData(path, handlers.placement(path))));
     if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
     const thumb = item.querySelector("img");
     if (thumb && event.dataTransfer) event.dataTransfer.setDragImage(thumb, thumb.width / 2, thumb.height / 2);
   });
-  item.addEventListener("dblclick", () => handlers.placeAtViewCenter(path));
+  item.addEventListener("dblclick", (event) => {
+    event.preventDefault();
+    handlers.placeAtViewCenter(path);
+  });
   item.addEventListener("keydown", (event) => {
     if (event.key === "Enter") handlers.placeAtViewCenter(path);
-    if (event.key === " " || event.key === "Spacebar") {
-      event.preventDefault();
-      handlers.toggleSelected(path, { exclusive: false });
-    }
   });
   return item;
 }

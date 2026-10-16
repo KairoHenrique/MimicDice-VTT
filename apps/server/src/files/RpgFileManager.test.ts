@@ -61,4 +61,16 @@ describe("RpgFileManager", () => {
     expect(await readFile(path.join(root, "Mesa", "mapa (2).png"), "utf8")).toBe("dois");
     expect((await manager.list("")).entries).toHaveLength(2);
   });
+
+  it("copies entries and deletes several at once", async () => {
+    await manager.createFolder("", "Origem");
+    await manager.createFolder("", "Destino");
+    await manager.writeText("Origem/nota.md", "ola");
+    expect(await manager.copy("Origem/nota.md", "Destino")).toBe("Destino/nota.md");
+    expect(await manager.readText("Destino/nota.md")).toBe("ola");
+    expect(await manager.copy("Origem/nota.md", "Destino")).toBe("Destino/nota (2).md");
+    await manager.removeMany(["Destino/nota.md", "Destino/nota (2).md", "Origem"]);
+    expect((await manager.list("")).entries.map((entry) => entry.name)).toEqual(["Destino"]);
+    expect((await manager.list("Destino")).entries).toEqual([]);
+  });
 });

@@ -224,6 +224,12 @@ export const rpgCreateFolderRequestSchema = z.object({ path: rpgRelativePathSche
 export const rpgRenameRequestSchema = z.object({ path: rpgEntryPathSchema, newName: rpgEntryNameSchema });
 export const rpgMoveRequestSchema = z.object({ path: rpgEntryPathSchema, destination: rpgRelativePathSchema });
 export const rpgEntryRequestSchema = z.object({ path: rpgEntryPathSchema });
+export const rpgCopyRequestSchema = z.object({ path: rpgEntryPathSchema, destination: rpgRelativePathSchema });
+/** Several entries to erase in one go (Arquivos do Mestre). */
+export const MAX_RPG_DELETE_PATHS = 100;
+export const rpgDeleteManyRequestSchema = z.object({
+  paths: z.array(rpgEntryPathSchema).min(1).max(MAX_RPG_DELETE_PATHS),
+});
 export const rpgWriteTextRequestSchema = z.object({ path: rpgEntryPathSchema, content: z.string().max(MAX_RPG_TEXT_FILE_CHARACTERS) });
 
 export interface RpgEntry {

@@ -2,7 +2,9 @@ import path from "node:path";
 import express, { Router, type Request, type Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import {
+  rpgCopyRequestSchema,
   rpgCreateFolderRequestSchema,
+  rpgDeleteManyRequestSchema,
   rpgEntryRequestSchema,
   rpgFileQuerySchema,
   rpgFolderQuerySchema,
@@ -87,8 +89,16 @@ function registerWriteRoutes(router: Router): void {
     const body = parseRequestBody(rpgMoveRequestSchema, request);
     response.json({ path: await managerFor(response).move(body.path, body.destination) });
   });
+  router.post("/copy", writeLimiter, jsonBody, async (request, response) => {
+    const body = parseRequestBody(rpgCopyRequestSchema, request);
+    response.json({ path: await managerFor(response).copy(body.path, body.destination) });
+  });
   router.post("/delete", writeLimiter, jsonBody, async (request, response) => {
     await managerFor(response).remove(parseRequestBody(rpgEntryRequestSchema, request).path);
+    response.status(204).end();
+  });
+  router.post("/delete-many", writeLimiter, jsonBody, async (request, response) => {
+    await managerFor(response).removeMany(parseRequestBody(rpgDeleteManyRequestSchema, request).paths);
     response.status(204).end();
   });
   router.put("/text", writeLimiter, jsonBody, async (request, response) => {

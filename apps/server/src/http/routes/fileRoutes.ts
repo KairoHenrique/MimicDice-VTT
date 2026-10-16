@@ -83,13 +83,16 @@ export function createFileRoutes(context: ServerContext, storage: FileStorage): 
     response.status(201).json({ path: await storage.createDirectory(isGameMaster ? target : area.newFolderTarget(userId, target)) });
   });
 
-  router.delete("/", uploadRateLimiter, async (request, response) => {
+  async function deleteUploadedFiles(request: Request, response: Response): Promise<void> {
     assertPermission(response, "FILES_UPLOAD");
     const { paths } = parseRequestBody(deleteFilesRequestSchema, request);
     const { isGameMaster, userId, area } = requestAccess(response, storage, sharing);
     const targets = isGameMaster ? paths : paths.map((path) => area.deletableTarget(userId, path));
     response.json({ deleted: await storage.deletePaths(targets) } satisfies FileDeleteResult);
-  });
+  }
+
+  router.post("/delete", uploadRateLimiter, deleteUploadedFiles);
+  router.delete("/", uploadRateLimiter, deleteUploadedFiles);
 
   router.get("/note", async (request, response) => {
     assertPermission(response, "FILES_BROWSE");

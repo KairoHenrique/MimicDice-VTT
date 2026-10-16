@@ -146,8 +146,8 @@ export class FilePicker extends ApplicationV2 {
 
   /** Removes files or folders under uploads; returns the paths that were erased. */
   static async delete(paths: readonly string[], { notify = true }: { notify?: boolean } = {}): Promise<string[]> {
-    const response = await fetch("/api/files", {
-      method: "DELETE",
+    const response = await fetch("/api/files/delete", {
+      method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ paths: paths.map((path) => normalizeDataPath(path)) }),

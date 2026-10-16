@@ -1,5 +1,10 @@
 # Notas de versão
 
+## 1.5.2
+
+- **Biblioteca de imagens:** clique, Ctrl, Shift ou arraste uma caixa para selecionar; **Excluir**, Delete e o menu do botão direito apagam vários de uma vez.
+- **Arquivos do Mestre:** seleção múltipla como no Windows (clique, Ctrl, Shift, arrastar a caixa), cortar, copiar, colar, mover e apagar vários itens.
+
 ## 1.5.1
 
 - **Biblioteca de imagens:** pastas **Mapas**, **Personagens** e **Props**. Envie arquivos ou pastas inteiras; o diálogo mostra o tamanho na grade (ex.: 2×1) e o DPI. Marque várias imagens para excluir de uma vez.

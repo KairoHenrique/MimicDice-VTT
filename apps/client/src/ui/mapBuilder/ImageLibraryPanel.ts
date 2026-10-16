@@ -1,6 +1,7 @@
 import { DialogV2, FilePicker, placeImageTile, type ImageTilePlacement } from "@tabbletop/api";
 import { h } from "../../views/dom";
 import { FloatingPanelPosition } from "../common/floatingPanel";
+import { installSelectionMarquee } from "../../rpgs/selectionMarquee";
 import { MAX_FOLDER_UPLOAD_FILES, relativeUploadsFromDataTransfer, relativeUploadsFromFileList, trimFolderUpload, type RelativeUpload } from "./folderUpload";
 import { categoryOf, categoryLabel, DEFAULT_LIBRARY_FOLDER, LIBRARY_CATEGORIES, LIBRARY_ROOT } from "./libraryCategories";
 import { categoryTabs, IMAGE_FILE_PATTERN, libraryGrid, selectablePaths, VIDEO_FILE_PATTERN, type LibraryListing, type LibraryViewHandlers } from "./imageLibraryView";
@@ -46,6 +47,9 @@ export class ImageLibraryPanel {
   #selected = new Set<string>();
   #selectionAnchor: string | null = null;
   #ensuredCategories = false;
+  #disposeMarquee: (() => void) | null = null;
+  #contextMenu: HTMLElement | null = null;
+  #keysBound = false;
 
   get open(): boolean {
     return this.#element !== null;
@@ -66,10 +70,14 @@ export class ImageLibraryPanel {
   async setOpen(open: boolean): Promise<void> {
     localStorage.setItem(OPEN_KEY, String(open));
     if (!open || !game.user.isGM) {
+      this.#disposeMarquee?.();
+      this.#disposeMarquee = null;
+      this.#closeContextMenu();
       this.#element?.remove();
       this.#element = null;
       return;
     }
+    this.#bindKeys();
     await this.#ensureCategories();
     if (!this.#listing) await this.browse(localStorage.getItem(FOLDER_KEY) ?? DEFAULT_LIBRARY_FOLDER);
     else this.render();
@@ -137,7 +145,7 @@ export class ImageLibraryPanel {
       content: h("p", {}, paths.length === 1 ? "Apagar 1 item selecionado? Isso não remove tiles já colocados no mapa." : `Apagar ${paths.length} itens selecionados? Isso não remove tiles já colocados no mapa.`),
       yes: { label: "Apagar", icon: "fa-solid fa-trash" },
     });
-    if (!confirmed) return;
+    if (confirmed !== true) return;
     try {
       const deleted = await FilePicker.delete(paths);
       forgetDpi(deleted);
@@ -151,6 +159,9 @@ export class ImageLibraryPanel {
 
   render(): void {
     if (!game.user.isGM || !this.#listing) return;
+    this.#disposeMarquee?.();
+    this.#closeContextMenu();
+    const body = h("div", { class: "md-imglib-body" }, libraryGrid(this.#listing, this.#filter, this.#handlers()));
     const panel = h(
       "section",
       { id: PANEL_ID, class: "md-imglib-panel", "aria-label": "Biblioteca de imagens" },
@@ -159,7 +170,7 @@ export class ImageLibraryPanel {
       this.#toolbar(this.#listing),
       this.#selectionBar(),
       this.#options(),
-      h("div", { class: "md-imglib-body" }, libraryGrid(this.#listing, this.#filter, this.#handlers())),
+      body,
       this.#hint(),
     );
     this.#acceptFileDrops(panel);
@@ -168,8 +179,17 @@ export class ImageLibraryPanel {
     else document.body.append(panel);
     this.#element = panel;
     panelPosition.place(panel);
-    const body = panel.querySelector(".md-imglib-body");
-    if (body) body.scrollTop = scrollTop;
+    body.scrollTop = scrollTop;
+    this.#disposeMarquee = installSelectionMarquee({
+      container: body,
+      itemSelector: "[data-path]",
+      onComplete: (paths, additive) => {
+        if (!additive) this.#selected.clear();
+        for (const path of paths) this.#selected.add(path);
+        if (paths.length) this.#selectionAnchor = paths[paths.length - 1] ?? null;
+        this.render();
+      },
+    });
   }
 
   async #ensureCategories(): Promise<void> {
@@ -220,31 +240,98 @@ export class ImageLibraryPanel {
       },
       selected: this.#selected,
       isSelected: (path) => this.#selected.has(path),
-      toggleSelected: (path, options) => this.#toggleSelected(path, options),
+      selectWithModifiers: (path, event) => this.#selectWithModifiers(path, event),
+      onContextMenu: (path, event) => this.#openContextMenu(path, event),
     };
   }
 
-  #toggleSelected(path: string, options?: { exclusive?: boolean; range?: boolean }): void {
+  #selectWithModifiers(path: string, event: MouseEvent): void {
     if (!this.#listing) return;
     const paths = selectablePaths(this.#listing, this.#filter);
-    if (options?.range && this.#selectionAnchor) {
+    if (event.shiftKey && this.#selectionAnchor) {
       const from = paths.indexOf(this.#selectionAnchor);
       const to = paths.indexOf(path);
       if (from >= 0 && to >= 0) {
         const [start, end] = from < to ? [from, to] : [to, from];
-        if (options.exclusive !== false) this.#selected.clear();
+        if (!(event.ctrlKey || event.metaKey)) this.#selected.clear();
         for (let index = start; index <= end; index++) this.#selected.add(paths[index]!);
         this.render();
         return;
       }
     }
-    if (options?.exclusive) {
+    if (event.ctrlKey || event.metaKey) {
+      if (this.#selected.has(path)) this.#selected.delete(path);
+      else this.#selected.add(path);
+    } else {
       this.#selected.clear();
       this.#selected.add(path);
-    } else if (this.#selected.has(path)) this.#selected.delete(path);
-    else this.#selected.add(path);
+    }
     this.#selectionAnchor = path;
     this.render();
+  }
+
+  #openContextMenu(path: string, event: MouseEvent): void {
+    this.#closeContextMenu();
+    if (!this.#selected.has(path)) {
+      this.#selected.clear();
+      this.#selected.add(path);
+      this.#selectionAnchor = path;
+      this.render();
+    }
+    const count = this.#selected.size;
+    const menu = h("div", { class: "md-imglib-menu", role: "menu" });
+    const deleteItem = h("button", { type: "button", class: "danger" }, h("i", { class: "fa-solid fa-trash" }), count === 1 ? " Apagar" : ` Apagar ${count} itens`);
+    deleteItem.addEventListener("click", () => {
+      this.#closeContextMenu();
+      void this.deleteSelected();
+    });
+    const placeItem = h("button", { type: "button" }, h("i", { class: "fa-solid fa-plus" }), " Colocar no centro");
+    placeItem.addEventListener("click", () => {
+      this.#closeContextMenu();
+      this.#handlers().placeAtViewCenter(path);
+    });
+    if (!path.match(IMAGE_FILE_PATTERN) && !path.match(VIDEO_FILE_PATTERN)) placeItem.hidden = true;
+    menu.append(placeItem, deleteItem);
+    menu.style.left = `${Math.min(event.clientX, window.innerWidth - 200)}px`;
+    menu.style.top = `${Math.min(event.clientY, window.innerHeight - 120)}px`;
+    menu.addEventListener("click", (clickEvent) => clickEvent.stopPropagation());
+    document.body.append(menu);
+    this.#contextMenu = menu;
+    const dismiss = () => {
+      this.#closeContextMenu();
+      document.removeEventListener("click", dismiss);
+    };
+    setTimeout(() => document.addEventListener("click", dismiss), 0);
+  }
+
+  #closeContextMenu(): void {
+    this.#contextMenu?.remove();
+    this.#contextMenu = null;
+  }
+
+  #bindKeys(): void {
+    if (this.#keysBound) return;
+    this.#keysBound = true;
+    document.addEventListener("keydown", (event) => {
+      if (!this.open) return;
+      const target = event.target as HTMLElement;
+      if (target.closest("input, textarea, select, dialog, .application")) return;
+      if (event.key === "Delete" || event.key === "Backspace") {
+        if (this.#selected.size === 0) return;
+        event.preventDefault();
+        void this.deleteSelected();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a" && this.#listing) {
+        event.preventDefault();
+        for (const path of selectablePaths(this.#listing, this.#filter)) this.#selected.add(path);
+        this.render();
+      } else if (event.key === "Escape") {
+        this.#closeContextMenu();
+        if (this.#selected.size) {
+          this.#selected.clear();
+          this.render();
+        }
+      }
+    });
   }
 
   #pruneSelection(): void {
@@ -328,7 +415,7 @@ export class ImageLibraryPanel {
   }
 
   #hint(): HTMLElement {
-    return h("p", { class: "md-imglib-hint hint" }, "Arraste para o mapa (Shift: livre). Envie arquivos ou pastas. Marque várias imagens para excluir.");
+    return h("p", { class: "md-imglib-hint hint" }, "Clique para selecionar (Ctrl/Shift ou arrastar a caixa). Delete apaga. Arraste para o mapa.");
   }
 
   #acceptFileDrops(panel: HTMLElement): void {

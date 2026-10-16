@@ -220,8 +220,31 @@
   box-shadow: 0 0 0 2px rgb(250 250 250 / 25%);
 }
 
+.entry-card.cut {
+  opacity: 0.45;
+}
+
 .entry-card.dragging {
   opacity: 0.4;
+}
+
+.selection-summary {
+  margin-left: 8px;
+  color: var(--color-accent-strong, var(--brand));
+  font-weight: 600;
+}
+
+.selection-marquee {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  border: 1px solid rgb(80 140 255 / 90%);
+  background: rgb(80 140 255 / 18%);
+}
+
+.rpgs-page button.danger {
+  border-color: rgb(180 60 60 / 60%);
+  color: #f88;
 }
 
 .entry-card.drop-target,

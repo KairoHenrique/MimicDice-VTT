@@ -148,21 +148,42 @@ export class RpgFileManager {
     const destinationDirectory = await this.#resolveExisting(destinationSegments, "folder");
     const name = segments.at(-1) as string;
     if (path.dirname(source) === destinationDirectory) return segments.join("/");
-    if (await pathExists(path.join(destinationDirectory, name))) throw HttpError.conflict("O destino já tem algo com esse nome");
+    const finalName = await this.#availableName(destinationDirectory, name);
     try {
-      await rename(source, path.join(destinationDirectory, name));
+      await rename(source, path.join(destinationDirectory, finalName));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EXDEV") throw error;
-      await cp(source, path.join(destinationDirectory, name), { recursive: true, errorOnExist: true });
+      await cp(source, path.join(destinationDirectory, finalName), { recursive: true, errorOnExist: true });
       await rm(source, { recursive: true });
     }
-    return [...destinationSegments, name].join("/");
+    return [...destinationSegments, finalName].join("/");
+  }
+
+  /** Copies a file or folder into another folder; an existing name gets a " (2)" style suffix. */
+  async copy(entryPath: string, destinationFolder: string): Promise<string> {
+    const segments = parseRpgPath(entryPath);
+    const destinationSegments = parseRpgPath(destinationFolder);
+    if (segments.length === 0) throw HttpError.badRequest("Não é possível copiar a pasta principal");
+    const isIntoItself = destinationSegments.length >= segments.length && segments.every((segment, index) => destinationSegments[index] === segment);
+    if (isIntoItself) throw HttpError.badRequest("Não dá para copiar uma pasta para dentro dela mesma");
+    const source = await this.#resolveExisting(segments);
+    const destinationDirectory = await this.#resolveExisting(destinationSegments, "folder");
+    const finalName = await this.#availableName(destinationDirectory, segments.at(-1) as string);
+    await cp(source, path.join(destinationDirectory, finalName), { recursive: true, errorOnExist: true });
+    return [...destinationSegments, finalName].join("/");
   }
 
   async remove(entryPath: string): Promise<void> {
     const segments = parseRpgPath(entryPath);
     if (segments.length === 0) throw HttpError.badRequest("A pasta principal não pode ser apagada");
     await rm(await this.#resolveExisting(segments), { recursive: true });
+  }
+
+  /** Deletes several entries; folders deeper in the tree are removed first so parents go last. */
+  async removeMany(entryPaths: readonly string[]): Promise<void> {
+    const unique = [...new Set(entryPaths.map((entryPath) => parseRpgPath(entryPath).join("/")).filter(Boolean))];
+    unique.sort((left, right) => right.split("/").length - left.split("/").length || right.localeCompare(left));
+    for (const entryPath of unique) await this.remove(entryPath);
   }
 
   /** Location of a file for streaming to the browser, as a root plus a path relative to it. */
