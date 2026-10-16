@@ -1,5 +1,9 @@
 # Notas de versão
 
+## 1.5.7
+
+- **Sync:** o servidor responde na hora (sem esperar a auditoria de habilidades) e o token arrastado não “pula” de volta no soltar enquanto a posição salva chega.
+
 ## 1.5.6
 
 - **Sync mais rápido:** mudanças do mestre (tokens, fichas, mapa) chegam aos jogadores sem esperar a gravação no disco. O preview ao arrastar token também ficou mais fluido.
