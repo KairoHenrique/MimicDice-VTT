@@ -22,12 +22,12 @@ export class BoardContext {
   }
 
   #baseRollData(): Record<string, unknown> {
-    return { ...this.store.extraRollData(), ...(this.actor.getRollData?.() ?? {}), ...this.#aliases };
+    return { ...(this.actor.getRollData?.() ?? {}), ...this.store.values(), ...this.store.extraRollData(), ...this.#aliases };
   }
 
-  /** Extra `@refs` for sheet rolls: flag-stored values, checkbox and option numbers, and calculated components. */
+  /** Extra `@refs` for sheet rolls: stored values, checkbox/option numbers, and calculated components. */
   extraRollData(): Record<string, unknown> {
-    return { ...this.store.extraRollData(), ...this.#aliases, ...this.derived };
+    return { ...this.store.values(), ...this.store.extraRollData(), ...this.#aliases, ...this.derived };
   }
 
   /** Dice-free formula over the sheet's values and calculations; null when it is invalid. */

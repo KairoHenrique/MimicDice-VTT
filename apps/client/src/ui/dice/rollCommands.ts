@@ -60,7 +60,8 @@ interface SpeakerRollOptions {
 }
 
 export async function rollAsSpeaker(formula: string, { actor = null, flavor = "", rollMode, extraRollData = {} }: SpeakerRollOptions = {}): Promise<unknown> {
-  const rollData = { ...extraRollData, ...(actor?.getRollData?.() ?? {}) };
+  // Sheet extras last so @atalhos from the board win over empty/partial actor.system paths.
+  const rollData = { ...(actor?.getRollData?.() ?? {}), ...extraRollData };
   const roll = Roll.create(formula, rollData);
   await roll.evaluate();
   const speaker = ChatMessage.getSpeaker({ actor: actor ?? undefined });

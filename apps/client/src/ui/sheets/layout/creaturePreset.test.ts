@@ -46,8 +46,9 @@ describe("NPC / Inimigo sheet model", () => {
         expect(evaluate(component.formula, {}), component.key).not.toBeNull();
       }
     }
-    const agility = allComponents(npc.layout).find((component) => component.key === "agilidade");
+    const agility = allComponents(npc.layout).find((component) => component.key === "agili");
     expect(agility?.formula).toContain("2d20kl");
+    expect(agility?.formula).toContain("@agili");
     expect(agility?.formula).toContain("d20kh");
   });
 

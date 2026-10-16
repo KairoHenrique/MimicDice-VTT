@@ -78,9 +78,9 @@ export const CREATURE_SHEET_PAGES: readonly SheetPage[] = [
         "y": 6,
         "w": 2,
         "h": 2,
-        "key": "agilidade",
+        "key": "agili",
         "label": "Agilidade",
-        "formula": "if(eq(@agilidade, 0), 2d20kl, (@agilidade)d20kh)",
+        "formula": "if(eq(@agili, 0), 2d20kl, (@agili)d20kh)",
         "min": 0,
         "initial": 1,
         "hint": "Com 0: 2d20 e fica com o menor. Com 1+: um d20 por ponto e fica com o maior."
@@ -366,7 +366,7 @@ export const CREATURE_SHEET_PAGES: readonly SheetPage[] = [
         "w": 3,
         "h": 2,
         "label": "Iniciativa",
-        "formula": "if(eq(@agilidade, 0), 2d20kl, (@agilidade)d20kh) + @pericias.iniciativa"
+        "formula": "if(eq(@agili, 0), 2d20kl, (@agili)d20kh) + @pericias.iniciativa"
       }
     ]
   },
