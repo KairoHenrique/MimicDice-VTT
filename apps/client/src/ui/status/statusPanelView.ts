@@ -1,5 +1,6 @@
 import { STATUS_PANEL_MODES, type StatusPanelMode, type StatusPanelState, type StatusResource } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
+import { applyActorPortraitFocus } from "../actors/appearances";
 import { actorRole, ROLE_PRESENTATION } from "../actors/actorRoles";
 import { applyEffectDialog } from "../effects/applyEffectDialog";
 import { actorEffects } from "../effects/effectStore";
@@ -82,7 +83,9 @@ export function buildActorCard(actor: any, resources: readonly StatusResource[])
   const readings = readActorResources(actor, resources);
   const name = h("button", { type: "button", class: "status-name", title: `Abrir a ficha de ${actor.name}` }, actor.name || "Sem nome");
   name.addEventListener("click", () => actor.sheet?.render(true));
-  const portrait = actor.img ? h("img", { class: "status-portrait", src: actor.img, alt: "", loading: "lazy" }) : null;
+  const portrait = actor.img
+    ? applyActorPortraitFocus(h("img", { class: "status-portrait", src: actor.img, alt: "", loading: "lazy" }) as HTMLImageElement, actor)
+    : null;
   const body = readings.length > 0 ? readings.map((reading) => buildReading(actor, reading)) : [h("p", { class: "status-empty hint" }, "A ficha não tem essas barras.")];
   const header = h("div", { class: "status-card-header" }, portrait, name, effectsButton(actor));
   return h("li", { class: "status-card", "data-actor-id": actor.id }, header, effectChipRow(actorEffects(actor), "status-effects"), ...body);

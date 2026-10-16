@@ -1,4 +1,5 @@
 import { h } from "../../views/dom";
+import { applyActorPortraitFocus } from "../actors/appearances";
 import { actorEffects } from "../effects/effectStore";
 import { effectChipRow } from "../effects/effectVisuals";
 import { panToCombatant } from "./combatActions";
@@ -85,7 +86,9 @@ function gameMasterControls(combatant: any): HTMLElement {
 /** One line of the turn order: portrait, name, initiative (or a roll button for its owner) and GM toggles. */
 export function buildCombatantRow(combatant: any, isCurrentTurn: boolean): HTMLElement {
   const classes = ["combatant", isCurrentTurn ? "active" : "", combatant.defeated ? "defeated" : "", combatant.hidden ? "hidden-combatant" : "", combatant.isOwner && !game.user.isGM ? "owned" : ""];
-  const portrait = combatant.img ? h("img", { class: "combatant-portrait", src: combatant.img, alt: "", loading: "lazy" }) : h("span", { class: "combatant-portrait placeholder" }, h("i", { class: "fa-solid fa-user" }));
+  const portrait = combatant.img
+    ? applyActorPortraitFocus(h("img", { class: "combatant-portrait", src: combatant.img, alt: "", loading: "lazy" }) as HTMLImageElement, combatant.actor)
+    : h("span", { class: "combatant-portrait placeholder" }, h("i", { class: "fa-solid fa-user" }));
   const name = h("span", { class: "combatant-name" }, combatant.name || "Sem nome");
   const row = h(
     "li",

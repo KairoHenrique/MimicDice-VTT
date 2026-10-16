@@ -35,6 +35,12 @@ function applyFocusStyle(image: HTMLImageElement, focus: PortraitFocus): void {
   image.style.objectPosition = `${focus.x}% ${focus.y}%`;
 }
 
+/** Same framing as the sheet portrait: header, sidebar, status, combat, etc. */
+export function applyActorPortraitFocus(image: HTMLImageElement, actor: any): HTMLImageElement {
+  applyFocusStyle(image, actorPortraitFocus(actor));
+  return image;
+}
+
 export function actorAppearances(actor: any): ActorAppearance[] {
   const parsed = appearancesSchema.safeParse(actor?.getFlag?.(MIMICDICE_FLAG_SCOPE, APPEARANCES_FLAG) ?? []);
   return parsed.success ? parsed.data : [];
@@ -162,9 +168,9 @@ export async function pickAndSetPortrait(actor: any): Promise<void> {
   if (path) await setActorPortrait(actor, path);
 }
 
-/** Sheet portrait: drag inside the frame to center the character; click (without drag) to change the image. */
-export function buildPortraitControl(actor: any, editable: boolean): HTMLElement {
-  const canEdit = editable && canChangeAppearance(actor);
+/** Sheet portrait (PC, NPC or enemy): drag to frame; click without drag to change the image. */
+export function buildPortraitControl(actor: any, _editable: boolean): HTMLElement {
+  const canEdit = canChangeAppearance(actor);
   const focus = actorPortraitFocus(actor);
   const image = h("img", {
     class: "md-c-image portrait",
@@ -315,10 +321,12 @@ async function renameAppearanceDialog(actor: any, appearance: ActorAppearance): 
 }
 
 function appearanceThumb(actor: any, appearance: ActorAppearance, active: boolean): HTMLElement {
+  const thumb = h("img", { src: appearance.img, alt: "", loading: "lazy" }) as HTMLImageElement;
+  if (appearance.img === actor.img) applyActorPortraitFocus(thumb, actor);
   const choose = h(
     "button",
     { type: "button", class: `md-appearance${active ? " active" : ""}`, title: active ? `${appearance.name} (em uso)` : `Usar ${appearance.name}`, "aria-pressed": String(active) },
-    h("img", { src: appearance.img, alt: "", loading: "lazy" }),
+    thumb,
     h("span", { class: "md-appearance-name" }, appearance.name),
   );
   choose.addEventListener("click", () => void applyAppearance(actor, appearance).catch(() => ui.notifications.warn("Não foi possível trocar a aparência.")));

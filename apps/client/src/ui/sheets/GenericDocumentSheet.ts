@@ -1,11 +1,18 @@
 import { DocumentSheetV2, type ApplicationConfiguration } from "@tabbletop/api";
 import { h } from "../../views/dom";
+import { applyActorPortraitFocus } from "../actors/appearances";
 import { DocumentOwnershipConfig } from "../documents/DocumentOwnershipConfig";
 import { describeVisibility } from "../documents/ownershipLevels";
 import { buildEmbeddedItemsSection } from "./embeddedItemsSection";
 import { buildJournalPagesSection } from "./journalPagesSection";
 import { buildAbilitiesSection } from "./abilitiesSection";
 import { buildSystemFieldsEditor } from "./systemFieldsEditor";
+
+function documentPortrait(document: any, className: string, attrs: Record<string, unknown> = {}): HTMLElement {
+  const image = h("img", { class: className, src: document.img ?? "", alt: "", ...attrs }) as HTMLImageElement;
+  if (document.documentName === "Actor") applyActorPortraitFocus(image, document);
+  return image;
+}
 
 function imagePathField(currentPath: string): HTMLElement {
   const field = document.createElement("file-picker");
@@ -51,7 +58,7 @@ export abstract class GenericDocumentSheet extends DocumentSheetV2 {
     return h(
       "div",
       { class: "sheet-limited" },
-      this.document.img ? h("img", { class: "profile-img", src: this.document.img, alt: "" }) : null,
+      this.document.img ? documentPortrait(this.document, "profile-img") : null,
       h("h2", {}, this.document.name),
       h("p", { class: "hint" }, "O mestre liberou apenas o nome e a imagem."),
     );
@@ -62,7 +69,7 @@ export abstract class GenericDocumentSheet extends DocumentSheetV2 {
     const hasImage = "img" in this.document._source;
     if (hasImage) {
       const imageAttributes = editable ? { "data-action": "editImage", "data-edit": "img", title: "Clique para trocar a imagem" } : {};
-      header.append(h("img", { class: editable ? "profile-img editable" : "profile-img", src: this.document.img ?? "", alt: "", ...imageAttributes }));
+      header.append(documentPortrait(this.document, editable ? "profile-img editable" : "profile-img", imageAttributes));
     }
     const details = h(
       "div",

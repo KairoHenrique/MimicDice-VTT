@@ -6,6 +6,7 @@ import { ActorCategoryManager, editActorCategoriesDialog } from "./ActorCategory
 import { addActorsToCategory, readActorCategories } from "./actorCategoryStore";
 import { ActorCreationDialog } from "./ActorCreationDialog";
 import { countMembers, filterActors, FILTER_ALL, FILTER_PLAYERS } from "./actorFilters";
+import { applyActorPortraitFocus } from "./appearances";
 import { actorRole, isPlayerCharacter, ROLE_PRESENTATION } from "./actorRoles";
 
 const SEARCH_DEBOUNCE_MS = 120;
@@ -64,6 +65,11 @@ export class ActorDirectory extends DocumentDirectory {
     const exportButton = h("button", { type: "button", title: "Salvar seus modelos de ficha em um arquivo para compartilhar" }, h("i", { class: "fa-solid fa-file-export" }), " Exportar sistema");
     exportButton.addEventListener("click", () => void exportSystemDialog());
     return h("div", { class: "md-exchange-row" }, importButton, exportButton);
+  }
+
+  protected override entryThumbnail(entry: any): HTMLElement {
+    if (!entry.img) return h("i", { class: "thumbnail fa-solid fa-user" });
+    return applyActorPortraitFocus(h("img", { class: "thumbnail", src: entry.img, alt: "", loading: "lazy" }) as HTMLImageElement, entry);
   }
 
   protected override entryBadges(entry: any): Node[] {

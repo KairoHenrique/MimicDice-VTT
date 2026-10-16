@@ -1,5 +1,9 @@
 # Notas de versão
 
+## 1.5.9
+
+- **Retrato:** o enquadramento (arrastar para centralizar) vale em PC, NPC e inimigo, e a mesma posição aparece na miniatura da ficha, na lista de Atores, no Status e no combate.
+
 ## 1.5.8
 
 - **Retrato:** arraste a foto na ficha para centralizar o personagem no quadro (enquadramento salvo). Clique sem arrastar (ou solte um arquivo) para trocar a imagem.
