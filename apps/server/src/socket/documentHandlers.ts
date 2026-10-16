@@ -71,7 +71,10 @@ async function handleModifyDocument(scope: DocumentHandlerScope, payload: unknow
 
   const outcome = await world.documents.modify(parsed.data, { userId: scope.userId, role: user.role });
   broadcastToViewers(scope, world, outcome);
-  await auditAbilityChanges(scope.io, scope.presence, world, outcome, { userId: scope.userId, role: user.role }).catch((error: unknown) => scope.context.logger.error("Falha ao registrar auditoria de habilidades", error));
+  // Audit can write a ChatMessage; never block the ack/broadcast path on that extra round-trip.
+  void auditAbilityChanges(scope.io, scope.presence, world, outcome, { userId: scope.userId, role: user.role }).catch((error: unknown) =>
+    scope.context.logger.error("Falha ao registrar auditoria de habilidades", error),
+  );
   return { response: redactResponseForRequester(outcome, { userId: scope.userId, isGameMaster: isGameMasterRole(user.role) }) };
 }
 

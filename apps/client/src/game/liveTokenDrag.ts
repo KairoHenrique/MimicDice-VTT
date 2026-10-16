@@ -70,6 +70,10 @@ export function registerLiveTokenDrag(socket: Socket): void {
     const parsed = tokenDragBroadcastSchema.safeParse(payload);
     if (!parsed.success || !canvas.ready || canvas.scene?.id !== parsed.data.sceneId) return;
     const dragger = game.users.get(parsed.data.userId);
-    for (const token of parsed.data.tokens) showRemoteDrag(token.tokenId, parsed.data.ended ? null : { x: token.x, y: token.y }, dragger);
+    for (const token of parsed.data.tokens) {
+      // On drop, keep the last live coords until the saved Token update clears #livePosition — clearing
+      // immediately caused a snap-back while MODIFY_DOCUMENT was still in flight.
+      showRemoteDrag(token.tokenId, { x: token.x, y: token.y }, parsed.data.ended ? null : dragger);
+    }
   });
 }
