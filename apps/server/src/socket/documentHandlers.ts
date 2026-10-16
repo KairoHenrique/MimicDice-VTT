@@ -10,8 +10,8 @@ import type { PresenceTracker } from "./PresenceTracker";
 import { SocketRateLimiter } from "./SocketRateLimiter";
 import { auditAbilityChanges } from "./abilityAudit";
 
-const DOCUMENT_REQUEST_BURST = 60;
-const DOCUMENT_REQUESTS_PER_SECOND = 20;
+const DOCUMENT_REQUEST_BURST = 80;
+const DOCUMENT_REQUESTS_PER_SECOND = 40;
 
 type Acknowledge = (response: ModifyDocumentAck) => void;
 

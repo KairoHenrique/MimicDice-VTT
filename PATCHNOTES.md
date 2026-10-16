@@ -1,8 +1,13 @@
 # Notas de versão
 
+## 1.5.6
+
+- **Sync mais rápido:** mudanças do mestre (tokens, fichas, mapa) chegam aos jogadores sem esperar a gravação no disco. O preview ao arrastar token também ficou mais fluido.
+
 ## 1.5.5
 
 - **Pasta do mestre:** pasta compartilhada (`uploads/compartilhado`) que os jogadores veem. No seletor de arquivos há atalho **Pasta do mestre**; o mestre também abre pelo botão na barra.
+- **Atualizador:** o instalador da 1.5.5 foi anexado ao release (antes faltava o `latest.yml`/`.exe`, e "Procurar atualização" falhava).
 - **Arquivos como no Windows:** arraste arquivos ou pastas do Explorer para o seletor (subpastas são recriadas), envie uma pasta inteira, crie subpastas e apague itens.
 - **Retrato na ficha:** clique ou arraste uma imagem na foto do personagem para trocar a aparência (ficha e token no mapa).
 

@@ -90,7 +90,9 @@ export class DocumentService {
     const parentUuid = request.operation.parentUuid ?? null;
     const target = parentUuid ? this.#embeddedTarget(request.type, parentUuid) : this.#worldTarget(request.type);
     const affected = this.#applyAction(request, target, actor);
-    await target.commit();
+    // Commit updates memory immediately (DocumentStore.set) and queues disk I/O. Do not await the disk write —
+    // waiting made every token/sheet change stall the GM and every player until LevelDB finished.
+    void target.commit();
     return {
       response: {
         type: target.definition.name,
@@ -242,8 +244,9 @@ export class DocumentService {
       definition,
       ancestors,
       siblings,
-      commit: async () => {
-        if (touched) await store.set(workingRoot);
+      commit: () => {
+        // Memory updates inside set() before the disk write is queued; callers may ignore the returned promise.
+        return touched ? store.set(workingRoot) : Promise.resolve();
       },
       isTakenId: (documentId) => siblings().some((sibling) => sibling._id === documentId),
       findById: (documentId) => siblings().find((sibling) => sibling._id === documentId),

@@ -1,7 +1,8 @@
 import { SOCKET_EVENTS, tokenDragBroadcastSchema, type TokenDragRequest } from "@tabbletop/protocol";
 import type { Socket } from "socket.io-client";
 
-const SEND_INTERVAL_MS = 50;
+/** ~30 fps live preview; lower adds lag between GM and players, higher floods the socket. */
+const SEND_INTERVAL_MS = 33;
 const STALE_PREVIEW_MS = 3_000;
 
 type DraggedTokens = TokenDragRequest["tokens"];
