@@ -3,7 +3,7 @@ import { h } from "../../../views/dom";
 import type { BoardContext } from "./boardContext";
 import { clampNumber } from "./sheetLayoutRules";
 import { rollSkillWithAttribute } from "./skillAttributeRoll";
-import { readSkillValues, skillPointsTotal } from "./skillList";
+import { readSkillValues, skillPointsTotal, sortSkillsByValue } from "./skillList";
 
 interface SkillRowContext {
   readonly context: BoardContext;
@@ -82,10 +82,10 @@ export function buildSkillsControl(context: BoardContext, component: SheetCompon
   };
   const columns = clampNumber(component.skillColumns ?? 1, 1, MAX_SKILL_COLUMNS);
   const list = h("ul", { class: "md-skills-list", style: `--md-skill-columns:${columns}`, role: "list" });
-  for (const skill of skills) {
+  for (const skill of sortSkillsByValue(skills, values)) {
     const value = values[skill.key] ?? 0;
     const control = component.skillStyle === "pips" ? pipsValue(row, skill, value) : numberValue(row, skill, value);
-    list.append(h("li", { class: "md-skill" }, skillName(row, skill, value), control));
+    list.append(h("li", { class: "md-skill", "data-skill-key": skill.key }, skillName(row, skill, value), control));
   }
   const wrapper = h("div", { class: "md-skills" }, header(context, component, skillPointsTotal(values)), list);
   wrapper.addEventListener("change", (event) => event.stopPropagation());

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_PULLED_USERS, pullToSceneRequestSchema, setupRequestSchema } from "./requests";
+import { MAX_PULLED_USERS, pullToSceneRequestSchema, setupRequestSchema, sheetPingBroadcastSchema, sheetPingRequestSchema } from "./requests";
 
 describe("pullToSceneRequestSchema", () => {
   const sceneId = "abcdefghijklmnop";
@@ -33,3 +33,34 @@ describe("setupRequestSchema", () => {
     expect(setupRequestSchema.safeParse({ ...base, gameMasterPassword: "x".repeat(129) }).success).toBe(false);
   });
 });
+
+describe("sheetPing schemas", () => {
+  it("accepts a valid sheet ping request with target identifiers", () => {
+    const valid = {
+      actorId: "abcdefghijklmnop",
+      tab: "sheet",
+      pageId: "page-1",
+      componentId: "comp-123",
+      skillKey: "luta",
+      label: "Perícia Luta",
+    };
+    expect(sheetPingRequestSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("validates broadcast schema with author userId", () => {
+    const broadcast = {
+      actorId: "abcdefghijklmnop",
+      tab: "rolls",
+      abilityId: "0",
+      label: "Golpe",
+      userId: "qrstuvwxyzabcdef",
+    };
+    expect(sheetPingBroadcastSchema.safeParse(broadcast).success).toBe(true);
+  });
+
+  it("rejects invalid actorId or unknown tab in sheet ping", () => {
+    expect(sheetPingRequestSchema.safeParse({ actorId: "invalid!id" }).success).toBe(false);
+    expect(sheetPingRequestSchema.safeParse({ actorId: "abcdefghijklmnop", tab: "invalid_tab" }).success).toBe(false);
+  });
+});
+

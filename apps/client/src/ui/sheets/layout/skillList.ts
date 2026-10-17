@@ -47,3 +47,13 @@ export function readSkillValues(raw: unknown, skills: readonly SheetSkill[], fal
 export function skillPointsTotal(values: Readonly<Record<string, number>>): number {
   return Object.values(values).reduce((total, value) => total + value, 0);
 }
+
+/** Sorts skills in descending order of points value; ties are sorted alphabetically. */
+export function sortSkillsByValue(skills: readonly SheetSkill[], values: Readonly<Record<string, number>>): SheetSkill[] {
+  return [...skills].sort((a, b) => {
+    const valueA = values[a.key] ?? 0;
+    const valueB = values[b.key] ?? 0;
+    if (valueB !== valueA) return valueB - valueA;
+    return a.label.localeCompare(b.label, "pt", { sensitivity: "base" });
+  });
+}

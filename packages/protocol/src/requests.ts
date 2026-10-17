@@ -102,6 +102,24 @@ export type CanvasPingRequest = z.infer<typeof canvasPingRequestSchema>;
 export const canvasPingBroadcastSchema = canvasPingRequestSchema.extend({ userId: documentIdSchema });
 export type CanvasPingBroadcast = z.infer<typeof canvasPingBroadcastSchema>;
 
+/** A highlighted element on an actor's sheet from the GM to guide players. */
+export const sheetPingRequestSchema = z.object({
+  actorId: documentIdSchema,
+  tab: z.enum(["sheet", "rolls", "items"]).optional(),
+  pageId: z.string().max(64).optional(),
+  componentId: z.string().max(64).optional(),
+  skillKey: z.string().max(64).optional(),
+  abilityId: z.string().max(64).optional(),
+  itemId: z.string().max(64).optional(),
+  label: z.string().max(100).optional(),
+});
+export type SheetPingRequest = z.infer<typeof sheetPingRequestSchema>;
+
+export const sheetPingBroadcastSchema = sheetPingRequestSchema.extend({
+  userId: documentIdSchema,
+});
+export type SheetPingBroadcast = z.infer<typeof sheetPingBroadcastSchema>;
+
 /** Live position of tokens while their owner drags them; `ended` tells others to drop the preview. Nothing is saved. */
 export const MAX_DRAGGED_TOKENS = 20;
 export const tokenDragRequestSchema = z.object({

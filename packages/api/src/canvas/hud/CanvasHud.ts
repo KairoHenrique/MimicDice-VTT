@@ -7,7 +7,7 @@ import { currentConfig, currentGame, currentUi } from "../../runtime";
 import type { PlaceableObject } from "../placeables/PlaceableObject";
 import type { Token } from "../placeables/Token";
 import type { AmbientLight, Note, Tile, Wall } from "../placeables/simplePlaceables";
-import { defaultDrawingColor, drawingEditFields, editorFields, readEditors, textFields } from "./drawingFields";
+import { defaultDrawingColor, drawingEditFields, editorFields, isGmDrawingsHidden, readEditors, textFields } from "./drawingFields";
 import { attachLivePreview, buildForm, readForm, type FormFieldSpec } from "./hudForms";
 
 const MAX_ITEM_SUGGESTIONS = 200;
@@ -135,7 +135,15 @@ export class CanvasHud {
     const entries: MenuEntry[] = [];
     if (authorName) entries.push({ heading: true, label: `Feito por ${authorName}`, icon: "" });
     if (object.document.documentName === "Drawing") entries.push(...this.#drawingEntries(object.document, user));
-    if (user?.isGM) entries.push(this.#lockAuthoredEntry(object.document, kind));
+    if (user?.isGM) {
+      const hidden = object.document.hidden === true;
+      entries.push({
+        label: hidden ? `Revelar ${kind} para jogadores` : `Ocultar ${kind} de jogadores`,
+        icon: hidden ? "fa-solid fa-eye" : "fa-solid fa-eye-slash",
+        onSelect: () => object.document.update({ hidden: !hidden }),
+      });
+      entries.push(this.#lockAuthoredEntry(object.document, kind));
+    }
     entries.push({ label: `Apagar ${kind}`, icon: "fa-solid fa-trash", onSelect: () => object.document.delete() });
     this.#openMenu(entries, event);
   }
@@ -151,7 +159,7 @@ export class CanvasHud {
     const isText = document.shape?.type === CONST.DRAWING_TYPES.TEXT;
     const values = await this.#formDialog(isText ? "Editar texto" : "Editar desenho", drawingEditFields(document._source), {
       document,
-      fields: ["text", "textColor", "fontSize", "strokeColor", "strokeWidth", "fillColor", "fillAlpha"],
+      fields: ["text", "textColor", "fontSize", "strokeColor", "strokeWidth", "fillColor", "fillAlpha", "hidden"],
     });
     if (!values) return;
     if (isText && (typeof values.text !== "string" || !values.text.trim())) {
@@ -322,7 +330,8 @@ export class CanvasHud {
     }
     if (documentName === "Drawing") {
       const color = defaultDrawingColor();
-      return { strokeColor: color, fillColor: color, ...data };
+      const hidden = currentGame()?.user?.isGM && isGmDrawingsHidden();
+      return { strokeColor: color, fillColor: color, ...(hidden ? { hidden: true } : {}), ...data };
     }
     return data;
   }

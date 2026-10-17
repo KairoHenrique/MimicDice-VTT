@@ -61,6 +61,7 @@ export const SOCKET_EVENTS = Object.freeze({
   ITEM_TRANSFER: "itemTransfer",
   CHEST_TAKE: "chestTake",
   CHEST_PUT: "chestPut",
+  SHEET_PING: "sheetPing",
 });
 
 export const MAX_DOCUMENT_BYTES = 1024 * 1024;

@@ -23,6 +23,7 @@ import { buildAppearanceStrip } from "../actors/appearances";
 import { draggedItem } from "../items/inventorySync";
 import { moveItemToActor } from "../items/itemExchange";
 import { buildLinkedSheets, isSheetShared, shareSheetDialog } from "../actors/sheetSharing";
+import { sendSheetPing } from "./sheetPings";
 
 type SheetTab = "sheet" | "rolls" | "items";
 
@@ -109,6 +110,7 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
   #editing = false;
   #editor: BoardEditor | null = null;
   #activePageId: string | null = null;
+  #pingModeActive = false;
 
   get layout(): SheetLayout {
     return readLayout(this.document.getFlag(MIMICDICE_FLAG_SCOPE, LAYOUT_FLAG_KEY)) ?? EMPTY_LAYOUT;
@@ -131,7 +133,7 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     const role = actorRole(this.document);
     const meta = h("div", { class: "md-meta" });
     if (game.user.isGM) {
-      meta.append(this.#roleControl(role), this.#ownerControl(), this.#shareControl());
+      meta.append(this.#roleControl(role), this.#ownerControl(), this.#shareControl(), this.#pingControl());
       const rollPrivacy = buildRollPrivacyToggle(this.document);
       if (rollPrivacy) meta.append(rollPrivacy);
     } else {
@@ -175,6 +177,29 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     button.addEventListener("click", (event) => {
       event.preventDefault();
       void shareSheetDialog(this.document).catch((error: Error) => ui.notifications.warn(error.message));
+    });
+    return button;
+  }
+
+  #pingControl(): HTMLButtonElement {
+    const button = h(
+      "button",
+      {
+        type: "button",
+        class: `md-toolbar-button${this.#pingModeActive ? " active" : ""}`,
+        title: "Destacar para o jogador: clique para ativar o modo de destaque (ou segure Alt + clique em qualquer campo)",
+      },
+      h("i", { class: "fa-solid fa-bullseye", "aria-hidden": "true" }),
+      " Destacar",
+    );
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.#pingModeActive = !this.#pingModeActive;
+      this.element?.classList.toggle("md-sheet-ping-mode", this.#pingModeActive);
+      if (this.#pingModeActive) {
+        ui.notifications.info("Modo destaque: clique em qualquer campo ou perícia para apontar na tela do jogador.");
+      }
+      void this.render();
     });
     return button;
   }
@@ -242,6 +267,7 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
     await super._onFirstRender(context, options as never);
     void this.#giveDefaultSheetIfMissing();
     this.#acceptItemDrops();
+    this.#setupSheetPingListener();
   }
 
   /** Dropping an Items-tab entry on the sheet puts a copy in this character's inventory. */
@@ -328,5 +354,70 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
   #showPage(pageId: string): void {
     this.#activePageId = pageId;
     void this.render();
+  }
+
+  setTab(tab: SheetTab): void {
+    if (this.#activeTab !== tab) {
+      this.#activeTab = tab;
+      void this.render();
+    }
+  }
+
+  setPage(pageId: string): void {
+    if (this.#activePageId !== pageId) {
+      this.#activePageId = pageId;
+      void this.render();
+    }
+  }
+
+  #setupSheetPingListener(): void {
+    const root = this.element;
+    if (!root) return;
+    root.addEventListener(
+      "click",
+      (event: MouseEvent) => {
+        if (!game.user.isGM) return;
+        if (!event.altKey && !this.#pingModeActive) return;
+        event.preventDefault();
+        event.stopPropagation();
+        this.#handlePingClick(event);
+      },
+      true,
+    );
+  }
+
+  #handlePingClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    const skillEl = target.closest<HTMLElement>("[data-skill-key]");
+    const compEl = target.closest<HTMLElement>("[data-component-id]");
+    const abilityEl = target.closest<HTMLElement>("[data-ability-id]");
+    const itemEl = target.closest<HTMLElement>("[data-item-id]");
+
+    if (skillEl) {
+      const skillKey = skillEl.dataset.skillKey;
+      const label = skillEl.querySelector(".md-skill-name")?.textContent?.trim() || "Perícia";
+      sendSheetPing({ actorId: this.document.id, tab: "sheet", pageId: this.#activePageId ?? undefined, skillKey, label: `Perícia ${label}` });
+    } else if (compEl) {
+      const componentId = compEl.dataset.componentId;
+      const label = compEl.querySelector(".md-field-label, .md-c-title, .md-c-label")?.textContent?.trim() || "Campo";
+      sendSheetPing({ actorId: this.document.id, tab: "sheet", pageId: this.#activePageId ?? undefined, componentId, label });
+    } else if (abilityEl) {
+      const abilityId = abilityEl.dataset.abilityId;
+      const label = abilityEl.querySelector(".md-ability-title, input")?.textContent?.trim() || (abilityEl.querySelector("input") as HTMLInputElement)?.value || "Habilidade";
+      sendSheetPing({ actorId: this.document.id, tab: "rolls", abilityId, label: `Habilidade: ${label}` });
+    } else if (itemEl) {
+      const itemId = itemEl.dataset.itemId;
+      const label = itemEl.querySelector(".entry-name")?.textContent?.trim() || "Item";
+      sendSheetPing({ actorId: this.document.id, tab: "items", itemId, label: `Item: ${label}` });
+    } else {
+      sendSheetPing({ actorId: this.document.id, tab: this.#activeTab, pageId: this.#activePageId ?? undefined, label: "Ficha" });
+    }
+
+    if (this.#pingModeActive) {
+      this.#pingModeActive = false;
+      this.element?.classList.remove("md-sheet-ping-mode");
+      void this.render();
+    }
   }
 }

@@ -1,5 +1,18 @@
 # Notas de versão
 
+## 1.7.2
+
+- **Perícias ordenadas por valor:** as perícias agora aparecem automaticamente organizadas da maior para a menor pontuação (por exemplo, perícias com 10 pontos ficam no topo da lista, seguidas pelas de 5 e 0). Em caso de empate, mantêm ordem alfabética.
+- **Desenhos ocultos do mestre:** o mestre pode desenhar de forma secreta (sem que os jogadores vejam) e ocultar qualquer desenho do mapa.
+  - Na barra de desenhos, a nova ferramenta de olho permite alternar o modo de desenhos ocultos ou ocultar/revelar os desenhos selecionados.
+  - No clique direito em qualquer desenho, o mestre pode escolher **Ocultar de jogadores** ou **Revelar para jogadores**.
+  - Desenhos ocultos ficam semi-transparentes para o mestre e não são enviados aos jogadores.
+- **Movimentação suave com WASD:** o movimento pelo teclado agora anda de forma fluida e contínua, sem pular de bloco em bloco da grade. Conta com suporte a diagonais e deslizamento suave em paredes.
+- **Zoom contínuo e tecla O:** afaste o zoom com **O** (ou **0**) e aproxime com **L**. Segurar a tecla agora aplica zoom suave e contínuo sem precisar ficar clicando repetidamente.
+- **Ping e destaque na ficha de jogadores:** o mestre pode destacar partes da ficha de personagens para ajudar iniciantes (atributos, perícias, habilidades e itens).
+  - Pelo botão **Destacar** no topo da ficha ou segurando **Alt + clique** em qualquer campo.
+  - Na tela do jogador, a ficha abre automaticamente se estiver fechada, navega para a aba/página certa e destaca o elemento com brilho animado e o nome do mestre.
+
 ## 1.7.1
 
 - **Salas sumindo ao ligar o link pela internet:** corrigido. Na primeira vez, o download do programa da Cloudflare fazia o launcher pedir a lista de salas centenas de vezes, e o servidor bloqueava o próprio PC do mestre por um minuto (lista vazia e "Não foi possível conectar" na mesa). Nenhum dado era perdido.

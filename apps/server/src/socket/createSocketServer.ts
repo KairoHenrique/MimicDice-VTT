@@ -7,6 +7,7 @@ import {
   modifySettingRequestSchema,
   PING_WINDOW_MS,
   pullToSceneRequestSchema,
+  sheetPingRequestSchema,
   SOCKET_EVENTS,
   TABLE_SESSION_IDLE_CLOSE_MS,
   TABLE_SESSION_OPEN_SETTING_KEY,
@@ -95,6 +96,7 @@ function registerCoreHandlers(context: ServerContext, io: Server, socket: Socket
   });
 
   registerPingHandler(context, socket, userId, pingLimiter);
+  registerSheetPingHandler(context, socket, userId);
 }
 
 /** Pings are relayed to everyone else on the server; only a GM ping may move other players' cameras. */
@@ -108,6 +110,19 @@ function registerPingHandler(context: ServerContext, socket: Socket, userId: str
     if (!sceneExists) return;
     const pull = parsed.data.pull === true && world.users.isGameMaster(userId);
     socket.broadcast.emit(SOCKET_EVENTS.CANVAS_PING, { sceneId: parsed.data.sceneId, x: parsed.data.x, y: parsed.data.y, pull, userId });
+  });
+}
+
+/** GM pings specific sections or elements on an actor's sheet to guide beginner players. */
+function registerSheetPingHandler(context: ServerContext, socket: Socket, userId: string): void {
+  socket.on(SOCKET_EVENTS.SHEET_PING, (payload: unknown) => {
+    const world = context.activeWorld.current;
+    const parsed = sheetPingRequestSchema.safeParse(payload);
+    if (!world || !parsed.success) return;
+    if (!world.users.isGameMaster(userId)) return;
+    const actorExists = world.documents.listCollection("actors").some((actor) => actor._id === parsed.data.actorId);
+    if (!actorExists) return;
+    socket.broadcast.emit(SOCKET_EVENTS.SHEET_PING, { ...parsed.data, userId });
   });
 }
 

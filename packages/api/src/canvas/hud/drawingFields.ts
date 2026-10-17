@@ -41,12 +41,26 @@ export function drawingColorPatch(source: PlainObject, color: string): PlainObje
   return isText ? { textColor: color } : { strokeColor: color, fillColor: color };
 }
 
+let gmDrawingsHiddenMode = false;
+
+export function isGmDrawingsHidden(): boolean {
+  return gmDrawingsHiddenMode;
+}
+
+export function setGmDrawingsHidden(hidden: boolean): void {
+  gmDrawingsHiddenMode = hidden;
+}
+
 export function textFields(source: PlainObject): FormFieldSpec[] {
-  return [
+  const fields: FormFieldSpec[] = [
     { name: "text", label: "Texto", type: "text", value: source.text ?? "", maxLength: MAX_DRAWING_TEXT_LENGTH },
     { name: "textColor", label: "Cor do texto", type: "color", value: colorOr(source.textColor, defaultDrawingColor()) },
     { name: "fontSize", label: "Tamanho da letra", type: "number", value: Number(source.fontSize) || 48, min: 8, max: 256, step: 1 },
   ];
+  if (currentGame()?.user?.isGM) {
+    fields.push({ name: "hidden", label: "Oculto dos jogadores (só o mestre vê)", type: "checkbox", value: source.hidden === true });
+  }
+  return fields;
 }
 
 export function shapeFields(source: PlainObject): FormFieldSpec[] {
@@ -60,6 +74,9 @@ export function shapeFields(source: PlainObject): FormFieldSpec[] {
       { name: "fillColor", label: "Cor do preenchimento", type: "color", value: colorOr(source.fillColor, "#ffffff") },
       { name: "fillAlpha", label: "Opacidade do preenchimento (0 a 1)", type: "number", value: Number(source.fillAlpha ?? 0.25), min: 0, max: 1, step: 0.05 },
     );
+  }
+  if (currentGame()?.user?.isGM) {
+    fields.push({ name: "hidden", label: "Oculto dos jogadores (só o mestre vê)", type: "checkbox", value: source.hidden === true });
   }
   return fields;
 }

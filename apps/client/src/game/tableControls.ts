@@ -203,9 +203,53 @@ function zoomCanvasBy(factor: number): boolean {
   return true;
 }
 
+let activeZoomDirection: "in" | "out" | null = null;
+let zoomRafId: number | null = null;
+let zoomHoldTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+function stopContinuousZoom(): void {
+  activeZoomDirection = null;
+  if (zoomHoldTimeoutId) {
+    clearTimeout(zoomHoldTimeoutId);
+    zoomHoldTimeoutId = null;
+  }
+  if (zoomRafId) {
+    cancelAnimationFrame(zoomRafId);
+    zoomRafId = null;
+  }
+}
+
+function startContinuousZoom(direction: "in" | "out", isRepeat: boolean): boolean {
+  if (isInteractiveElement(document.activeElement) || !canvas.ready) return false;
+  if (isRepeat) return true;
+  stopContinuousZoom();
+  activeZoomDirection = direction;
+  zoomCanvasBy(direction === "in" ? ZOOM_STEP : 1 / ZOOM_STEP);
+
+  zoomHoldTimeoutId = setTimeout(() => {
+    let lastTime = performance.now();
+    const frame = () => {
+      if (!activeZoomDirection || !canvas.ready) {
+        stopContinuousZoom();
+        return;
+      }
+      const now = performance.now();
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+      const speed = 1.8;
+      const factor = Math.pow(speed, dt);
+      zoomCanvasBy(activeZoomDirection === "in" ? factor : 1 / factor);
+      zoomRafId = requestAnimationFrame(frame);
+    };
+    zoomRafId = requestAnimationFrame(frame);
+  }, 180);
+  return true;
+}
+
 export function registerTableKeybindings(): void {
   registerTokenKeyboardMovement();
   installCanvasHistory();
+  window.addEventListener("blur", stopContinuousZoom);
   game.keybindings.register("core", "centerOwnToken", {
     name: "Centralizar no meu token",
     editable: [{ key: "Space" }],
@@ -221,13 +265,21 @@ export function registerTableKeybindings(): void {
     name: "Aumentar zoom",
     hint: "Segure L para ir aproximando o mapa.",
     editable: [{ key: "KeyL" }],
-    onDown: () => zoomCanvasBy(ZOOM_STEP),
+    onDown: (context: { repeat?: boolean } = {}) => startContinuousZoom("in", Boolean(context.repeat)),
+    onUp: () => {
+      stopContinuousZoom();
+      return false;
+    },
   });
   game.keybindings.register("core", "zoomOut", {
     name: "Diminuir zoom",
-    hint: "Segure 0 para ir afastando o mapa.",
-    editable: [{ key: "Digit0" }],
-    onDown: () => zoomCanvasBy(1 / ZOOM_STEP),
+    hint: "Segure O para ir afastando o mapa.",
+    editable: [{ key: "KeyO" }, { key: "Digit0" }],
+    onDown: (context: { repeat?: boolean } = {}) => startContinuousZoom("out", Boolean(context.repeat)),
+    onUp: () => {
+      stopContinuousZoom();
+      return false;
+    },
   });
   game.keybindings.register("core", "movePathKey", {
     name: "Tecla do caminho",

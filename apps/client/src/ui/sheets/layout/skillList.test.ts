@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readSkillValues, skillPointsTotal, skillsFromLabels } from "./skillList";
+import { readSkillValues, skillPointsTotal, skillsFromLabels, sortSkillsByValue } from "./skillList";
 
 describe("skill list", () => {
   it("turns typed names into keys, skipping blanks and repeats", () => {
@@ -24,5 +24,17 @@ describe("skill list", () => {
     const values = readSkillValues({ luta: 5, crime: "x", outra: 9 }, skills);
     expect(values).toEqual({ luta: 5, crime: 0, artes: 0 });
     expect(skillPointsTotal(values)).toBe(5);
+  });
+
+  it("sorts skills in descending order of points value, tiebreaking alphabetically", () => {
+    const skills = [
+      { key: "acrobacia", label: "Acrobacia" },
+      { key: "luta", label: "Luta" },
+      { key: "tiro", label: "Pontaria" },
+      { key: "crime", label: "Crime" },
+    ];
+    const values = { acrobacia: 5, luta: 10, tiro: 0, crime: 5 };
+    const sorted = sortSkillsByValue(skills, values);
+    expect(sorted.map((s) => s.key)).toEqual(["luta", "acrobacia", "crime", "tiro"]);
   });
 });

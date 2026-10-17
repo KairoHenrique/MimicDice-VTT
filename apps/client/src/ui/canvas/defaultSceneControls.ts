@@ -1,4 +1,4 @@
-import { ERASE_TOOL } from "@tabbletop/api";
+import { ERASE_TOOL, isGmDrawingsHidden, setGmDrawingsHidden } from "@tabbletop/api";
 import { createChest, createTrap, secretsListDialog } from "../../game/concealment/secretsTools";
 import { isGmEditMode, isMapLocked } from "../../game/tableControls";
 import { toggleLayersPanel } from "../layers/LayersPanel";
@@ -38,6 +38,30 @@ function tool(name: string, order: number, title: string, icon: string, extra: P
 /** GM-only eraser: while it is the active tool, each click deletes only the object clicked (Ctrl+Z brings it back). */
 function eraseTool(label: string): SceneControlTool {
   return tool(ERASE_TOOL, 99, `Apagar ${label}: clique em cada um que quer apagar (Ctrl+Z desfaz)`, "fa-solid fa-eraser", { visible: game.user.isGM });
+}
+
+/** GM-only: hides/reveals selected drawings, or toggles whether new drawings start hidden from players. */
+function hideDrawingsTool(): SceneControlTool {
+  const hiddenMode = isGmDrawingsHidden();
+  return tool("hideDrawings", 97, hiddenMode ? "Desenhos novos: OCULTOS dos jogadores (clique para mudar)" : "Ocultar/revelar desenho dos jogadores", hiddenMode ? "fa-solid fa-eye-slash" : "fa-solid fa-eye", {
+    button: true,
+    visible: game.user.isGM,
+    active: hiddenMode,
+    onChange: async () => {
+      const controlled: any[] = canvas.drawings?.controlled ?? [];
+      const drawings: any[] = controlled.map((drawing: any) => drawing.document);
+      if (drawings.length > 0) {
+        const anyVisible = drawings.some((drawing: any) => drawing.hidden !== true);
+        await canvas.scene.updateEmbeddedDocuments("Drawing", drawings.map((drawing: any) => ({ _id: drawing.id, hidden: anyVisible })));
+        ui.notifications.info(anyVisible ? `${drawings.length} desenho(s) ocultado(s) dos jogadores.` : `${drawings.length} desenho(s) revelado(s) para os jogadores.`);
+      } else {
+        const next = !isGmDrawingsHidden();
+        setGmDrawingsHidden(next);
+        ui.notifications.info(next ? "Desenhos novos do mestre agora começam ocultos dos jogadores." : "Desenhos novos do mestre agora começam visíveis para os jogadores.");
+        void ui.controls?.render();
+      }
+    },
+  });
 }
 
 /** GM-only: locks the selected drawings so players cannot move, edit or erase them; unlocks them if all are locked. */
@@ -101,6 +125,7 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
         freehand: tool("freehand", 4, "Mão livre", "fa-solid fa-signature"),
         text: tool("text", 5, "Texto", "fa-solid fa-font"),
         color: drawingColorTool(),
+        hideDrawings: hideDrawingsTool(),
         lockAll: lockSelectedDrawingsTool(),
         erase: eraseTool("desenhos"),
       },

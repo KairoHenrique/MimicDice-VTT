@@ -810,3 +810,88 @@ input.md-skill-value {
     flex-flow: row wrap;
   }
 }
+
+/* GM sheet ping mode */
+.md-sheet-ping-mode {
+  cursor: crosshair !important;
+}
+
+.md-sheet-ping-mode .md-cell,
+.md-sheet-ping-mode .md-skill,
+.md-sheet-ping-mode .md-ability,
+.md-sheet-ping-mode .embedded-item {
+  cursor: crosshair !important;
+  transition: outline 0.15s ease;
+}
+
+.md-sheet-ping-mode .md-cell:hover,
+.md-sheet-ping-mode .md-skill:hover,
+.md-sheet-ping-mode .md-ability:hover,
+.md-sheet-ping-mode .embedded-item:hover {
+  outline: 2px dashed #f59e0b;
+  outline-offset: 2px;
+}
+
+/* Sheet ping beacon and highlight on receiver */
+.md-sheet-ping-active {
+  position: relative !important;
+  z-index: 50 !important;
+  animation: mdSheetPingPulse 1.2s ease-in-out infinite alternate !important;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 3px var(--md-ping-color, #3b82f6), 0 0 20px var(--md-ping-color, #3b82f6) !important;
+}
+
+@keyframes mdSheetPingPulse {
+  0% {
+    box-shadow: 0 0 0 2px var(--md-ping-color, #3b82f6), 0 0 10px var(--md-ping-color, #3b82f6);
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 0 5px var(--md-ping-color, #3b82f6), 0 0 24px var(--md-ping-color, #3b82f6);
+    transform: scale(1.02);
+  }
+}
+
+.md-sheet-ping-badge {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--md-ping-color, #3b82f6);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: mdSheetPingBadgePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.md-sheet-ping-badge::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px 4px 0 4px;
+  border-style: solid;
+  border-color: var(--md-ping-color, #3b82f6) transparent transparent transparent;
+}
+
+@keyframes mdSheetPingBadgePop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+

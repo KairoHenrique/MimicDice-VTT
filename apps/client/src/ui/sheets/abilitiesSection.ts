@@ -119,7 +119,7 @@ function editableAbility(document: any, index: number, ability: Ability, total: 
   const full = ability.rolls.length >= MAX_ROLLS_PER_ABILITY;
   const addRoll = h("button", { type: "button", class: "md-ability-add-roll", disabled: full, title: full ? `Limite de ${MAX_ROLLS_PER_ABILITY} rolagens por habilidade` : undefined }, h("i", { class: "fa-solid fa-plus" }), " Rolagem");
   addRoll.addEventListener("click", () => changeAbility(document, index, (current) => ({ ...current, rolls: [...current.rolls, { ...NEW_ROLL }] })));
-  return h("article", { class: "md-ability editing" }, editableAbilityHeader(document, index, ability, total), descriptionEditor(document, index, ability), rolls, addRoll);
+  return h("article", { class: "md-ability editing", "data-ability-id": String(index) }, editableAbilityHeader(document, index, ability, total), descriptionEditor(document, index, ability), rolls, addRoll);
 }
 
 function rollSummary(roll: AbilityRoll): HTMLElement {
@@ -127,11 +127,11 @@ function rollSummary(roll: AbilityRoll): HTMLElement {
 }
 
 /** Viewers of a shared sheet read its rolls but do not roll as that character. */
-function readOnlyAbility(document: any, ability: Ability): HTMLElement {
+function readOnlyAbility(document: any, ability: Ability, index: number): HTMLElement {
   const canRoll = Boolean(document.canEditSheet?.());
   return h(
     "article",
-    { class: "md-ability" },
+    { class: "md-ability", "data-ability-id": String(index) },
     h("h3", { class: "md-ability-title" }, ability.name || "Sem nome"),
     ability.description ? h("p", { class: "md-ability-text" }, ability.description) : null,
     ability.rolls.length ? h("div", { class: "md-ability-rolls" }, ...ability.rolls.map((roll) => (canRoll ? rollButton(document, ability, roll) : rollSummary(roll)))) : null,
@@ -148,7 +148,7 @@ function addAbilityButton(document: any, count: number): HTMLButtonElement {
 /** Abilities with a description and any number of named rolls; `@campo` in a formula reads the sheet's values. */
 export function buildAbilitiesSection(document: any, editable: boolean): HTMLElement {
   const abilities = loadAbilities(document);
-  const cards = abilities.map((ability, index) => (editable ? editableAbility(document, index, ability, abilities.length) : readOnlyAbility(document, ability)));
+  const cards = abilities.map((ability, index) => (editable ? editableAbility(document, index, ability, abilities.length) : readOnlyAbility(document, ability, index)));
   const empty = h("p", { class: "hint" }, editable ? "Nenhuma habilidade. Crie uma e dê a ela quantas rolagens quiser, como Acerto: 1d20 + @forca e Efeito: 2d6." : "Nenhuma habilidade.");
   const section = h("fieldset", { class: "abilities-section" }, h("legend", {}, "Habilidades"), ...(cards.length ? cards : [empty]));
   if (editable) section.append(addAbilityButton(document, abilities.length));

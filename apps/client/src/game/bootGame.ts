@@ -18,6 +18,7 @@ import { Sidebar } from "../ui/sidebar/Sidebar";
 import { registerCoreSettings, readPreferredLanguage } from "./coreSettings";
 import { registerCoreSheets } from "./coreSheets";
 import { listenForPings, registerPingKeybinding } from "./canvasPings";
+import { listenForSheetPings } from "../ui/sheets/sheetPings";
 import { registerLiveTokenDrag } from "./liveTokenDrag";
 import { registerBoardContextMenu } from "./boardContextMenu";
 import { registerLootPickup } from "./lootPickup";
@@ -138,6 +139,7 @@ export async function bootGame(root: HTMLElement): Promise<void> {
   registerLiveTokenDrag(socket);
   syncLightAreasOnSceneLoad();
   listenForPings(socket);
+  listenForSheetPings(socket);
   announceOwnTurns();
   installPrivateMessageAlert();
   installLinkedSheetRefresh();
