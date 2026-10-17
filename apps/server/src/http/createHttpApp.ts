@@ -1,6 +1,7 @@
 import path from "node:path";
 import express, { type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
+import { isHostMachineRequest } from "../security/clientAddress";
 import { createRateLimiter } from "../security/rateLimiter";
 import type { ApiErrorResponse } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
@@ -104,7 +105,7 @@ export function createHttpApp(context: ServerContext): express.Express {
   const fileStorage = new FileStorage(context.config.dataPath);
 
   const apiRouter = express.Router();
-  apiRouter.use(createRateLimiter({ windowMs: 60_000, limit: 600, standardHeaders: "draft-7", legacyHeaders: false }));
+  apiRouter.use(createRateLimiter({ windowMs: 60_000, limit: 600, standardHeaders: "draft-7", legacyHeaders: false, skip: (request) => isHostMachineRequest(request) }));
   apiRouter.use("/rpgs", createRpgRoutes(context));
   apiRouter.use(express.json({ limit: "1mb" }));
   apiRouter.use(createAuthRoutes(context));

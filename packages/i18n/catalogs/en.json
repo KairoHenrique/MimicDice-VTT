@@ -1363,6 +1363,7 @@
   "Não foi possível apagar a camada.": "Could not delete the layer.",
   "Não foi possível apagar os itens selecionados": "Could not delete the selected items",
   "Não foi possível atualizar os efeitos de um personagem.": "Couldn't update a character's effects.",
+  "Não foi possível carregar as salas agora ({0}). Elas continuam salvas; o app tenta de novo sozinho.": "Could not load the rooms right now ({0}). They are still saved; the app will try again on its own.",
   "Não foi possível conectar": "Couldn't connect",
   "Não foi possível cortar a parede.": "Could not cut the wall.",
   "Não foi possível criar a camada.": "Could not create the layer.",

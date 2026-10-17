@@ -169,7 +169,11 @@ export class CloudflareTunnel {
     this.#setStatus({ phase: "error", error: message });
   }
 
+  /** Download chunks arrive by the hundreds; listeners only hear about changes the launcher would actually show. */
   #setStatus(status: TunnelStatus): void {
+    const current = this.#status;
+    const unchanged = current.phase === status.phase && current.percent === status.percent && current.url === status.url && current.error === status.error;
+    if (unchanged) return;
     this.#status = status;
     for (const listener of this.#listeners) listener();
   }

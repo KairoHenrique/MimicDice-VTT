@@ -1,5 +1,12 @@
 # Notas de versão
 
+## 1.7.1
+
+- **Salas sumindo ao ligar o link pela internet:** corrigido. Na primeira vez, o download do programa da Cloudflare fazia o launcher pedir a lista de salas centenas de vezes, e o servidor bloqueava o próprio PC do mestre por um minuto (lista vazia e "Não foi possível conectar" na mesa). Nenhum dado era perdido.
+  - O launcher agora só é avisado quando o download muda de verdade e carrega a lista de salas uma vez.
+  - Se a lista não carregar, aparece uma mensagem dizendo que as salas continuam salvas, e o app tenta de novo sozinho.
+  - O limite geral de pedidos por minuto não vale mais para o PC do mestre. Para quem entra pela rede ou pelo link, continua valendo.
+
 ## 1.7.0
 
 - **Link pela internet (Cloudflare):** novo interruptor no launcher, em Convide seus amigos. Ligado, ele gera um link `https` que os amigos abrem no navegador de qualquer lugar, sem Radmin e sem mexer no roteador. Radmin e Wi-Fi continuam funcionando ao mesmo tempo, na mesma mesa. O botão **?** ao lado abre um passo a passo.

@@ -1363,6 +1363,7 @@
   "Não foi possível apagar a camada.": "No se pudo borrar la capa.",
   "Não foi possível apagar os itens selecionados": "No se pudieron borrar los elementos seleccionados",
   "Não foi possível atualizar os efeitos de um personagem.": "No se pudieron actualizar los efectos de un personaje.",
+  "Não foi possível carregar as salas agora ({0}). Elas continuam salvas; o app tenta de novo sozinho.": "No se pudieron cargar las salas ahora ({0}). Siguen guardadas; la app lo intenta de nuevo sola.",
   "Não foi possível conectar": "No se pudo conectar",
   "Não foi possível cortar a parede.": "No se pudo cortar la pared.",
   "Não foi possível criar a camada.": "No se pudo crear la capa.",

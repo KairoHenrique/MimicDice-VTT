@@ -178,14 +178,21 @@ const roomMenuHandlers: RoomActionHandlers = {
   changed: () => renderRooms(),
 };
 
+let roomsLoaded = false;
+let loadErrorShown = false;
+
+/** A failed listing says so and is retried on the next refresh, so rooms never just look deleted. */
 async function renderRooms(): Promise<void> {
   const result = await bridge.listRooms();
-  const list = byId("room-list");
+  roomsLoaded = result.ok;
   if (!result.ok) {
-    list.replaceChildren();
+    showRoomError(t(`Não foi possível carregar as salas agora (${result.error}). Elas continuam salvas; o app tenta de novo sozinho.`));
+    loadErrorShown = true;
     return;
   }
-  list.replaceChildren(...result.value.map(buildRoomItem));
+  if (loadErrorShown) showRoomError(null);
+  loadErrorShown = false;
+  byId("room-list").replaceChildren(...result.value.map(buildRoomItem));
 }
 
 function bindRoomActions(): void {
@@ -230,7 +237,12 @@ function renderUpdate(update: UpdateStatus): void {
   checkButton.disabled = update.phase === "checking";
 }
 
-async function refresh(): Promise<void> {
+let refreshRunning = false;
+let refreshPending = false;
+const ROOM_RETRY_MS = 5_000;
+
+/** Rooms only change through the room actions, so they are listed once when the server comes up, not on every state change. */
+async function refreshNow(): Promise<void> {
   const state = await bridge.getLauncherState();
   renderStatus(state);
   renderInvites(state);
@@ -240,7 +252,27 @@ async function refresh(): Promise<void> {
   byId("version").textContent = `v${state.version}`;
   const createButton = byId<HTMLFormElement>("room-create").querySelector<HTMLButtonElement>("button");
   if (createButton) createButton.disabled = state.serverState !== "running";
-  if (state.serverState === "running") await renderRooms();
+  if (state.serverState === "running" && !roomsLoaded) {
+    await renderRooms();
+    if (!roomsLoaded) setTimeout(() => void refresh(), ROOM_RETRY_MS);
+  }
+}
+
+/** Bursts of state changes collapse into one refresh in flight plus at most one queued after it. */
+async function refresh(): Promise<void> {
+  if (refreshRunning) {
+    refreshPending = true;
+    return;
+  }
+  refreshRunning = true;
+  try {
+    do {
+      refreshPending = false;
+      await refreshNow();
+    } while (refreshPending);
+  } finally {
+    refreshRunning = false;
+  }
 }
 
 function bindActions(): void {
