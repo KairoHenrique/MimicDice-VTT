@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
+import { createRateLimiter } from "../../security/rateLimiter";
 import { banIdParamSchema, changePasswordRequestSchema, changeUserRoleRequestSchema, createUserRequestSchema, userIdParamSchema } from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
 import type { ServerContext } from "../../ServerContext";
@@ -10,7 +10,7 @@ const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 export function createUserRoutes(context: ServerContext): Router {
   const router = Router();
   router.use(requireGameMaster(context));
-  const passwordChangeLimiter = rateLimit({ windowMs: FIFTEEN_MINUTES_MS, limit: 10, standardHeaders: "draft-7", legacyHeaders: false, message: { error: "Tentativas demais. Aguarde alguns minutos." } });
+  const passwordChangeLimiter = createRateLimiter({ windowMs: FIFTEEN_MINUTES_MS, limit: 10, standardHeaders: "draft-7", legacyHeaders: false, message: { error: "Tentativas demais. Aguarde alguns minutos." } });
 
   router.get("/", (_request, response) => {
     response.json(authenticatedState(response).world.users.listPublicUsers());

@@ -14,6 +14,7 @@ const bridge: DesktopBridge = {
   renameRoom: (worldId: string, title: string, password: string) => ipcRenderer.invoke(IPC_CHANNELS.renameRoom, worldId, title, password),
   checkUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.checkUpdate),
   installUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.installUpdate),
+  setTunnel: (enabled: boolean) => ipcRenderer.invoke(IPC_CHANNELS.setTunnel, enabled),
   onStateChanged: (listener: () => void) => {
     ipcRenderer.on(IPC_CHANNELS.stateChanged, () => listener());
   },

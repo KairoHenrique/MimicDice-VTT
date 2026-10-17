@@ -1,5 +1,15 @@
 # Notas de versão
 
+## 1.7.0
+
+- **Link pela internet (Cloudflare):** novo interruptor no launcher, em Convide seus amigos. Ligado, ele gera um link `https` que os amigos abrem no navegador de qualquer lugar, sem Radmin e sem mexer no roteador. Radmin e Wi-Fi continuam funcionando ao mesmo tempo, na mesma mesa. O botão **?** ao lado abre um passo a passo.
+  - Na primeira vez o app baixa o programa oficial da Cloudflare e confere a assinatura dele antes de usar.
+  - O link muda cada vez que você liga. Começa sempre desligado e desliga ao fechar o app.
+- **Segurança pelo link da internet:** cada visitante é contado pelo próprio endereço, então o limite de tentativas de senha e o banimento por aparelho funcionam para quem entra pelo link. Ninguém de fora consegue criar o mestre nem usar as funções do launcher.
+- **Janelas em outro monitor:** fichas e outras janelas da mesa têm um botão ao lado do X que as abre numa janela separada do Windows, para arrastar até o segundo monitor. O mesmo botão traz de volta.
+- **Título das janelas:** o título da ficha acompanha o nome novo do personagem.
+- **Traduções:** os textos que faltavam em inglês e espanhol foram traduzidos.
+
 ## 1.6.2
 
 - **Zoom pelo teclado:** **L** aproxima e **0** afasta o mapa (pode segurar). As teclas podem ser trocadas em Configurações > Atalhos.

@@ -14,8 +14,18 @@ export const IPC_CHANNELS = Object.freeze({
   renameRoom: "launcher:rename-room",
   checkUpdate: "launcher:check-update",
   installUpdate: "launcher:install-update",
+  setTunnel: "launcher:set-tunnel",
   stateChanged: "launcher:changed",
 });
+
+export type TunnelPhase = "off" | "downloading" | "starting" | "on" | "error";
+
+export interface TunnelStatus {
+  phase: TunnelPhase;
+  url?: string;
+  percent?: number;
+  error?: string;
+}
 
 export type UpdatePhase = "disabled" | "idle" | "checking" | "latest" | "downloading" | "ready" | "error";
 
@@ -45,6 +55,7 @@ export interface LauncherState {
   firewall: FirewallStatus;
   version: string;
   update: UpdateStatus;
+  tunnel: TunnelStatus;
 }
 
 export interface DesktopBridge {
@@ -60,5 +71,6 @@ export interface DesktopBridge {
   renameRoom(worldId: string, title: string, password: string): Promise<RoomsResult<{ id: string }>>;
   checkUpdate(): Promise<void>;
   installUpdate(): Promise<void>;
+  setTunnel(enabled: boolean): Promise<void>;
   onStateChanged(listener: () => void): void;
 }

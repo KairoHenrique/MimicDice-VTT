@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
 import {
   joinRequestSchema,
   playerJoinRequestSchema,
@@ -11,14 +10,16 @@ import {
 } from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
 import { clearRememberCookie, clearSessionCookie, readRememberToken, readSessionToken, writeRememberCookie, writeSessionCookie } from "../../security/cookies";
-import { isLoopbackAddress, maskAddress } from "../../security/networkAddress";
+import { clientAddressOf, isHostMachineRequest } from "../../security/clientAddress";
+import { maskAddress } from "../../security/networkAddress";
+import { createRateLimiter } from "../../security/rateLimiter";
 import type { ServerContext } from "../../ServerContext";
 import { authenticatedState, parseRequestBody, requireActiveWorld, requireSession } from "../requestGuards";
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
 function createCredentialRateLimiter() {
-  return rateLimit({
+  return createRateLimiter({
     windowMs: FIFTEEN_MINUTES_MS,
     limit: 10,
     standardHeaders: "draft-7",
@@ -30,21 +31,21 @@ function createCredentialRateLimiter() {
 export function createAuthRoutes(context: ServerContext): Router {
   const router = Router();
   const credentialRateLimiter = createCredentialRateLimiter();
-  const playerJoinRateLimiter = rateLimit({ windowMs: FIFTEEN_MINUTES_MS, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { error: "Tentativas demais. Aguarde alguns minutos." } });
+  const playerJoinRateLimiter = createRateLimiter({ windowMs: FIFTEEN_MINUTES_MS, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { error: "Tentativas demais. Aguarde alguns minutos." } });
 
   router.get("/status", (request, response) => {
     const world = context.activeWorld.current;
     const status: ServerStatusResponse = {
       configured: world !== undefined && world.users.userCount > 0,
       world: world ? { id: world.manifest.id, title: world.manifest.title } : null,
-      isLocalRequest: isLoopbackAddress(request.socket.remoteAddress),
+      isLocalRequest: isHostMachineRequest(request),
     };
     response.json(status);
   });
 
   let setupInProgress = false;
   router.post("/setup", credentialRateLimiter, async (request, response) => {
-    if (!isLoopbackAddress(request.socket.remoteAddress)) throw HttpError.forbidden("A configuração só pode ser feita no PC que hospeda");
+    if (!isHostMachineRequest(request)) throw HttpError.forbidden("A configuração só pode ser feita no PC que hospeda");
     const existingWorld = context.activeWorld.current;
     if (setupInProgress || (existingWorld && existingWorld.users.userCount > 0)) throw HttpError.conflict("O mundo já foi configurado");
 
@@ -78,10 +79,10 @@ export function createAuthRoutes(context: ServerContext): Router {
     const joinRequest = parseRequestBody(joinRequestSchema, request);
     const user = await world.users.verifyCredentials(joinRequest.userId, joinRequest.password);
     if (!user) {
-      context.logger.warn("Login recusado", { remote: maskAddress(request.socket.remoteAddress) });
+      context.logger.warn("Login recusado", { remote: maskAddress(clientAddressOf(request)) });
       throw HttpError.unauthorized("Usuário ou senha incorretos");
     }
-    const session = context.sessions.create(user._id, context.deviceFingerprints.keyFor(request.socket.remoteAddress));
+    const session = context.sessions.create(user._id, context.deviceFingerprints.keyFor(clientAddressOf(request)));
     writeSessionCookie(response, session.token, context.config.sessionLifetimeMs);
     if (joinRequest.remember) {
       const device = await context.rememberedDevices.remember(user._id, world.manifest.id);
@@ -119,15 +120,15 @@ export function createAuthRoutes(context: ServerContext): Router {
   router.post("/join/player", playerJoinRateLimiter, async (request, response) => {
     const world = requireActiveWorld(context);
     const { name } = parseRequestBody(playerJoinRequestSchema, request);
-    const deviceKey = context.deviceFingerprints.keyFor(request.socket.remoteAddress);
+    const deviceKey = context.deviceFingerprints.keyFor(clientAddressOf(request));
     if (world.bans.isBanned(name, deviceKey)) {
-      context.logger.warn("Entrada recusada: jogador banido", { remote: maskAddress(request.socket.remoteAddress) });
+      context.logger.warn("Entrada recusada: jogador banido", { remote: maskAddress(clientAddressOf(request)) });
       throw HttpError.forbidden("Você foi banido desta mesa pelo mestre.");
     }
     const user = await world.users.joinPlayerByName(name);
     const session = context.sessions.create(user._id, deviceKey);
     writeSessionCookie(response, session.token, context.config.sessionLifetimeMs);
-    context.logger.info("Jogador entrou pelo nome", { userId: user._id, remote: maskAddress(request.socket.remoteAddress) });
+    context.logger.info("Jogador entrou pelo nome", { userId: user._id, remote: maskAddress(clientAddressOf(request)) });
     response.json({ userId: user._id } satisfies SessionResponse);
   });
 

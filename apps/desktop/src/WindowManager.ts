@@ -10,6 +10,7 @@ export interface WindowManagerOptions {
 }
 
 const BACKGROUND_COLOR = "#16151a";
+const BLANK_POPOUT_URL = "about:blank";
 
 function isExternalWebUrl(url: string): boolean {
   return /^https?:\/\//i.test(url);
@@ -95,7 +96,10 @@ export class WindowManager {
     window.focus();
   }
 
-  /** Same-origin popouts stay in-app; anything else opens in the system browser and never inside our windows. */
+  /**
+   * Same-origin popouts stay in-app, including the blank windows the table fills with a detached sheet so it can
+   * go to another monitor. Anything else opens in the system browser and never inside our windows.
+   */
   #guardNavigation(contents: WebContents, isAllowed: (url: string) => boolean): void {
     contents.on("will-navigate", (event, url) => {
       if (isAllowed(url)) return;
@@ -103,11 +107,20 @@ export class WindowManager {
       if (isExternalWebUrl(url)) void shell.openExternal(url);
     });
     contents.setWindowOpenHandler(({ url }) => {
-      if (this.#isTableUrl(url)) {
-        return { action: "allow", overrideBrowserWindowOptions: { autoHideMenuBar: true, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, plugins: true } } };
+      if (this.#isTableUrl(url) || url === BLANK_POPOUT_URL) {
+        return {
+          action: "allow",
+          overrideBrowserWindowOptions: {
+            autoHideMenuBar: true,
+            icon: this.options.icon,
+            backgroundColor: BACKGROUND_COLOR,
+            webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, plugins: true, backgroundThrottling: false },
+          },
+        };
       }
       if (isExternalWebUrl(url)) void shell.openExternal(url);
       return { action: "deny" };
     });
+    contents.on("did-create-window", (child) => this.#guardNavigation(child.webContents, (url) => this.#isTableUrl(url) || url === BLANK_POPOUT_URL));
   }
 }

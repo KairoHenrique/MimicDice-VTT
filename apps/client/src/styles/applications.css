@@ -94,6 +94,32 @@ dialog.application {
   opacity: 1;
 }
 
+/* A window moved to its own OS window (popOutWindow.ts) fills it; the OS frame moves and resizes it now. */
+.popout-body {
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.application.popped-out {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.application.popped-out .window-header {
+  cursor: default;
+}
+
+.application.popped-out .window-resize-handle {
+  display: none;
+}
+
 .window-content {
   flex: 1;
   min-height: 0;

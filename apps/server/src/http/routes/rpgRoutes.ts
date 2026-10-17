@@ -1,6 +1,6 @@
 import path from "node:path";
 import express, { Router, type Request, type Response } from "express";
-import { rateLimit } from "express-rate-limit";
+import { createRateLimiter } from "../../security/rateLimiter";
 import {
   rpgCopyRequestSchema,
   rpgCreateFolderRequestSchema,
@@ -71,7 +71,7 @@ function registerReadRoutes(router: Router): void {
 }
 
 function registerWriteRoutes(router: Router): void {
-  const writeLimiter = rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false });
+  const writeLimiter = createRateLimiter({ windowMs: 60_000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false });
   const jsonBody = express.json({ limit: TEXT_BODY_LIMIT });
   router.post("/upload", writeLimiter, async (request, response) => {
     const query = parseQuery(rpgUploadQuerySchema, request);

@@ -3,8 +3,9 @@ import { randomBytes } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, renameSync } from "node:fs";
 import { app, clipboard, ipcMain, session, shell, type IpcMainInvokeEvent } from "electron";
 import { DEFAULT_SERVER_PORT } from "@tabbletop/protocol";
+import { CloudflareTunnel } from "./CloudflareTunnel";
 import { addFirewallRule, getFirewallStatus, type FirewallStatus } from "./firewall";
-import { listInviteAddresses } from "./inviteAddresses";
+import { internetInvite, listInviteAddresses } from "./inviteAddresses";
 import { IPC_CHANNELS, type LauncherState, type ServerState } from "./ipcChannels";
 import { RoomsClient } from "./RoomsClient";
 import { ServerProcess } from "./ServerProcess";
@@ -47,6 +48,8 @@ function resolvePaths() {
     preload: path.join(appPath, "dist", "preload.cjs"),
     windowIcon: path.join(appPath, "dist", "icon.png"),
     serverLog: path.join(logsPath, "server.log"),
+    tunnelLog: path.join(logsPath, "tunnel.log"),
+    binDirectory: path.join(app.getPath("userData"), "bin"),
   };
 }
 
@@ -65,6 +68,7 @@ class DesktopApplication {
   });
   readonly #windows = new WindowManager({ launcherHtml: this.#paths.launcherHtml, preload: this.#paths.preload, icon: this.#paths.windowIcon, tableUrl: this.#server.localUrl });
   readonly #updates = new UpdateService();
+  readonly #tunnel = new CloudflareTunnel({ port: this.#port, binDirectory: this.#paths.binDirectory, logFilePath: this.#paths.tunnelLog });
   #serverState: ServerState = "starting";
   #serverError: string | null = null;
   #firewall: FirewallStatus = "missing";
@@ -77,6 +81,7 @@ class DesktopApplication {
     this.#server.onUnexpectedExit(() => this.#markServerFailed("O servidor foi encerrado inesperadamente. Veja o log em " + this.#paths.serverLog));
     app.on("before-quit", (event) => this.#handleBeforeQuit(event));
     this.#updates.onChange(() => this.#windows.notifyLauncherChanged());
+    this.#tunnel.onChange(() => this.#windows.notifyLauncherChanged());
     this.#updates.start();
     this.#firewall = await getFirewallStatus(this.#port);
     await this.#startServer();
@@ -85,6 +90,7 @@ class DesktopApplication {
   async #installUpdate(): Promise<void> {
     if (this.#updates.status.phase !== "ready" || this.#quitting) return;
     this.#quitting = true;
+    this.#tunnel.stop();
     await this.#server.stop();
     if (!this.#updates.install()) app.quit();
   }
@@ -110,15 +116,18 @@ class DesktopApplication {
   }
 
   #launcherState(): LauncherState {
+    const tunnel = this.#tunnel.status;
+    const localInvites = listInviteAddresses(this.#port);
     return {
       serverState: this.#serverState,
       serverError: this.#serverError,
       localUrl: this.#server.localUrl,
       port: this.#port,
-      invites: listInviteAddresses(this.#port),
+      invites: tunnel.phase === "on" && tunnel.url ? [internetInvite(tunnel.url), ...localInvites] : localInvites,
       firewall: this.#firewall,
       version: app.getVersion(),
       update: this.#updates.status,
+      tunnel,
     };
   }
 
@@ -145,6 +154,10 @@ class DesktopApplication {
     });
     handle(IPC_CHANNELS.checkUpdate, () => this.#updates.check());
     handle(IPC_CHANNELS.installUpdate, () => this.#installUpdate());
+    handle(IPC_CHANNELS.setTunnel, (_event, enabled) => {
+      if (enabled !== true) return this.#tunnel.stop();
+      if (this.#serverState === "running") void this.#tunnel.start();
+    });
     this.#registerRoomHandlers(handle);
   }
 
@@ -176,6 +189,7 @@ class DesktopApplication {
     if (this.#quitting) return;
     event.preventDefault();
     this.#quitting = true;
+    this.#tunnel.stop();
     void this.#server.stop().finally(() => app.quit());
   }
 }

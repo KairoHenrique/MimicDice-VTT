@@ -1,5 +1,5 @@
 import express, { Router, type Request, type Response } from "express";
-import { rateLimit } from "express-rate-limit";
+import { createRateLimiter } from "../../security/rateLimiter";
 import { roleHasPermission, type ConfiguredPermissions, type UserPermissionName } from "@tabbletop/common";
 import {
   browseFilesQuerySchema,
@@ -57,7 +57,7 @@ export function createFileRoutes(context: ServerContext, storage: FileStorage): 
   const router = Router();
   router.use(requireSession(context));
   const sharing = new PlayerFolderSharing(context.config.configPath);
-  const uploadRateLimiter = rateLimit({ windowMs: 60_000, limit: 40, standardHeaders: "draft-7", legacyHeaders: false });
+  const uploadRateLimiter = createRateLimiter({ windowMs: 60_000, limit: 40, standardHeaders: "draft-7", legacyHeaders: false });
 
   router.get("/browse", async (request, response) => {
     assertPermission(response, "FILES_BROWSE");

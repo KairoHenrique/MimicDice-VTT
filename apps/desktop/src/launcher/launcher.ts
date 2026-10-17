@@ -2,6 +2,7 @@ import { detectLanguage, t, translatePage } from "@tabbletop/i18n";
 import type { DesktopBridge, LauncherState, RoomSummary, UpdateStatus } from "../ipcChannels";
 import type { InviteAddress } from "../inviteAddresses";
 import { buildRoomMenu, type RoomActionHandlers } from "./roomActions";
+import { bindTunnelControls, renderTunnel } from "./tunnelControls";
 
 declare global {
   interface Window {
@@ -233,6 +234,7 @@ async function refresh(): Promise<void> {
   const state = await bridge.getLauncherState();
   renderStatus(state);
   renderInvites(state);
+  renderTunnel(state.tunnel, state.serverState);
   renderFirewall(state.firewall);
   renderUpdate(state.update);
   byId("version").textContent = `v${state.version}`;
@@ -255,6 +257,7 @@ function bindActions(): void {
     }
   });
   bindUpdateActions();
+  bindTunnelControls(bridge);
   bridge.onStateChanged(() => void refresh());
 }
 

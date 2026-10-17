@@ -1,6 +1,6 @@
 import { networkInterfaces } from "node:os";
 
-export type InviteKind = "radmin" | "lan" | "other";
+export type InviteKind = "internet" | "radmin" | "lan" | "other";
 
 export interface InviteAddress {
   kind: InviteKind;
@@ -9,15 +9,20 @@ export interface InviteAddress {
 }
 
 const RADMIN_PREFIX = "26.";
-const KIND_ORDER: Record<InviteKind, number> = { radmin: 0, lan: 1, other: 2 };
-const KIND_LABELS: Record<InviteKind, string> = { radmin: "Radmin VPN", lan: "Rede local (mesma casa/Wi-Fi)", other: "Outra rede" };
+const KIND_ORDER: Record<InviteKind, number> = { internet: -1, radmin: 0, lan: 1, other: 2 };
+const KIND_LABELS: Record<Exclude<InviteKind, "internet">, string> = { radmin: "Radmin VPN", lan: "Rede local (mesma casa/Wi-Fi)", other: "Outra rede" };
+
+/** The Cloudflare link, listed first because it works for anyone, with or without Radmin. */
+export function internetInvite(url: string): InviteAddress {
+  return { kind: "internet", label: "Pela internet (Cloudflare)", url };
+}
 
 function isPrivateLanAddress(address: string): boolean {
   const [first, second] = address.split(".").map(Number);
   return first === 10 || (first === 192 && second === 168) || (first === 172 && second >= 16 && second <= 31);
 }
 
-function classifyAddress(address: string, interfaceName: string): InviteKind {
+function classifyAddress(address: string, interfaceName: string): Exclude<InviteKind, "internet"> {
   if (address.startsWith(RADMIN_PREFIX) || /radmin/i.test(interfaceName)) return "radmin";
   return isPrivateLanAddress(address) ? "lan" : "other";
 }

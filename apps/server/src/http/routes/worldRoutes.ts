@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
+import { createRateLimiter } from "../../security/rateLimiter";
 import { activateWorldRequestSchema, createWorldRequestSchema, type WorldSummaryRecord } from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
 import type { ServerContext } from "../../ServerContext";
 import { parseRequestBody, requireGameMaster } from "../requestGuards";
 
 export function createSwitchLimiter() {
-  return rateLimit({ windowMs: 60_000, limit: 10, standardHeaders: "draft-7", legacyHeaders: false, message: { error: "Aguarde um pouco antes de trocar de sala de novo." } });
+  return createRateLimiter({ windowMs: 60_000, limit: 10, standardHeaders: "draft-7", legacyHeaders: false, message: { error: "Aguarde um pouco antes de trocar de sala de novo." } });
 }
 
 export async function listWorldSummaries(context: ServerContext): Promise<WorldSummaryRecord[]> {

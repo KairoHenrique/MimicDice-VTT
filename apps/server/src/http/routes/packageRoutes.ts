@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
+import { createRateLimiter } from "../../security/rateLimiter";
 import { installPackageRequestSchema, setWorldSystemRequestSchema } from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
 import { toPackageRecord } from "../../packages/PackageRegistry";
@@ -11,7 +11,7 @@ export function createPackageRoutes(context: ServerContext): Router {
   const router = Router();
   router.use(requireGameMaster(context));
 
-  const installRateLimiter = rateLimit({ windowMs: 60_000, limit: 10, standardHeaders: "draft-7", legacyHeaders: false });
+  const installRateLimiter = createRateLimiter({ windowMs: 60_000, limit: 10, standardHeaders: "draft-7", legacyHeaders: false });
 
   router.get("/modules", (_request, response) => {
     const activeModuleIds = readActiveModuleIds(requireActiveWorld(context));

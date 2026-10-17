@@ -51,6 +51,19 @@
 
       <section class="card">
         <h2>Convide seus amigos</h2>
+        <div class="tunnel-row">
+          <div class="tunnel-text">
+            <span class="tunnel-title">
+              <span id="tunnel-label">Link pela internet (Cloudflare)</span>
+              <button id="tunnel-help" class="help-button" type="button" aria-label="Como funciona o link pela internet" title="Como funciona">?</button>
+            </span>
+            <span id="tunnel-status" class="hint" aria-live="polite">Desligado. Ligue para gerar um link que funciona sem Radmin.</span>
+          </div>
+          <button id="tunnel-switch" class="switch" type="button" role="switch" aria-checked="false" aria-labelledby="tunnel-label">
+            <span class="switch-thumb" aria-hidden="true"></span>
+          </button>
+        </div>
+        <progress id="tunnel-progress" class="tunnel-progress" max="100" value="0" aria-label="Download do programa da Cloudflare" hidden></progress>
         <p class="hint">Envie um destes links. Quem usa Radmin VPN precisa estar na mesma rede Radmin que você.</p>
         <ul id="invite-list" class="invite-list"></ul>
         <p id="invite-empty" class="hint" hidden>Nenhuma rede encontrada. Conecte-se ao Wi-Fi ou ao Radmin VPN e reabra o app.</p>
@@ -91,6 +104,20 @@
           <button id="room-dialog-confirm" type="submit"></button>
         </div>
       </form>
+    </dialog>
+    <dialog id="tunnel-guide" class="room-dialog guide-dialog" aria-labelledby="tunnel-guide-title">
+      <div class="guide-body">
+        <p id="tunnel-guide-counter" class="guide-counter"></p>
+        <h2 id="tunnel-guide-title"></h2>
+        <p id="tunnel-guide-text" class="guide-text"></p>
+        <ol id="tunnel-guide-dots" class="guide-dots" aria-hidden="true"></ol>
+        <div class="dialog-actions">
+          <button id="tunnel-guide-close" type="button" class="link">Fechar</button>
+          <span class="guide-spacer"></span>
+          <button id="tunnel-guide-back" type="button">Voltar</button>
+          <button id="tunnel-guide-next" type="button" class="accent">Próximo</button>
+        </div>
+      </div>
     </dialog>
     <script src="launcher.js"></script>
   </body>

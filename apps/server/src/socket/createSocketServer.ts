@@ -13,6 +13,7 @@ import {
 } from "@tabbletop/protocol";
 import { HttpError } from "../errors/HttpError";
 import { readSessionToken } from "../security/cookies";
+import { clientAddressOf } from "../security/clientAddress";
 import { maskAddress } from "../security/networkAddress";
 import type { ServerContext } from "../ServerContext";
 import { buildWorldSnapshot } from "./buildWorldSnapshot";
@@ -159,7 +160,7 @@ export function createSocketServer(context: ServerContext, httpServer: HttpServe
     const sessionToken = readSessionToken(socket.handshake.headers.cookie);
     const session = context.sessions.resolve(sessionToken);
     if (!world || !session || !world.users.getUser(session.userId)) {
-      context.logger.warn("Conexão em tempo real recusada", { remote: maskAddress(socket.handshake.address) });
+      context.logger.warn("Conexão em tempo real recusada", { remote: maskAddress(clientAddressOf(socket.request)) });
       return next(new Error("unauthorized"));
     }
     socket.data = { userId: session.userId, sessionToken: session.token } satisfies SocketIdentity;

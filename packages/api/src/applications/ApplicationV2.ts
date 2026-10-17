@@ -3,6 +3,7 @@ import { localize } from "../runtime";
 import { deepClone, mergeObject } from "@tabbletop/common";
 import { applicationInstances, inheritanceChainOf, nextZIndex } from "./applicationRegistry";
 import { FormDataExtended } from "./FormDataExtended";
+import { popOutElement, type PoppedOutWindow } from "./popOutWindow";
 
 type ActionHandler = (this: ApplicationV2, event: PointerEvent, target: HTMLElement) => unknown;
 type ActionConfig = ActionHandler | { handler: ActionHandler; buttons?: number[] };
@@ -31,6 +32,8 @@ export interface ApplicationConfiguration {
     resizable: boolean;
     contentTag: string;
     contentClasses: string[];
+    /** Shows the header button that moves the window out of the table, e.g. to a second monitor. */
+    popOut?: boolean;
   };
   actions: Record<string, ActionConfig>;
   form?: { handler?: Function; submitOnChange?: boolean; closeOnSubmit?: boolean };
@@ -75,8 +78,9 @@ export class ApplicationV2 extends EventTarget {
   state: number = RENDER_STATES.NONE;
   #element: HTMLElement | undefined;
   #content: HTMLElement | undefined;
-  #windowElements: { header?: HTMLElement; title?: HTMLElement; close?: HTMLElement; content?: HTMLElement } = {};
+  #windowElements: { header?: HTMLElement; title?: HTMLElement; close?: HTMLElement; popOut?: HTMLElement; content?: HTMLElement } = {};
   #renderQueue: Promise<unknown> = Promise.resolve();
+  #poppedOut: PoppedOutWindow | null = null;
 
   constructor(options: Partial<ApplicationConfiguration> = {}) {
     super();
@@ -132,6 +136,14 @@ export class ApplicationV2 extends EventTarget {
     return this.options.window.frame;
   }
 
+  get isPoppedOut(): boolean {
+    return this.#poppedOut !== null;
+  }
+
+  get #canPopOut(): boolean {
+    return this.hasFrame && this.options.window.positioned && this.options.window.popOut !== false;
+  }
+
   get classList(): DOMTokenList | undefined {
     return this.#element?.classList;
   }
@@ -155,6 +167,7 @@ export class ApplicationV2 extends EventTarget {
       const result = await this._renderHTML(context, options);
       if (!options.isFirstRender && !this.#element) return this;
       if (options.isFirstRender) this.#mountFrame(options);
+      else if (this.#windowElements.title) this.#windowElements.title.textContent = this.title;
       this._replaceHTML(result, this.#content as HTMLElement, options);
       this.state = RENDER_STATES.RENDERED;
       if (options.isFirstRender) await this._onFirstRender(context, options);
@@ -211,13 +224,51 @@ export class ApplicationV2 extends EventTarget {
     closeButton.className = "header-control icon fa-solid fa-xmark";
     closeButton.dataset.action = "close";
     closeButton.setAttribute("aria-label", localize("Close"));
-    header.append(title, closeButton);
+    const popOutButton = this.#canPopOut ? this.#renderPopOutButton() : undefined;
+    header.append(title, ...(popOutButton ? [popOutButton] : []), closeButton);
 
     const content = document.createElement(this.options.window.contentTag);
     content.className = ["window-content", ...this.options.window.contentClasses].join(" ");
     frame.append(header, content);
-    this.#windowElements = { header, title, close: closeButton, content };
+    this.#windowElements = { header, title, close: closeButton, popOut: popOutButton, content };
     return frame;
+  }
+
+  #renderPopOutButton(): HTMLElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "header-control icon fa-solid fa-up-right-from-square";
+    button.dataset.action = "popOut";
+    this.#syncPopOutButton(button);
+    return button;
+  }
+
+  #syncPopOutButton(button = this.#windowElements.popOut): void {
+    if (!button) return;
+    const label = localize(this.#poppedOut ? "Trazer de volta para a mesa" : "Abrir em janela separada (outro monitor)");
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.classList.toggle("fa-up-right-from-square", !this.#poppedOut);
+    button.classList.toggle("fa-down-left-and-up-right-to-center", Boolean(this.#poppedOut));
+  }
+
+  /** Moves this window into a separate OS window (to drag to another monitor), or brings it back. */
+  togglePopOut(): void {
+    if (this.#poppedOut) {
+      this.#poppedOut.close();
+      return;
+    }
+    if (!this.#element || !this.#canPopOut) return;
+    this.#poppedOut = popOutElement(this.#element, {
+      name: `mimicdice-${this.id}`,
+      title: this.title,
+      onReturn: () => {
+        this.#poppedOut = null;
+        this.#syncPopOutButton();
+        if (this.state === RENDER_STATES.RENDERED) this.setPosition();
+      },
+    });
+    this.#syncPopOutButton();
   }
 
   #mountFrame(options: RenderOptions): void {
@@ -238,7 +289,7 @@ export class ApplicationV2 extends EventTarget {
   }
 
   setPosition(position: ApplicationPosition = {}): ApplicationPosition {
-    if (!this.#element || !this.options.window.positioned) return this.position;
+    if (!this.#element || !this.options.window.positioned || this.#poppedOut) return this.position;
     Object.assign(this.position, position);
     const style = this.#element.style;
     style.position = "fixed";
@@ -264,6 +315,8 @@ export class ApplicationV2 extends EventTarget {
     this.state = RENDER_STATES.CLOSING;
     this._preClose(options);
     this.#element.remove();
+    this.#poppedOut?.close();
+    this.#poppedOut = null;
     this.state = RENDER_STATES.CLOSED;
     applicationInstances.delete(this.id);
     this.#element = undefined;
@@ -287,6 +340,11 @@ export class ApplicationV2 extends EventTarget {
     if (actionName === "close") {
       event.preventDefault();
       void this.close();
+      return;
+    }
+    if (actionName === "popOut") {
+      event.preventDefault();
+      this.togglePopOut();
       return;
     }
     const configured = this.options.actions[actionName];

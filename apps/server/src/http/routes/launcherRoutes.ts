@@ -3,12 +3,12 @@ import type { NextFunction, Request, Response } from "express";
 import { Router } from "express";
 import { activateWorldRequestSchema, createWorldRequestSchema, deleteWorldRequestSchema, renameWorldRequestSchema } from "@tabbletop/protocol";
 import { HttpError } from "../../errors/HttpError";
+import { isHostMachineRequest } from "../../security/clientAddress";
 import type { ServerContext } from "../../ServerContext";
 import { parseRequestBody } from "../requestGuards";
 import { activateWorld, createSwitchLimiter, createWorld, deleteWorld, listWorldSummaries, renameWorld } from "./worldRoutes";
 
 export const LAUNCHER_TOKEN_HEADER = "x-mimicdice-launcher";
-const LOOPBACK_ADDRESSES = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 
 function tokensMatch(expected: string, received: unknown): boolean {
   if (typeof received !== "string") return false;
@@ -21,7 +21,7 @@ function tokensMatch(expected: string, received: unknown): boolean {
 function requireLauncher(token: string | null) {
   return (request: Request, _response: Response, next: NextFunction): void => {
     if (!token) throw HttpError.notFound();
-    if (!LOOPBACK_ADDRESSES.has(request.socket.remoteAddress ?? "")) throw HttpError.forbidden();
+    if (!isHostMachineRequest(request)) throw HttpError.forbidden();
     if (!tokensMatch(token, request.headers[LAUNCHER_TOKEN_HEADER])) throw HttpError.forbidden();
     next();
   };
