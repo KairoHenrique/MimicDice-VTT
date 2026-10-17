@@ -3,6 +3,7 @@ import { CONST } from "../constants";
 import { Hooks } from "../hooks/Hooks";
 import { currentConfig, currentGame } from "../runtime";
 import { ClientDocumentMixin } from "./abstract/ClientDocumentMixin";
+import type { DocumentOperation } from "./abstract/Document";
 import { BaseActiveEffect, BaseActor, BaseCombat, BaseCombatant, BaseFolder, BaseItem, BaseJournalEntry, BaseJournalEntryPage } from "./baseDocuments";
 
 const MODES = CONST.ACTIVE_EFFECT_MODES;
@@ -167,6 +168,31 @@ export class Actor extends ClientDocumentMixin(BaseActor) {
 
   getActiveTokens(): unknown[] {
     return [];
+  }
+
+  /** Renaming the actor also renames the prototype and every token of this actor on the maps. */
+  override async update(data: PlainObject = {}, operation: DocumentOperation = {}): Promise<this | undefined> {
+    const patch = { ...data };
+    if (typeof patch.name === "string") {
+      const next = patch.name.trim();
+      patch.name = next;
+      if (next) patch["prototypeToken.name"] = next;
+    }
+    const updated = await super.update(patch, operation);
+    if (updated && typeof patch.name === "string" && patch.name) await this.#syncTokenNames(patch.name);
+    return updated;
+  }
+
+  async #syncTokenNames(name: string): Promise<void> {
+    const scenes: any[] = currentGame()?.scenes?.contents ?? [];
+    await Promise.allSettled(
+      scenes.map((scene: any) => {
+        const updates = (scene.tokens?.contents ?? [])
+          .filter((token: any) => token.actorId === this.id && String(token.name ?? "") !== name)
+          .map((token: any) => ({ _id: token.id, name }));
+        return updates.length > 0 ? scene.updateEmbeddedDocuments("Token", updates) : Promise.resolve([]);
+      }),
+    );
   }
 
   /** `prototypeToken` always exposes the full token defaults, even for actors stored with an empty prototype. */

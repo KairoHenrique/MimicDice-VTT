@@ -8,7 +8,7 @@ export { DialogV2 } from "./applications/DialogV2";
 export { ClientSettings, type SettingConfig } from "./settings/ClientSettings";
 export { Keybindings, type KeyBinding, type KeybindingOverrides } from "./game/Keybindings";
 export type { MovePathMode } from "./canvas/interaction/CanvasInteraction";
-export { actorTokenData } from "./canvas/interaction/canvasDrop";
+export { actorRoleOf, actorTokenData } from "./canvas/interaction/canvasDrop";
 export type { TokenBadge } from "./canvas/placeables/Token";
 export { ERASE_TOOL } from "./canvas/placeables/PlaceableObject";
 export type { TileLayerState } from "./canvas/placeables/simplePlaceables";

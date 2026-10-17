@@ -1,5 +1,15 @@
 # Notas de versão
 
+## 1.6.2
+
+- **Zoom pelo teclado:** **L** aproxima e **0** afasta o mapa (pode segurar). As teclas podem ser trocadas em Configurações > Atalhos.
+- **Jogadores no mapa:** o personagem de jogador entra **visível** e só existe um token dele. Arrastar de Atores leva o token para o ponto e a câmera vai até lá.
+- **Inimigos e NPCs repetidos:** se já houver token, a mesa pergunta se é para **mover o existente** ou **duplicar a ficha** (a cópia ganha ficha própria).
+- **Nome do personagem:** mudar o nome na ficha atualiza a lista de Atores, os tokens no mapa e os próximos que forem colocados.
+- **Visibilidade:** botões com ícone (Oculto, Só nome, Ver, Editar) no lugar das listas. Cada jogador mostra o acesso que está valendo para ele.
+- **Pasta do mestre:** abre como pasta compartilhada da sessão, com envio de arquivos e **Nova pasta** (Enter ou botão). A tela Arquivos explica que ela é a pasta da campanha no disco.
+- **Arquivos:** o caminho mostra o nome atual do mundo depois de renomear.
+
 ## 1.6.1
 
 - **Tokens na cena:** player ou inimigo colocado no mapa começa **oculto**; o mestre revela quando quiser.

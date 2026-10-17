@@ -410,10 +410,34 @@ export class FilePicker extends ApplicationV2 {
   }
 
   async #createFolder(name: string): Promise<void> {
-    const folderName = name.trim().replace(/[\\/]+/g, "-");
-    if (!folderName) return;
+    let folderName = name.trim().replace(/[\\/]+/g, "-");
+    if (!folderName) {
+      const typed = await DialogV2.prompt({
+        window: { title: "Nova pasta" },
+        content: `<p>Nome da pasta dentro de <code>${this.target || "uploads"}</code>:</p><input type="text" name="folder" maxlength="60" placeholder="Ex.: Mapas" style="width:100%">`,
+        ok: {
+          label: "Criar",
+          icon: "fa-solid fa-folder-plus",
+          callback: (_event: Event, button: HTMLButtonElement) => {
+            const input = button.form?.querySelector<HTMLInputElement>("input[name='folder']");
+            return input?.value?.trim() ?? "";
+          },
+        },
+      });
+      folderName = String(typed ?? "").trim().replace(/[\\/]+/g, "-");
+    }
+    if (!folderName) {
+      currentUi()?.notifications?.warn("Digite um nome para a pasta.");
+      return;
+    }
+    if (!this.canUpload) {
+      currentUi()?.notifications?.warn("Não dá para criar pasta aqui. Abra a Pasta do mestre ou Uploads.");
+      return;
+    }
+    const parent = this.target && this.target.startsWith("uploads") ? this.target : "uploads/compartilhado";
     try {
-      const created = await FilePicker.createDirectory("data", `${this.target}/${folderName}`);
+      const created = await FilePicker.createDirectory("data", `${parent}/${folderName}`);
+      currentUi()?.notifications?.info(`Pasta "${folderName}" criada.`);
       await this.browse(created);
     } catch (error) {
       currentUi()?.notifications?.error(error instanceof Error ? error.message : "Não foi possível criar a pasta");

@@ -191,6 +191,18 @@ function isInteractiveElement(element: Element | null): boolean {
   return element instanceof HTMLButtonElement || element instanceof HTMLSelectElement || element instanceof HTMLAnchorElement;
 }
 
+const ZOOM_STEP = 1.12;
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 3;
+
+function zoomCanvasBy(factor: number): boolean {
+  if (isInteractiveElement(document.activeElement) || !canvas.ready) return false;
+  const stage = canvas.stage;
+  const scale = Math.min(Math.max(stage.scale.x * factor, MIN_ZOOM), MAX_ZOOM);
+  canvas.pan({ scale });
+  return true;
+}
+
 export function registerTableKeybindings(): void {
   registerTokenKeyboardMovement();
   installCanvasHistory();
@@ -204,6 +216,18 @@ export function registerTableKeybindings(): void {
       void canvas.animatePan({ x: token.center.x, y: token.center.y });
       return true;
     },
+  });
+  game.keybindings.register("core", "zoomIn", {
+    name: "Aumentar zoom",
+    hint: "Segure L para ir aproximando o mapa.",
+    editable: [{ key: "KeyL" }],
+    onDown: () => zoomCanvasBy(ZOOM_STEP),
+  });
+  game.keybindings.register("core", "zoomOut", {
+    name: "Diminuir zoom",
+    hint: "Segure 0 para ir afastando o mapa.",
+    editable: [{ key: "Digit0" }],
+    onDown: () => zoomCanvasBy(1 / ZOOM_STEP),
   });
   game.keybindings.register("core", "movePathKey", {
     name: "Tecla do caminho",

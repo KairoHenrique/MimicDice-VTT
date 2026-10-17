@@ -63,7 +63,8 @@ export class Token extends PlaceableObject {
   }
 
   get name(): string {
-    return this.document.name;
+    if (this.document.isLinked && this.actor?.name) return String(this.actor.name);
+    return String(this.document.name ?? "");
   }
 
   get isVisible(): boolean {
@@ -124,7 +125,7 @@ export class Token extends PlaceableObject {
     this.#refreshBorder(w, h);
     this.#refreshBars(w, h);
     this.#refreshBadges(w);
-    this.nameplate.text = this.document.name ?? "";
+    this.nameplate.text = this.name;
     this.nameplate.position.set(w / 2, h + 4);
     this.nameplate.visible = this.hover || this.controlled || Number(this.document.displayName) >= CONST.TOKEN_DISPLAY_MODES.ALWAYS;
     this.#placeDragLabel(w, h);

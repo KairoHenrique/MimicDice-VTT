@@ -30,7 +30,12 @@ export async function applyTemplateToActor(actor: any, template: SheetTemplate):
 }
 
 export async function changeActorRole(actor: any, role: ActorRole): Promise<void> {
-  await actor.update({ [`flags.${MIMICDICE_FLAG_SCOPE}.${ROLE_FLAG_KEY}`]: role, prototypeToken: roleTokenDefaults(role) });
+  await actor.update({
+    [`flags.${MIMICDICE_FLAG_SCOPE}.${ROLE_FLAG_KEY}`]: role,
+    "prototypeToken.actorLink": roleTokenDefaults(role).actorLink,
+    "prototypeToken.disposition": roleTokenDefaults(role).disposition,
+    "prototypeToken.sight": roleTokenDefaults(role).sight,
+  });
 }
 
 /** Makes `userId` the only player owning the actor (GMs always see everything) and sets it as their character if they have none. */

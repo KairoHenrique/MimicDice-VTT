@@ -123,6 +123,14 @@
   color: var(--color-accent-strong);
 }
 
+.files-shared-hint {
+  margin: 0;
+  max-width: 420px;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
 .workspace {
   display: flex;
   flex: 1;

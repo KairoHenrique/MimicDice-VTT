@@ -85,7 +85,7 @@ export class HostToolbar extends DomApplication {
         "Administração",
         this.#button("fas fa-puzzle-piece", "Módulos", () => new ModuleManagement().render({ force: true }), "icon", "toolbar:modules"),
         this.#button("fas fa-users", "Jogadores", () => new UserManagement().render({ force: true }), "icon", "toolbar:users"),
-        this.#button("fas fa-folder-open", "Arquivos", () => window.open("/rpgs", "_blank", "noopener"), "icon", "toolbar:files"),
+        this.#campaignFilesButton(),
         this.#sharedFolderButton(),
       ),
     ];
@@ -101,6 +101,12 @@ export class HostToolbar extends DomApplication {
     return button;
   }
 
+  #campaignFilesButton(): HTMLButtonElement {
+    const button = this.#button("fas fa-folder-open", "Arquivos", () => window.open("/rpgs", "_blank", "noopener"), "icon", "toolbar:files");
+    button.title = "Arquivos da campanha (pasta do RPG no disco). A pasta compartilhada com os jogadores é o botão Pasta do mestre.";
+    return button;
+  }
+
   #sharedFolderButton(): HTMLButtonElement {
     const button = this.#button(
       "fas fa-share-nodes",
@@ -108,14 +114,14 @@ export class HostToolbar extends DomApplication {
       () =>
         new FilePicker({
           type: "any",
-          browseOnly: true,
+          browseOnly: false,
           current: "uploads/compartilhado",
-          window: { title: "Pasta do mestre", icon: "fa-solid fa-share-nodes" } as ApplicationConfiguration["window"],
+          window: { title: "Pasta do mestre (compartilhada na sessão)", icon: "fa-solid fa-share-nodes" } as ApplicationConfiguration["window"],
         }).render({ force: true }),
       "icon",
       "toolbar:shared-folder",
     );
-    button.title = "Pasta do mestre: os jogadores veem o que você colocar aqui. Arraste arquivos ou pastas do Windows; dá para criar subpastas e apagar.";
+    button.title = "Pasta compartilhada da sessão: o que você colocar aqui os jogadores veem. Envie arquivos, crie pastas e apague.";
     return button;
   }
 

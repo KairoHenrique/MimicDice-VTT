@@ -32,10 +32,11 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     audience: "all",
     summary: "Navegar, pingar e usar o clique direito.",
     steps: [
-      "Roda do mouse: zoom. Botão direito ou do meio arrastando: mover a câmera.",
+      "Roda do mouse: zoom. Botão direito ou do meio arrastando: mover a câmera. L aproxima e 0 afasta (pode segurar).",
       "P faz um ping no ponto do mouse para todos verem. O limite é de 3 pings a cada 5 segundos.",
       "Espaço centraliza a câmera no seu token.",
       "Mestre: clique direito num ponto vazio para puxar jogadores para ali ou apagar desenhos que estejam embaixo do mouse.",
+      "Mestre: arrastar um jogador de Atores teleporta o token único e mostra a área. Inimigo/NPC já no mapa pergunta se move ou duplica a ficha.",
     ],
   },
   {

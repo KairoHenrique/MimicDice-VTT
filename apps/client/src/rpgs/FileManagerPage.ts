@@ -122,7 +122,7 @@ export class FileManagerPage {
     return h(
       "header",
       { class: "top-bar" },
-      h("div", { class: "brand" }, h("i", { class: "fa-solid fa-dungeon" }), h("div", {}, h("h1", {}, "Arquivos do Mestre"), this.#worldTitle)),
+      h("div", { class: "brand" }, h("i", { class: "fa-solid fa-dungeon" }), h("div", {}, h("h1", {}, "Arquivos da campanha"), this.#worldTitle)),
       h(
         "div",
         { class: "top-actions" },
@@ -137,13 +137,14 @@ export class FileManagerPage {
         button("fa-solid fa-upload", "Enviar arquivos", () => fileInput.click(), "primary"),
         fileInput,
       ),
+      h("p", { class: "hint files-shared-hint" }, "Isto é a pasta da campanha no disco. A pasta compartilhada com os jogadores na sessão fica no botão ", h("strong", {}, "Pasta do mestre"), " na mesa."),
       h("a", { class: "back-link", href: "/", title: "Voltar para a mesa" }, h("i", { class: "fa-solid fa-dice-d20" }), " Voltar à mesa"),
     );
   }
 
   #render(): void {
     if (!this.#listing) return;
-    this.#worldTitle.textContent = `Mundo: ${this.#listing.worldTitle}  ·  pasta rpgs/${this.#listing.rootName}`;
+    this.#worldTitle.textContent = `Mundo: ${this.#listing.worldTitle}  ·  pasta no disco: rpgs/${this.#listing.rootName}`;
     document.title = `Arquivos · ${this.#listing.worldTitle}`;
     this.#renderBreadcrumb();
     this.#renderEntries();
@@ -151,7 +152,7 @@ export class FileManagerPage {
 
   #renderBreadcrumb(): void {
     const segments = this.#currentPath ? this.#currentPath.split("/") : [];
-    const crumbs: HTMLElement[] = [this.#crumb(this.#listing?.rootName ?? "rpgs", "", "fa-solid fa-house")];
+    const crumbs: HTMLElement[] = [this.#crumb(this.#listing?.worldTitle || this.#listing?.rootName || "rpgs", "", "fa-solid fa-house")];
     segments.forEach((segment, index) => {
       crumbs.push(h("i", { class: "fa-solid fa-chevron-right separator", "aria-hidden": "true" }), this.#crumb(segment, segments.slice(0, index + 1).join("/")));
     });

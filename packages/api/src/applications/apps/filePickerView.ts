@@ -206,7 +206,15 @@ function buildUploadControls(handlers: FilePickerViewHandlers): HTMLElement {
   const folderInput = element("input", "file-picker-folder-name");
   folderInput.type = "text";
   folderInput.maxLength = 60;
-  folderInput.placeholder = "Nova pasta";
+  folderInput.placeholder = "Nome da nova pasta";
+  folderInput.setAttribute("aria-label", "Nome da nova pasta");
+  const createFolder = () => handlers.createFolder(folderInput.value);
+  folderInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      createFolder();
+    }
+  });
   controls.append(
     fileInput,
     folderPicker,
@@ -214,7 +222,7 @@ function buildUploadControls(handlers: FilePickerViewHandlers): HTMLElement {
     iconButton("fa-solid fa-folder-open", "Enviar pasta", () => folderPicker.click()),
     iconButton("fa-solid fa-file-pen", "Nova nota", () => handlers.createNote()),
     folderInput,
-    iconButton("fa-solid fa-folder-plus", "Criar", () => handlers.createFolder(folderInput.value)),
+    iconButton("fa-solid fa-folder-plus", "Nova pasta", createFolder),
     iconButton("fa-solid fa-trash", "Apagar", () => handlers.deletePaths([]), "file-picker-button danger"),
   );
   return controls;
