@@ -15,6 +15,7 @@ const bridge: DesktopBridge = {
   checkUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.checkUpdate),
   installUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.installUpdate),
   setTunnel: (enabled: boolean) => ipcRenderer.invoke(IPC_CHANNELS.setTunnel, enabled),
+  openExternal: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.openExternal, url),
   onStateChanged: (listener: () => void) => {
     ipcRenderer.on(IPC_CHANNELS.stateChanged, () => listener());
   },

@@ -3,6 +3,7 @@ import type { DesktopBridge, LauncherState, RoomSummary, UpdateStatus } from "..
 import type { InviteAddress } from "../inviteAddresses";
 import { buildRoomMenu, type RoomActionHandlers } from "./roomActions";
 import { bindTunnelControls, renderTunnel } from "./tunnelControls";
+import { PatchNotesManager } from "./patchNotes";
 
 declare global {
   interface Window {
@@ -11,6 +12,7 @@ declare global {
 }
 
 const bridge = window.tabbletopDesktop;
+const patchNotes = new PatchNotesManager(bridge);
 const COPIED_FEEDBACK_MS = 1500;
 const STATUS_TEXT: Record<LauncherState["serverState"], string> = {
   starting: "Iniciando o servidor...",
@@ -224,6 +226,7 @@ function updateCardText(update: UpdateStatus): string | null {
 }
 
 function renderUpdate(update: UpdateStatus): void {
+  patchNotes.setUpdateStatus(update);
   const cardText = updateCardText(update);
   byId("update-card").hidden = cardText === null;
   byId("update-text").textContent = cardText ?? "";
@@ -231,6 +234,7 @@ function renderUpdate(update: UpdateStatus): void {
   progress.hidden = update.phase !== "downloading";
   progress.value = update.percent ?? 0;
   byId("install-update").hidden = update.phase !== "ready";
+  byId("update-patchnotes").hidden = cardText === null;
   byId("update-footer").textContent = UPDATE_FOOTER_TEXT[update.phase] ?? "";
   const checkButton = byId<HTMLButtonElement>("check-update");
   checkButton.hidden = !["idle", "checking", "latest", "error"].includes(update.phase);
@@ -249,6 +253,7 @@ async function refreshNow(): Promise<void> {
   renderTunnel(state.tunnel, state.serverState);
   renderFirewall(state.firewall);
   renderUpdate(state.update);
+  patchNotes.setAppVersion(state.version);
   byId("version").textContent = `v${state.version}`;
   const createButton = byId<HTMLFormElement>("room-create").querySelector<HTMLButtonElement>("button");
   if (createButton) createButton.disabled = state.serverState !== "running";

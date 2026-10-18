@@ -732,3 +732,324 @@ button.link:hover:not(:disabled) {
 .guide-spacer {
   flex: 1;
 }
+
+/* Patch Notes button in update card & footer */
+.patchnotes-link {
+  align-self: center;
+  font-size: 13px;
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 150ms, background 150ms;
+}
+
+.patchnotes-link:hover {
+  color: #93c5fd;
+  background: rgb(59 130 246 / 10%);
+}
+
+.version-label {
+  cursor: pointer;
+  transition: color 150ms;
+}
+
+.version-label:hover {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+/* Patch Notes Dialog */
+.patchnotes-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(640px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+}
+
+.patchnotes-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 12px;
+  min-height: 0;
+  max-height: calc(100vh - 88px);
+}
+
+.patchnotes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.patchnotes-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.patchnotes-title-group h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.patchnotes-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.patchnotes-version-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgb(59 130 246 / 15%);
+  color: #60a5fa;
+  border: 1px solid rgb(59 130 246 / 35%);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 26px 3px 10px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2360a5fa'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px 14px;
+  transition: background-color 150ms, border-color 150ms, color 150ms;
+}
+
+.patchnotes-version-select:hover {
+  background-color: rgb(59 130 246 / 25%);
+  border-color: #60a5fa;
+  color: #93c5fd;
+}
+
+.patchnotes-version-select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--brand);
+}
+
+.patchnotes-version-select option {
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.patchnotes-close-icon {
+  background: transparent;
+  border: none;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+}
+
+.patchnotes-close-icon:hover {
+  background: var(--muted-strong);
+  color: var(--text);
+}
+
+.patchnotes-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.patchnotes-content {
+  overflow-y: auto;
+  max-height: 380px;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 4px 0;
+}
+
+.patchnotes-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.patchnotes-content::-webkit-scrollbar-track {
+  background: var(--background);
+  border-radius: 3px;
+}
+
+.patchnotes-content::-webkit-scrollbar-thumb {
+  background: var(--muted-strong);
+  border-radius: 3px;
+}
+
+.patchnotes-content::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+.patchnotes-main-section {
+  border-left: 2px solid var(--brand);
+  padding-left: 14px;
+}
+
+.patchnotes-list {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.patchnotes-list li {
+  margin-bottom: 8px;
+  line-height: 1.55;
+  font-size: 13px;
+  color: #e2e8f0;
+}
+
+.patchnotes-list li strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.patchnotes-list li code {
+  background: var(--muted-strong);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #93c5fd;
+}
+
+.patchnotes-sublist {
+  margin: 6px 0 6px 0;
+  padding-left: 18px;
+  list-style: circle;
+}
+
+.patchnotes-sublist li {
+  margin-bottom: 5px;
+  font-size: 12.5px;
+  color: #94a3b8;
+}
+
+.patchnotes-paragraph {
+  margin: 0 0 8px;
+  line-height: 1.5;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.patchnotes-older-section {
+  margin-top: 8px;
+  border-top: 1px dashed var(--border);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.patchnotes-older-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.patchnotes-older-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  overflow: hidden;
+}
+
+.patchnotes-older-summary {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  color: var(--text);
+  list-style: none;
+}
+
+.patchnotes-older-summary::-webkit-details-marker {
+  display: none;
+}
+
+.patchnotes-older-summary:hover {
+  background: var(--muted);
+}
+
+.patchnotes-older-version {
+  color: #60a5fa;
+  font-weight: 700;
+}
+
+.patchnotes-older-arrow {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  transition: transform 150ms;
+}
+
+.patchnotes-older-item[open] .patchnotes-older-arrow {
+  transform: rotate(180deg);
+}
+
+.patchnotes-older-body {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: rgb(0 0 0 / 20%);
+}
+
+.patchnotes-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.patchnotes-github-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgb(39 39 42 / 90%);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms, color 150ms;
+}
+
+.patchnotes-github-btn:hover {
+  background: rgb(59 130 246 / 20%);
+  border-color: var(--brand);
+  color: #93c5fd;
+}
+
+.patchnotes-github-btn .github-icon {
+  flex: none;
+}
+
+.patchnotes-github-btn .external-arrow {
+  font-size: 13px;
+  color: #93c5fd;
+}
+

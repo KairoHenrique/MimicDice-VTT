@@ -9,6 +9,20 @@ function safeVersion(info: UpdateInfo): string | undefined {
   return VERSION_PATTERN.test(info.version) ? info.version : undefined;
 }
 
+function safeReleaseNotes(info: UpdateInfo): string | undefined {
+  if (typeof info.releaseNotes === "string" && info.releaseNotes.trim()) {
+    return info.releaseNotes.trim();
+  }
+  if (Array.isArray(info.releaseNotes)) {
+    const combined = info.releaseNotes
+      .map((entry) => (typeof entry === "string" ? entry : entry.note ?? ""))
+      .filter(Boolean)
+      .join("\n\n");
+    return combined.trim() || undefined;
+  }
+  return undefined;
+}
+
 /**
  * Downloads new releases from the public GitHub repository in the background. electron-updater checks the
  * installer's SHA-512 from latest.yml before installing, and the update only runs when the user asks or quits.
@@ -59,9 +73,9 @@ export class UpdateService {
   #bindEvents(): void {
     autoUpdater.on("checking-for-update", () => this.#set({ phase: "checking" }));
     autoUpdater.on("update-not-available", () => this.#set({ phase: "latest" }));
-    autoUpdater.on("update-available", (info: UpdateInfo) => this.#set({ phase: "downloading", version: safeVersion(info), percent: 0 }));
+    autoUpdater.on("update-available", (info: UpdateInfo) => this.#set({ phase: "downloading", version: safeVersion(info), releaseNotes: safeReleaseNotes(info), percent: 0 }));
     autoUpdater.on("download-progress", (progress: ProgressInfo) => this.#set({ ...this.#status, phase: "downloading", percent: Math.max(0, Math.min(100, Math.round(progress.percent))) }));
-    autoUpdater.on("update-downloaded", (info: UpdateInfo) => this.#set({ phase: "ready", version: safeVersion(info) }));
+    autoUpdater.on("update-downloaded", (info: UpdateInfo) => this.#set({ phase: "ready", version: safeVersion(info), releaseNotes: safeReleaseNotes(info) }));
     autoUpdater.on("error", () => {
       if (this.#status.phase !== "ready") this.#set({ phase: "error" });
     });

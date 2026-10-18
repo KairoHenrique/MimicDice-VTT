@@ -1,5 +1,12 @@
 # Notas de versão
 
+## 1.7.4
+
+- **Notas de versão (Patch Notes) no Launcher:** agora você pode conferir tudo o que mudou no MimicDice VTT diretamente pela janela inicial do aplicativo.
+  - **Acesso rápido:** botão posicionado logo abaixo de **Reiniciar e atualizar** (e no rodapé) para abrir a janela de novidades da versão a qualquer momento.
+  - **Popup de novidades:** janela com o resumo detalhado das melhorias, novidades e correções de cada atualização com visual moderno e organizado.
+  - **Link direto para o GitHub:** botão integrado para abrir a página oficial de notas de versão do repositório no navegador com um clique.
+
 ## 1.7.3
 
 - **Teste às cegas em grupo solicitado pelo mestre:** o mestre pode pedir uma rolagem para todos os jogadores (ou personagens selecionados) sem que eles saibam qual perícia ou atributo está sendo testado.

@@ -10,7 +10,7 @@ const outputRoot = path.join(desktopRoot, "dist");
 /** Native or optional packages that must be loaded from node_modules at runtime. */
 export const SERVER_RUNTIME_EXTERNALS = ["classic-level", "@node-rs/argon2", "bufferutil", "utf-8-validate"];
 
-const sharedOptions = { bundle: true, target: "node22", sourcemap: false, legalComments: "none", logLevel: "warning" };
+const sharedOptions = { bundle: true, target: "node22", sourcemap: false, legalComments: "none", logLevel: "warning", loader: { ".md": "text" } };
 
 async function buildElectronProcesses() {
   await build({ ...sharedOptions, entryPoints: [path.join(desktopRoot, "src", "main.ts")], outfile: path.join(outputRoot, "main.cjs"), platform: "node", format: "cjs", external: ["electron"] });

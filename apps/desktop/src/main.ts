@@ -158,6 +158,11 @@ class DesktopApplication {
       if (enabled !== true) return this.#tunnel.stop();
       if (this.#serverState === "running") void this.#tunnel.start();
     });
+    handle(IPC_CHANNELS.openExternal, (_event, url) => {
+      if (typeof url === "string" && /^https?:\/\//i.test(url)) {
+        void shell.openExternal(url);
+      }
+    });
     this.#registerRoomHandlers(handle);
   }
 

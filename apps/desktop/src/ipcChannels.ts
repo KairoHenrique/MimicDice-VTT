@@ -15,6 +15,7 @@ export const IPC_CHANNELS = Object.freeze({
   checkUpdate: "launcher:check-update",
   installUpdate: "launcher:install-update",
   setTunnel: "launcher:set-tunnel",
+  openExternal: "launcher:open-external",
   stateChanged: "launcher:changed",
 });
 
@@ -33,6 +34,7 @@ export interface UpdateStatus {
   phase: UpdatePhase;
   version?: string;
   percent?: number;
+  releaseNotes?: string;
 }
 
 export interface RoomSummary {
@@ -72,5 +74,6 @@ export interface DesktopBridge {
   checkUpdate(): Promise<void>;
   installUpdate(): Promise<void>;
   setTunnel(enabled: boolean): Promise<void>;
+  openExternal(url: string): Promise<void>;
   onStateChanged(listener: () => void): void;
 }
