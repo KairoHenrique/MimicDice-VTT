@@ -189,7 +189,7 @@ export class PatchNotesManager {
   }
 
   open(options?: { version?: string; releaseNotes?: string }): void {
-    const targetVersion = options?.version || this.#currentAppVersion || this.#blocks[0]?.version || "1.7.7";
+    const targetVersion = options?.version || this.#currentAppVersion || this.#blocks[0]?.version || "1.7.8";
     this.renderVersionNotes(targetVersion, options?.releaseNotes);
 
     if (!this.#dialog.open) {
@@ -220,7 +220,6 @@ export class PatchNotesManager {
 
   #bindEvents(): void {
     document.getElementById("patchnotes-close-icon")?.addEventListener("click", () => this.close());
-    document.getElementById("patchnotes-dialog-close")?.addEventListener("click", () => this.close());
 
     this.#dialog.addEventListener("click", (event) => {
       if (event.target === this.#dialog) {
@@ -251,10 +250,6 @@ export class PatchNotesManager {
     });
 
     document.getElementById("footer-patchnotes")?.addEventListener("click", () => {
-      this.open();
-    });
-
-    document.getElementById("version")?.addEventListener("click", () => {
       this.open();
     });
   }

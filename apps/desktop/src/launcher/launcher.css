@@ -752,13 +752,7 @@ button.link:hover:not(:disabled) {
 }
 
 .version-label {
-  cursor: pointer;
-  transition: color 150ms;
-}
-
-.version-label:hover {
-  color: var(--brand);
-  text-decoration: underline;
+  color: var(--muted-foreground);
 }
 
 /* Patch Notes Dialog */
@@ -766,10 +760,13 @@ button.link:hover:not(:disabled) {
   width: min(620px, calc(100vw - 32px));
   height: min(640px, calc(100vh - 48px));
   max-height: min(640px, calc(100vh - 48px));
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
   padding: 0;
+}
+
+.patchnotes-dialog[open] {
+  display: flex;
+  flex-direction: column;
 }
 
 .patchnotes-card {

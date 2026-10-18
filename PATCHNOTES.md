@@ -1,5 +1,10 @@
 # Notas de versão
 
+## 1.7.8
+
+- **Janela de Notas de versão corrigida:** o botão de fechar (✕) agora fecha a janela de verdade, que também passa a abrir centralizada sobre o launcher com fundo escurecido.
+- **Interface mais limpa:** removidos o botão "Fechar" duplicado do rodapé da janela e o atalho repetido no número da versão; as notas abrem pelo link **Notas da versão**.
+
 ## 1.7.7
 
 - **Correção e melhorias na janela de Notas de versão (Patch Notes):**
