@@ -117,8 +117,12 @@ export class Tile extends PlaceableObject {
     this.position.set(x, y);
     const rotation = this.previewRotation ?? (Number(this.document.rotation) || 0);
     if (this.mesh) {
+      const signX = (Number(this.document.texture?.scaleX) ?? 1) < 0 ? -1 : 1;
+      const signY = (Number(this.document.texture?.scaleY) ?? 1) < 0 ? -1 : 1;
       this.mesh.width = width;
       this.mesh.height = height;
+      this.mesh.scale.x = Math.abs(this.mesh.scale.x) * signX;
+      this.mesh.scale.y = Math.abs(this.mesh.scale.y) * signY;
       this.mesh.position.set(width / 2, height / 2);
       this.mesh.angle = rotation;
       this.mesh.tint = colorToNumber(this.document.texture?.tint, 0xffffff);
@@ -148,8 +152,12 @@ export class Tile extends PlaceableObject {
       this.frame.lineStyle(2, 0xffffff, 1).beginFill(0x3b82f6, 1).drawCircle(0, -halfH - dist, r).endFill();
     }
     const dist = this.rotatable ? this.rotateHandleDistance + this.rotateHandleRadius : 0;
-    const maxDim = Math.hypot(halfW, halfH) + handle + dist;
-    this.hitArea = new PIXI.Circle(halfW, halfH, maxDim);
+    if (this.controlled && (handle > 0 || dist > 0)) {
+      const maxDim = Math.hypot(halfW, halfH) + handle + dist;
+      this.hitArea = new PIXI.Circle(halfW, halfH, maxDim);
+    } else {
+      this.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    }
   }
 
   /** Objects that do not fill whole squares move by quarter squares so they can sit anywhere inside one. */

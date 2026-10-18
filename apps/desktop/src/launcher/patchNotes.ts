@@ -189,7 +189,7 @@ export class PatchNotesManager {
   }
 
   open(options?: { version?: string; releaseNotes?: string }): void {
-    const targetVersion = options?.version || this.#currentAppVersion || this.#blocks[0]?.version || "1.7.5";
+    const targetVersion = options?.version || this.#currentAppVersion || this.#blocks[0]?.version || "1.7.6";
     this.renderVersionNotes(targetVersion, options?.releaseNotes);
 
     if (!this.#dialog.open) {

@@ -1,5 +1,13 @@
 # Notas de versão
 
+## 1.7.6
+
+- **Manipulação aprimorada de assets, props e personagens:**
+  - **Redimensionamento proporcional sem distorção:** arrastar a alça no canto de assets, props e personagens agora preserva a proporção exata da imagem por padrão, evitando qualquer distorção visual. Se desejar redimensionamento livre de largura e altura independentes, basta segurar Alt.
+  - **Espelhar horizontalmente e verticalmente:** espelhe qualquer asset, prop ou token na horizontal ou vertical com um clique pelo menu de contexto (botão direito) ou através dos novos atalhos de teclado **H** (espelhar horizontalmente) e **V** (espelhar verticalmente).
+  - **Giro livre contínuo com o mouse:** agora, clicar e arrastar a alça circular gira os itens livremente com movimento suave contínuo grau a grau. Segurar Shift encaixa o giro em passos precisos de 15°.
+  - **Ajuste de tamanho livre para personagens (tokens):** personagens selecionados agora contam com alça de redimensionamento na própria tela no canto inferior direito, permitindo regular o tamanho de criaturas e heróis livremente sem perder a proporção, com pré-visualização ao vivo e indicador de dimensões. O menu de contexto também conta com opções rápidas de aumentar (+25%), diminuir (-25%) e redefinir (1×1).
+
 ## 1.7.5
 
 - **Pontos de Interesse (POIs) e pins clicáveis no mapa:** agora você pode criar pontos de clique interativos em locais do mapa (como tavernas, ferreiros, lojas de armas, castelos e templos).

@@ -28,8 +28,20 @@ type Session =
   | { kind: "create"; origin: Point; tool: CreationTool; points: number[]; startedAt: number }
   | { kind: "move"; origin: Point; objects: PlaceableObject[] }
   | { kind: "endpoint"; wall: Wall; index: 0 | 1 }
-  | { kind: "resize"; tile: Tile }
-  | { kind: "rotate"; tile: Tile; center: Point; initialRotation: number };
+  | {
+      kind: "resize";
+      target: Tile | Token;
+      initialWidth: number;
+      initialHeight: number;
+      initialRatio: number;
+      center: Point;
+    }
+  | {
+      kind: "rotate";
+      target: Tile | Token;
+      center: Point;
+      initialRotation: number;
+    };
 
 export type MovePathMode = "modifier" | "always" | "never";
 
@@ -97,17 +109,29 @@ export class CanvasInteraction {
         return;
       }
     }
-    if (placeable.document.documentName === "Tile") {
-      const tile = placeable as Tile;
+    if (placeable.document.documentName === "Tile" || placeable.document.documentName === "Token") {
+      const target = placeable as Tile | Token;
       const world = this.#toWorld(event);
-      if (tile.grabsRotateHandle(world)) {
-        const bounds = tile.bounds;
+      if (typeof (target as any).grabsRotateHandle === "function" && (target as any).grabsRotateHandle(world)) {
+        const bounds = target.bounds;
         const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-        this.#session = { kind: "rotate", tile, center, initialRotation: Number(tile.document.rotation) || 0 };
+        this.#session = { kind: "rotate", target, center, initialRotation: Number(target.document.rotation) || 0 };
         return;
       }
-      if (tile.grabsResizeHandle(world)) {
-        this.#session = { kind: "resize", tile };
+      if (typeof (target as any).grabsResizeHandle === "function" && (target as any).grabsResizeHandle(world)) {
+        const bounds = target.bounds;
+        const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+        const initialWidth = bounds.width;
+        const initialHeight = bounds.height;
+        const initialRatio = Math.max(0.01, initialWidth / Math.max(0.01, initialHeight));
+        this.#session = {
+          kind: "resize",
+          target,
+          initialWidth,
+          initialHeight,
+          initialRatio,
+          center,
+        };
         return;
       }
     }
@@ -194,85 +218,145 @@ export class CanvasInteraction {
         this.#previewEndpoint(session, this.#wallPoint(world, event.shiftKey));
         break;
       case "resize":
-        this.#previewResize(session.tile, this.#resizedArea(session.tile, world, event.shiftKey));
+        this.#previewResize(session.target, this.#resizedArea(session, world, event.altKey, event.shiftKey));
         break;
       case "rotate":
-        this.#previewRotate(session.tile, session.center, world, event.shiftKey);
+        this.#previewRotate(session.target, session.center, world, event.shiftKey);
         break;
     }
   }
 
-  /** New tile size from the dragged corner: quarter-square steps (free with Shift), never below a quarter square. */
-  #resizedArea(tile: Tile, world: Point, free: boolean): { width: number; height: number } {
-    const corner = free ? world : this.canvas.grid.getSnappedPoint(world, { mode: "quarter" });
-    const smallest = Math.round(this.canvas.grid.size / 4);
-    const rotation = Number(tile.document.rotation) || 0;
-    if (rotation === 0) {
-      return { width: Math.max(smallest, Math.round(corner.x - tile.document.x)), height: Math.max(smallest, Math.round(corner.y - tile.document.y)) };
-    }
+  /**
+   * Resizes keeping aspect ratio by default (no distortion), unless distortAllowed (Alt) is active.
+   * Free smooth scaling by default for tokens and when Shift is held for tiles.
+   */
+  #resizedArea(
+    session: { target: Tile | Token; initialWidth: number; initialHeight: number; initialRatio: number; center: Point },
+    world: Point,
+    distortAllowed: boolean,
+    freeSnapping: boolean
+  ): { width: number; height: number } {
+    const rotation = Number(session.target.document.rotation) || 0;
     const rad = (-rotation * Math.PI) / 180;
-    const { x, y, width, height } = tile.bounds;
-    const centerX = x + width / 2;
-    const centerY = y + height / 2;
-    const dx = corner.x - centerX;
-    const dy = corner.y - centerY;
+    const dx = world.x - session.center.x;
+    const dy = world.y - session.center.y;
     const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
     const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
-    return {
-      width: Math.max(smallest, Math.round(localX + width / 2)),
-      height: Math.max(smallest, Math.round(localY + height / 2)),
-    };
+
+    const rawW = localX + session.initialWidth / 2;
+    const rawH = localY + session.initialHeight / 2;
+
+    let computedW: number;
+    let computedH: number;
+
+    if (distortAllowed) {
+      computedW = Math.max(10, rawW);
+      computedH = Math.max(10, rawH);
+    } else {
+      const lenSq = session.initialWidth * session.initialWidth + session.initialHeight * session.initialHeight;
+      const dot = (rawW * session.initialWidth + rawH * session.initialHeight) / Math.max(1, lenSq);
+      const scale = Math.max(0.05, dot);
+      computedW = Math.max(10, session.initialWidth * scale);
+      computedH = Math.max(10, session.initialHeight * scale);
+    }
+
+    const gridSize = this.canvas.grid.size;
+
+    if (session.target.document.documentName === "Token") {
+      const rawGridW = computedW / gridSize;
+      const step = freeSnapping ? 0.01 : 0.05;
+      const gridW = Math.max(0.1, Math.round(rawGridW / step) * step);
+      const gridH = distortAllowed
+        ? Math.max(0.1, Math.round((computedH / gridSize) / step) * step)
+        : Math.max(0.1, Math.round((gridW / session.initialRatio) * 100) / 100);
+      return { width: Math.round(gridW * 100) / 100, height: Math.round(gridH * 100) / 100 };
+    }
+
+    const quarter = Math.round(gridSize / 4);
+    if (!freeSnapping) {
+      const snappedW = Math.max(quarter, Math.round(computedW / quarter) * quarter);
+      const snappedH = distortAllowed
+        ? Math.max(quarter, Math.round(computedH / quarter) * quarter)
+        : Math.max(quarter, Math.round(snappedW / session.initialRatio));
+      return { width: snappedW, height: snappedH };
+    }
+
+    const snappedW = Math.max(quarter, Math.round(computedW));
+    const snappedH = distortAllowed
+      ? Math.max(quarter, Math.round(computedH))
+      : Math.max(quarter, Math.round(snappedW / session.initialRatio));
+    return { width: snappedW, height: snappedH };
   }
 
-  #previewResize(tile: Tile, area: { width: number; height: number }): void {
-    const { x, y } = tile.document;
-    tile.previewSize = area;
-    tile.refresh();
+  #previewResize(target: Tile | Token, area: { width: number; height: number }): void {
+    target.previewSize = area;
+    target.refresh();
     const size = this.canvas.grid.size;
-    const squares = (value: number) => String(Math.round((value / size) * 100) / 100).replace(".", ",");
-    this.label.text = `${squares(area.width)} × ${squares(area.height)}`;
-    this.label.position.set(x + area.width / 2, y + area.height);
+    if (target.document.documentName === "Token") {
+      const squares = (value: number) => String(Math.round(value * 100) / 100).replace(".", ",");
+      this.label.text = `${squares(area.width)} × ${squares(area.height)}`;
+      this.label.position.set(target.position.x + (area.width * size) / 2, target.position.y + area.height * size);
+    } else {
+      const { x, y } = target.document;
+      const squares = (value: number) => String(Math.round((value / size) * 100) / 100).replace(".", ",");
+      this.label.text = `${squares(area.width)} × ${squares(area.height)}`;
+      this.label.position.set(x + area.width / 2, y + area.height);
+    }
     this.label.visible = true;
   }
 
-  /** The stretched preview stays until the save lands, so the tile does not snap back for a moment. */
-  async #commitResize(tile: Tile, area: { width: number; height: number }): Promise<void> {
+  async #commitResize(target: Tile | Token, area: { width: number; height: number }): Promise<void> {
     try {
-      if (!tile.destroyed && (area.width !== Number(tile.document.width) || area.height !== Number(tile.document.height))) await tile.document.update(area);
+      if (!target.destroyed) {
+        if (target.document.documentName === "Token") {
+          const currentW = Number(target.document.width);
+          const currentH = Number(target.document.height);
+          if (area.width !== currentW || area.height !== currentH) {
+            await target.document.update({ width: area.width, height: area.height });
+          }
+        } else {
+          const currentW = Number(target.document.width);
+          const currentH = Number(target.document.height);
+          if (area.width !== currentW || area.height !== currentH) {
+            await target.document.update(area);
+          }
+        }
+      }
     } catch {
       currentUi()?.notifications?.warn("Não foi possível mudar o tamanho.");
     } finally {
-      tile.previewSize = null;
-      if (!tile.destroyed) tile.refresh();
+      target.previewSize = null;
+      this.label.visible = false;
+      if (!target.destroyed) target.refresh();
     }
   }
 
-  #previewRotate(tile: Tile, center: Point, world: Point, free: boolean): void {
+  #previewRotate(target: Tile | Token, center: Point, world: Point, snap: boolean): void {
     const rad = Math.atan2(world.y - center.y, world.x - center.x);
     let deg = Math.round((rad * 180) / Math.PI + 90);
     deg = ((deg % 360) + 360) % 360;
-    if (!free) {
+    if (snap) {
       const step = 15;
       deg = (Math.round(deg / step) * step) % 360;
     }
-    tile.previewRotation = deg;
-    tile.refresh();
+    target.previewRotation = deg;
+    target.refresh();
     this.label.text = `${deg}°`;
     this.label.position.set(center.x, center.y);
     this.label.visible = true;
   }
 
-  async #commitRotate(tile: Tile, angle: number): Promise<void> {
+  async #commitRotate(target: Tile | Token, angle: number): Promise<void> {
     try {
-      if (!tile.destroyed && angle !== Number(tile.document.rotation)) {
-        await tile.document.update({ rotation: angle });
+      if (!target.destroyed && angle !== Number(target.document.rotation)) {
+        await target.document.update({ rotation: angle });
       }
     } catch {
       currentUi()?.notifications?.warn("Não foi possível mudar a rotação.");
     } finally {
-      tile.previewRotation = null;
+      target.previewRotation = null;
       this.label.visible = false;
-      if (!tile.destroyed) tile.refresh();
+      if (!target.destroyed) target.refresh();
     }
   }
 
@@ -413,10 +497,10 @@ export class CanvasInteraction {
         void this.#commitEndpoint(session, this.#wallPoint(world, event.shiftKey));
         break;
       case "resize":
-        void this.#commitResize(session.tile, this.#resizedArea(session.tile, world, event.shiftKey));
+        void this.#commitResize(session.target, this.#resizedArea(session, world, event.altKey, event.shiftKey));
         break;
       case "rotate":
-        void this.#commitRotate(session.tile, session.tile.previewRotation ?? session.initialRotation);
+        void this.#commitRotate(session.target, session.target.previewRotation ?? session.initialRotation);
         break;
       case "pan":
         this.#openBoardMenuOnRightClick(session, event, world);
@@ -538,7 +622,7 @@ export class CanvasInteraction {
     this.canvas.pan({ x: stage.pivot.x + (before.x - after.x), y: stage.pivot.y + (before.y - after.y), scale });
   }
 
-  #handleRotateWheel(event: WheelEvent): boolean {
+  #getTargetPlaceables(): PlaceableObject[] {
     const layer = this.canvas.activeLayer;
     let targets: PlaceableObject[] = ((layer?.controlled ?? []) as PlaceableObject[]).filter((o) => o.canDrag());
     if (targets.length === 0) {
@@ -553,6 +637,22 @@ export class CanvasInteraction {
         if (tokenHovered) targets = [tokenHovered];
       }
     }
+    return targets;
+  }
+
+  async #flipSelected(axis: "horizontal" | "vertical"): Promise<void> {
+    const targets = this.#getTargetPlaceables();
+    if (targets.length === 0) return;
+    const property = axis === "horizontal" ? "texture.scaleX" : "texture.scaleY";
+    for (const object of targets) {
+      const current = axis === "horizontal" ? Number(object.document.texture?.scaleX ?? 1) : Number(object.document.texture?.scaleY ?? 1);
+      const next = current < 0 ? 1 : -1;
+      await object.document.update({ [property]: next });
+    }
+  }
+
+  #handleRotateWheel(event: WheelEvent): boolean {
+    const targets = this.#getTargetPlaceables();
     if (targets.length === 0) return false;
 
     event.preventDefault();
@@ -578,14 +678,19 @@ export class CanvasInteraction {
       }
     } else if (event.key === "Escape") {
       this.canvas.activeLayer?.releaseAll?.();
+    } else if (event.key === "h" || event.key === "H") {
+      event.preventDefault();
+      void this.#flipSelected("horizontal");
+    } else if (event.key === "v" || event.key === "V") {
+      event.preventDefault();
+      void this.#flipSelected("vertical");
     } else if (event.key === "r" || event.key === "R" || event.key === "[" || event.key === "]") {
-      const layer = this.canvas.activeLayer;
-      const controlled = ((layer?.controlled ?? []) as PlaceableObject[]).filter((o) => o.canDrag());
-      if (controlled.length > 0) {
+      const targets = this.#getTargetPlaceables();
+      if (targets.length > 0) {
         event.preventDefault();
         const step = event.altKey ? 15 : 45;
         const delta = (event.key === "R" || event.key === "[") ? -step : step;
-        for (const object of controlled) {
+        for (const object of targets) {
           const current = Number(object.document.rotation) || 0;
           const next = ((Math.round((current + delta) / step) * step % 360) + 360) % 360;
           void object.document.update({ rotation: next });

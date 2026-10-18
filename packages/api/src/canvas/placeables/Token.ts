@@ -46,12 +46,70 @@ export class Token extends PlaceableObject {
   #livePosition: Point | null = null;
   #dragLabel: PIXI.Text | null = null;
 
+  previewSize: { width: number; height: number } | null = null;
+  previewRotation: number | null = null;
+
   get w(): number {
+    if (this.previewSize) return this.previewSize.width * currentCanvas().grid.size;
     return Number(this.document.width) * currentCanvas().grid.size;
   }
 
   get h(): number {
+    if (this.previewSize) return this.previewSize.height * currentCanvas().grid.size;
     return Number(this.document.height) * currentCanvas().grid.size;
+  }
+
+  get resizable(): boolean {
+    return this.controlled && this.canDrag();
+  }
+
+  get rotatable(): boolean {
+    return this.controlled && this.canDrag() && !this.document.lockRotation;
+  }
+
+  get resizeHandleSize(): number {
+    return Math.max(12, Math.round(currentCanvas().grid.size * 0.16));
+  }
+
+  get rotateHandleDistance(): number {
+    return Math.max(22, Math.round(currentCanvas().grid.size * 0.25));
+  }
+
+  get rotateHandleRadius(): number {
+    return Math.max(7, Math.round(currentCanvas().grid.size * 0.08));
+  }
+
+  #toLocalRotated(point: Point): Point {
+    const { x, y } = this.position;
+    const width = this.w;
+    const height = this.h;
+    const rotation = this.previewRotation ?? (Number(this.document.rotation) || 0);
+    const rad = (-rotation * Math.PI) / 180;
+    const dx = point.x - (x + width / 2);
+    const dy = point.y - (y + height / 2);
+    return {
+      x: dx * Math.cos(rad) - dy * Math.sin(rad),
+      y: dx * Math.sin(rad) + dy * Math.cos(rad),
+    };
+  }
+
+  grabsResizeHandle(point: Point): boolean {
+    if (!this.resizable) return false;
+    const local = this.#toLocalRotated(point);
+    const halfW = this.w / 2;
+    const halfH = this.h / 2;
+    const reach = this.resizeHandleSize;
+    return Math.abs(local.x - halfW) <= reach && Math.abs(local.y - halfH) <= reach;
+  }
+
+  grabsRotateHandle(point: Point): boolean {
+    if (!this.rotatable) return false;
+    const local = this.#toLocalRotated(point);
+    const halfH = this.h / 2;
+    const dist = this.rotateHandleDistance;
+    const r = this.rotateHandleRadius;
+    const reach = Math.max(r * 2, 16);
+    return Math.abs(local.x) <= reach && Math.abs(local.y - (-halfH - dist)) <= reach;
   }
 
   override get bounds(): Rectangle {
@@ -121,8 +179,9 @@ export class Token extends PlaceableObject {
     if (!this.mesh || !this.nameplate) return;
     const { w, h } = this;
     if (!this.#animation) this.position.set(this.#livePosition?.x ?? this.document.x, this.#livePosition?.y ?? this.document.y);
-    this.#refreshMesh(w, h);
-    this.#refreshBorder(w, h);
+    const rotation = this.previewRotation ?? (Number(this.document.rotation) || 0);
+    this.#refreshMesh(w, h, rotation);
+    this.#refreshBorder(w, h, rotation);
     this.#refreshBars(w, h);
     this.#refreshBadges(w);
     this.nameplate.text = this.name;
@@ -130,28 +189,55 @@ export class Token extends PlaceableObject {
     this.nameplate.visible = this.hover || this.controlled || Number(this.document.displayName) >= CONST.TOKEN_DISPLAY_MODES.ALWAYS;
     this.#placeDragLabel(w, h);
     this.alpha = this.document.hidden ? 0.5 : (Number(this.document.alpha) ?? 1);
-    this.hitArea = new PIXI.Rectangle(0, 0, w, h);
+    const handle = this.resizable ? this.resizeHandleSize : 0;
+    const dist = this.rotatable ? this.rotateHandleDistance + this.rotateHandleRadius : 0;
+    if (this.controlled && (handle > 0 || dist > 0)) {
+      const halfW = w / 2;
+      const halfH = h / 2;
+      const maxDim = Math.hypot(halfW, halfH) + handle + dist;
+      this.hitArea = new PIXI.Circle(halfW, halfH, maxDim);
+    } else {
+      this.hitArea = new PIXI.Rectangle(0, 0, w, h);
+    }
     this.cursor = this.canControl() || this.canDrag() ? "pointer" : "default";
   }
 
-  #refreshMesh(width: number, height: number): void {
+  #refreshMesh(width: number, height: number, rotation: number): void {
     const mesh = this.mesh as PIXI.Sprite;
     const texture = mesh.texture;
     const textureScale = Math.min(width / texture.width, height / texture.height);
-    const scaleX = Number(this.document.texture?.scaleX ?? 1);
-    const scaleY = Number(this.document.texture?.scaleY ?? 1);
-    mesh.scale.set(textureScale * scaleX, textureScale * scaleY);
+    const signX = (Number(this.document.texture?.scaleX) ?? 1) < 0 ? -1 : 1;
+    const signY = (Number(this.document.texture?.scaleY) ?? 1) < 0 ? -1 : 1;
+    const absScaleX = Math.abs(Number(this.document.texture?.scaleX) || 1);
+    const absScaleY = Math.abs(Number(this.document.texture?.scaleY) || 1);
+    mesh.scale.set(textureScale * absScaleX * signX, textureScale * absScaleY * signY);
     mesh.position.set(width / 2, height / 2);
-    mesh.angle = Number(this.document.rotation) || 0;
+    mesh.angle = rotation;
     mesh.tint = colorToNumber(this.document.texture?.tint, 0xffffff);
   }
 
-  #refreshBorder(width: number, height: number): void {
+  #refreshBorder(width: number, height: number, rotation: number): void {
     this.border.clear();
+    this.border.position.set(width / 2, height / 2);
+    this.border.angle = rotation;
     if (!this.controlled && !this.hover) return;
     const color = this.controlled ? 0x3b82f6 : (DISPOSITION_COLORS[Number(this.document.disposition)] ?? 0xffffff);
-    this.border.lineStyle(4, 0x000000, 0.6).drawRoundedRect(-1, -1, width + 2, height + 2, 6);
-    this.border.lineStyle(2, color, 1).drawRoundedRect(-1, -1, width + 2, height + 2, 6);
+    const halfW = width / 2;
+    const halfH = height / 2;
+    this.border.lineStyle(4, 0x000000, 0.6).drawRoundedRect(-halfW - 1, -halfH - 1, width + 2, height + 2, 6);
+    this.border.lineStyle(2, color, 1).drawRoundedRect(-halfW - 1, -halfH - 1, width + 2, height + 2, 6);
+    if (this.controlled) {
+      if (this.resizable) {
+        const handle = this.resizeHandleSize;
+        this.border.lineStyle(2, 0xffffff, 1).beginFill(0x3b82f6, 1).drawRect(halfW - handle / 2, halfH - handle / 2, handle, handle).endFill();
+      }
+      if (this.rotatable) {
+        const dist = this.rotateHandleDistance;
+        const r = this.rotateHandleRadius;
+        this.border.lineStyle(2, 0x3b82f6, 0.9).moveTo(0, -halfH).lineTo(0, -halfH - dist);
+        this.border.lineStyle(2, 0xffffff, 1).beginFill(0x3b82f6, 1).drawCircle(0, -halfH - dist, r).endFill();
+      }
+    }
   }
 
   #refreshBars(width: number, height: number): void {

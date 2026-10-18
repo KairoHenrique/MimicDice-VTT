@@ -125,6 +125,48 @@ export class CanvasHud {
       };
       entries.push({ label: "Girar token 45°", icon: "fa-solid fa-rotate-right", onSelect: () => void rotateBy(45) });
       entries.push({ label: "Girar token 90°", icon: "fa-solid fa-arrows-rotate", onSelect: () => void rotateBy(90) });
+      entries.push({ label: "Redefinir rotação (0°)", icon: "fa-solid fa-compass", onSelect: () => void token.document.update({ rotation: 0 }) });
+      entries.push({
+        label: "Espelhar horizontalmente",
+        icon: "fa-solid fa-arrows-left-right",
+        onSelect: async () => {
+          const current = Number(token.document.texture?.scaleX ?? 1);
+          await token.document.update({ "texture.scaleX": current < 0 ? 1 : -1 });
+        },
+      });
+      entries.push({
+        label: "Espelhar verticalmente",
+        icon: "fa-solid fa-arrows-up-down",
+        onSelect: async () => {
+          const current = Number(token.document.texture?.scaleY ?? 1);
+          await token.document.update({ "texture.scaleY": current < 0 ? 1 : -1 });
+        },
+      });
+      entries.push({
+        label: "Aumentar tamanho (+25%)",
+        icon: "fa-solid fa-maximize",
+        onSelect: async () => {
+          const w = Math.round(Number(token.document.width) * 1.25 * 100) / 100;
+          const h = Math.round(Number(token.document.height) * 1.25 * 100) / 100;
+          await token.document.update({ width: w, height: h });
+        },
+      });
+      entries.push({
+        label: "Diminuir tamanho (-25%)",
+        icon: "fa-solid fa-minimize",
+        onSelect: async () => {
+          const w = Math.max(0.2, Math.round(Number(token.document.width) * 0.8 * 100) / 100);
+          const h = Math.max(0.2, Math.round(Number(token.document.height) * 0.8 * 100) / 100);
+          await token.document.update({ width: w, height: h });
+        },
+      });
+      entries.push({
+        label: "Redefinir tamanho (1×1)",
+        icon: "fa-solid fa-arrows-to-dot",
+        onSelect: async () => {
+          await token.document.update({ width: 1, height: 1 });
+        },
+      });
     }
     if (token.document.canUserModify?.(user, "delete") && (user?.isGM || user?.can?.("TOKEN_DELETE"))) {
       entries.push({ label: "Remover do mapa", icon: "fa-solid fa-trash", onSelect: () => token.document.delete() });
@@ -219,6 +261,22 @@ export class CanvasHud {
       { label: "Girar 90° anti-horário", icon: "fa-solid fa-rotate-left", onSelect: () => void rotateBy(-90) },
       { label: "Girar 180°", icon: "fa-solid fa-arrows-rotate", onSelect: () => void rotateBy(180) },
       { label: "Redefinir rotação (0°)", icon: "fa-solid fa-compass", onSelect: () => void tile.document.update({ rotation: 0 }) },
+      {
+        label: "Espelhar horizontalmente",
+        icon: "fa-solid fa-arrows-left-right",
+        onSelect: async () => {
+          const current = Number(tile.document.texture?.scaleX ?? 1);
+          await tile.document.update({ "texture.scaleX": current < 0 ? 1 : -1 });
+        },
+      },
+      {
+        label: "Espelhar verticalmente",
+        icon: "fa-solid fa-arrows-up-down",
+        onSelect: async () => {
+          const current = Number(tile.document.texture?.scaleY ?? 1);
+          await tile.document.update({ "texture.scaleY": current < 0 ? 1 : -1 });
+        },
+      },
       this.#pinEntry(tile.document),
       { label: "Excluir tile", icon: "fa-solid fa-trash", onSelect: () => tile.document.delete() },
     ];
@@ -287,8 +345,8 @@ export class CanvasHud {
     const fields: FormFieldSpec[] = [
       { name: "name", label: "Nome", type: "text", value: document.name ?? "" },
       { name: "texture.src", label: "Imagem do token", type: "image", value: document.texture?.src ?? "", maxLength: 2048 },
-      { name: "width", label: "Largura (quadrados)", type: "number", value: document.width, min: 0.25, max: 20, step: 0.25 },
-      { name: "height", label: "Altura (quadrados)", type: "number", value: document.height, min: 0.25, max: 20, step: 0.25 },
+      { name: "width", label: "Largura (quadrados)", type: "number", value: document.width, min: 0.2, max: 20, step: 0.05 },
+      { name: "height", label: "Altura (quadrados)", type: "number", value: document.height, min: 0.2, max: 20, step: 0.05 },
       { name: "sight.enabled", label: "Tem visão", type: "checkbox", value: document.sight?.enabled === true },
       { name: "sight.range", label: `Alcance da visão (${currentGame()?.canvas?.dimensions?.units ?? ""}; 0 = ilimitado)`, type: "number", value: document.sight?.range ?? 0, min: 0, max: 1000 },
       { name: "displayName", label: "Mostrar nome sempre", type: "checkbox", value: Number(document.displayName) >= CONST.TOKEN_DISPLAY_MODES.ALWAYS },
