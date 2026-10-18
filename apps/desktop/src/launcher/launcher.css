@@ -763,22 +763,28 @@ button.link:hover:not(:disabled) {
 
 /* Patch Notes Dialog */
 .patchnotes-dialog {
-  width: min(560px, calc(100vw - 32px));
+  width: min(620px, calc(100vw - 32px));
+  height: min(640px, calc(100vh - 48px));
   max-height: min(640px, calc(100vh - 48px));
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  padding: 0;
 }
 
 .patchnotes-card {
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  gap: 12px;
+  height: 100%;
   min-height: 0;
-  max-height: calc(100vh - 88px);
+  padding: 20px 24px;
+  gap: 12px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .patchnotes-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -789,6 +795,7 @@ button.link:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .patchnotes-title-group h2 {
@@ -796,12 +803,14 @@ button.link:hover:not(:disabled) {
   font-size: 18px;
   font-weight: 700;
   color: var(--text);
+  white-space: nowrap;
 }
 
 .patchnotes-select-wrapper {
   position: relative;
   display: inline-flex;
   align-items: center;
+  min-width: 0;
 }
 
 .patchnotes-version-select {
@@ -822,6 +831,8 @@ button.link:hover:not(:disabled) {
   background-position: right 8px center;
   background-size: 14px 14px;
   transition: background-color 150ms, border-color 150ms, color 150ms;
+  max-width: 220px;
+  text-overflow: ellipsis;
 }
 
 .patchnotes-version-select:hover {
@@ -843,35 +854,43 @@ button.link:hover:not(:disabled) {
 }
 
 .patchnotes-close-icon {
-  background: transparent;
-  border: none;
-  color: var(--muted-foreground);
-  font-size: 14px;
-  width: 28px;
-  height: 28px;
-  min-height: 28px;
+  background: var(--muted-strong);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  min-width: 32px;
   padding: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: background 150ms, color 150ms;
+  flex-shrink: 0;
+  transition: background 150ms, border-color 150ms, color 150ms, transform 100ms;
 }
 
 .patchnotes-close-icon:hover {
-  background: var(--muted-strong);
-  color: var(--text);
+  background: #3f3f46;
+  border-color: #71717a;
+  color: #ffffff;
+}
+
+.patchnotes-close-icon:active {
+  transform: scale(0.95);
 }
 
 .patchnotes-subtitle {
+  flex-shrink: 0;
   margin: 0;
   font-size: 13px;
   color: var(--muted-foreground);
 }
 
 .patchnotes-content {
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
-  max-height: 380px;
   padding-right: 8px;
   display: flex;
   flex-direction: column;
@@ -1015,11 +1034,12 @@ button.link:hover:not(:disabled) {
 }
 
 .patchnotes-footer {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-top: 10px;
+  padding-top: 14px;
   border-top: 1px solid var(--border);
 }
 
@@ -1036,6 +1056,7 @@ button.link:hover:not(:disabled) {
   font-weight: 500;
   cursor: pointer;
   transition: background 150ms, border-color 150ms, color 150ms;
+  flex-shrink: 0;
 }
 
 .patchnotes-github-btn:hover {
@@ -1051,5 +1072,20 @@ button.link:hover:not(:disabled) {
 .patchnotes-github-btn .external-arrow {
   font-size: 13px;
   color: #93c5fd;
+}
+
+.patchnotes-close-btn {
+  min-width: 104px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 

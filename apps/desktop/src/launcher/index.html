@@ -130,7 +130,12 @@
               <select id="patchnotes-version-select" class="patchnotes-version-select" aria-label="Selecionar versão"></select>
             </div>
           </div>
-          <button id="patchnotes-close-icon" class="patchnotes-close-icon" type="button" aria-label="Fechar" title="Fechar">✕</button>
+          <button id="patchnotes-close-icon" class="patchnotes-close-icon" type="button" aria-label="Fechar" title="Fechar (Esc)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </header>
         <p class="hint patchnotes-subtitle">Confira as principais novidades e melhorias do MimicDice VTT</p>
         <div id="patchnotes-content" class="patchnotes-content"></div>
@@ -142,7 +147,7 @@
             <span>Ver notas completas no GitHub</span>
             <span class="external-arrow" aria-hidden="true">↗</span>
           </button>
-          <button id="patchnotes-dialog-close" type="button">Fechar</button>
+          <button id="patchnotes-dialog-close" class="primary patchnotes-close-btn" type="button">Fechar</button>
         </div>
       </div>
     </dialog>

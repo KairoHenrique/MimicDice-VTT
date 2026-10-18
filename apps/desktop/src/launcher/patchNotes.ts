@@ -189,7 +189,7 @@ export class PatchNotesManager {
   }
 
   open(options?: { version?: string; releaseNotes?: string }): void {
-    const targetVersion = options?.version || this.#currentAppVersion || this.#blocks[0]?.version || "1.7.6";
+    const targetVersion = options?.version || this.#currentAppVersion || this.#blocks[0]?.version || "1.7.7";
     this.renderVersionNotes(targetVersion, options?.releaseNotes);
 
     if (!this.#dialog.open) {
@@ -224,6 +224,16 @@ export class PatchNotesManager {
 
     this.#dialog.addEventListener("click", (event) => {
       if (event.target === this.#dialog) {
+        this.close();
+      }
+    });
+
+    this.#dialog.addEventListener("cancel", () => {
+      this.close();
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && this.#dialog.open) {
         this.close();
       }
     });

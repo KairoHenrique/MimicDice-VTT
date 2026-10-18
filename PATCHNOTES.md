@@ -1,5 +1,13 @@
 # Notas de versão
 
+## 1.7.7
+
+- **Correção e melhorias na janela de Notas de versão (Patch Notes):**
+  - **Botões de fechar sempre visíveis:** o cabeçalho e o rodapé do modal agora ficam fixos na tela, impedindo que textos longos de atualizações empurrem o rodapé para fora do campo de visão em telas menores ou com escala reduzida. Apenas a lista de novidades rola internamente.
+  - **Botão "Fechar" destacado:** o botão no rodapé agora conta com visual de botão principal em alto contraste e dimensões padronizadas, fácil de localizar e clicar.
+  - **Botão de fechar (✕) aprimorado no topo:** redesenhado com visual nítido de botão, moldura destacada, efeito ao passar o mouse e ícone SVG vetorial de alta definição.
+  - **Fechamento rápido com Esc e clique externo:** feche a janela a qualquer momento pressionando `Esc` no teclado ou clicando na área escura fora do modal.
+
 ## 1.7.6
 
 - **Manipulação aprimorada de assets, props e personagens:**
