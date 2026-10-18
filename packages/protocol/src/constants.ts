@@ -62,6 +62,8 @@ export const SOCKET_EVENTS = Object.freeze({
   CHEST_TAKE: "chestTake",
   CHEST_PUT: "chestPut",
   SHEET_PING: "sheetPing",
+  GROUP_BLIND_CHECK: "groupBlindCheck",
+  GROUP_BLIND_CHECK_ROLL: "groupBlindCheckRoll",
 });
 
 export const MAX_DOCUMENT_BYTES = 1024 * 1024;

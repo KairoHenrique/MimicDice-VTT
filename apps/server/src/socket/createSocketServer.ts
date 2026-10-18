@@ -8,6 +8,8 @@ import {
   PING_WINDOW_MS,
   pullToSceneRequestSchema,
   sheetPingRequestSchema,
+  groupBlindCheckRequestSchema,
+  groupBlindCheckRollSchema,
   SOCKET_EVENTS,
   TABLE_SESSION_IDLE_CLOSE_MS,
   TABLE_SESSION_OPEN_SETTING_KEY,
@@ -97,6 +99,7 @@ function registerCoreHandlers(context: ServerContext, io: Server, socket: Socket
 
   registerPingHandler(context, socket, userId, pingLimiter);
   registerSheetPingHandler(context, socket, userId);
+  registerGroupBlindCheckHandler(context, io, socket, userId);
 }
 
 /** Pings are relayed to everyone else on the server; only a GM ping may move other players' cameras. */
@@ -123,6 +126,35 @@ function registerSheetPingHandler(context: ServerContext, socket: Socket, userId
     const actorExists = world.documents.listCollection("actors").some((actor) => actor._id === parsed.data.actorId);
     if (!actorExists) return;
     socket.broadcast.emit(SOCKET_EVENTS.SHEET_PING, { ...parsed.data, userId });
+  });
+}
+
+/** GM initiates a blind group check and players submit their roll participation. */
+function registerGroupBlindCheckHandler(context: ServerContext, io: Server, socket: Socket, userId: string): void {
+  socket.on(SOCKET_EVENTS.GROUP_BLIND_CHECK, (payload: unknown) => {
+    const world = context.activeWorld.current;
+    const parsed = groupBlindCheckRequestSchema.safeParse(payload);
+    if (!world || !parsed.success) return;
+    if (!world.users.isGameMaster(userId)) return;
+    const user = world.users.getUser(userId);
+    socket.broadcast.emit(SOCKET_EVENTS.GROUP_BLIND_CHECK, {
+      checkId: parsed.data.checkId,
+      message: parsed.data.message,
+      targetActorIds: parsed.data.targetActorIds,
+      authorName: user?.name ?? "Mestre",
+      userId,
+    });
+  });
+
+  socket.on(SOCKET_EVENTS.GROUP_BLIND_CHECK_ROLL, (payload: unknown) => {
+    const world = context.activeWorld.current;
+    const parsed = groupBlindCheckRollSchema.safeParse(payload);
+    if (!world || !parsed.success) return;
+    io.emit(SOCKET_EVENTS.GROUP_BLIND_CHECK_ROLL, {
+      checkId: parsed.data.checkId,
+      actorId: parsed.data.actorId,
+      userId,
+    });
   });
 }
 

@@ -15,6 +15,7 @@ import { DomApplication } from "./DomApplication";
 import { ModuleManagement } from "./ModuleManagement";
 import { HelpDialog } from "./help/HelpDialog";
 import { UserManagement } from "./UserManagement";
+import { openBlindCheckDialog } from "../game/blindCheck/BlindCheckDialog";
 
 export class HostToolbar extends DomApplication {
   static override DEFAULT_OPTIONS: Partial<ApplicationConfiguration> = {
@@ -80,7 +81,7 @@ export class HostToolbar extends DomApplication {
     return [
       this.#group("Sessão", this.#sessionButton()),
       this.#group("Mapa", this.#modeButton(), pauseButton, lockButton),
-      this.#group("Jogadores na mesa", visionButton, shareViewButton, this.#perceptionButton(), this.#statusButton()),
+      this.#group("Jogadores na mesa", visionButton, shareViewButton, this.#perceptionButton(), this.#blindCheckButton(), this.#statusButton()),
       this.#group(
         "Administração",
         this.#button("fas fa-puzzle-piece", "Módulos", () => new ModuleManagement().render({ force: true }), "icon", "toolbar:modules"),
@@ -136,6 +137,12 @@ export class HostToolbar extends DomApplication {
   #perceptionButton(): HTMLButtonElement {
     const button = this.#button("fas fa-magnifying-glass", "Anotar percepção", () => perceptionScoresDialog(), "compact", "toolbar:perception");
     button.title = "Anotar percepção: digite o que cada um tirou. Revela só os segredos que o token de cada um está vendo agora.";
+    return button;
+  }
+
+  #blindCheckButton(): HTMLButtonElement {
+    const button = this.#button("fas fa-eye-slash", "Teste às cegas", () => openBlindCheckDialog(), "compact", "toolbar:blind-check");
+    button.title = "Pedir teste às cegas: você escolhe a perícia e os jogadores rolam sem saber qual é. O resultado só você vê.";
     return button;
   }
 

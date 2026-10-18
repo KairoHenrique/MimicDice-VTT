@@ -1,5 +1,6 @@
 import { h } from "../../views/dom";
 import { rollAnimationParts } from "./rollAnimationParts";
+import { playDiceSound } from "../../game/audio/soundEffects";
 
 const MAX_ANIMATED_DICE = 16;
 const TUMBLE_MS = 1000;
@@ -37,7 +38,6 @@ function shapeClass(term: any): string {
  */
 export class DiceTray {
   readonly #layer: HTMLElement;
-  #audioContext: AudioContext | null = null;
 
   constructor() {
     this.#layer = h("div", { id: "dice-tray", "aria-hidden": "true" });
@@ -98,31 +98,8 @@ export class DiceTray {
     }
   }
 
-  /** Short synthesized clatter; no audio assets are shipped or fetched. */
   #playRattle(): void {
-    try {
-      this.#audioContext ??= new AudioContext();
-      const context = this.#audioContext;
-      if (context.state === "suspended") void context.resume();
-      for (let hit = 0; hit < 5; hit += 1) this.#scheduleClick(context, context.currentTime + hit * 0.09 + Math.random() * 0.04, 0.35 - hit * 0.05);
-    } catch {
-      /* Audio is optional (blocked autoplay, missing API). */
-    }
-  }
-
-  #scheduleClick(context: AudioContext, startTime: number, volume: number): void {
-    const length = Math.floor(context.sampleRate * 0.03);
-    const buffer = context.createBuffer(1, length, context.sampleRate);
-    const samples = buffer.getChannelData(0);
-    for (let index = 0; index < length; index += 1) samples[index] = (Math.random() * 2 - 1) * (1 - index / length) ** 3;
-    const source = context.createBufferSource();
-    source.buffer = buffer;
-    const filter = context.createBiquadFilter();
-    filter.type = "bandpass";
-    filter.frequency.value = 1800 + Math.random() * 1600;
-    const gain = context.createGain();
-    gain.gain.value = Math.max(volume, 0.05);
-    source.connect(filter).connect(gain).connect(context.destination);
-    source.start(startTime);
+    playDiceSound();
   }
 }
+

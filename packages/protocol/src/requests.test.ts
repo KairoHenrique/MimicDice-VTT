@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_PULLED_USERS, pullToSceneRequestSchema, setupRequestSchema, sheetPingBroadcastSchema, sheetPingRequestSchema } from "./requests";
+import { groupBlindCheckBroadcastSchema, groupBlindCheckRequestSchema, groupBlindCheckRollSchema, MAX_PULLED_USERS, pullToSceneRequestSchema, setupRequestSchema, sheetPingBroadcastSchema, sheetPingRequestSchema } from "./requests";
 
 describe("pullToSceneRequestSchema", () => {
   const sceneId = "abcdefghijklmnop";
@@ -62,5 +62,35 @@ describe("sheetPing schemas", () => {
     expect(sheetPingRequestSchema.safeParse({ actorId: "invalid!id" }).success).toBe(false);
     expect(sheetPingRequestSchema.safeParse({ actorId: "abcdefghijklmnop", tab: "invalid_tab" }).success).toBe(false);
   });
+
+  it("validates group blind check request, broadcast and roll schemas", () => {
+    const validRequest = {
+      checkId: "check-1",
+      skillLabel: "Percepção",
+      attributeKey: "presenca",
+      attributeLabel: "Presença",
+      dc: 15,
+      message: "O mestre pediu uma rolagem misteriosa...",
+      targetActorIds: ["abcdefghijklmnop"],
+    };
+    expect(groupBlindCheckRequestSchema.safeParse(validRequest).success).toBe(true);
+
+    const validBroadcast = {
+      checkId: "check-1",
+      message: "O mestre pediu uma rolagem misteriosa...",
+      targetActorIds: ["abcdefghijklmnop"],
+      authorName: "Mestre",
+      userId: "qrstuvwxyzabcdef",
+    };
+    expect(groupBlindCheckBroadcastSchema.safeParse(validBroadcast).success).toBe(true);
+
+    const validRoll = {
+      checkId: "check-1",
+      actorId: "abcdefghijklmnop",
+    };
+    expect(groupBlindCheckRollSchema.safeParse(validRoll).success).toBe(true);
+    expect(groupBlindCheckRollSchema.safeParse({ checkId: "check-1", actorId: "invalid!" }).success).toBe(false);
+  });
 });
+
 

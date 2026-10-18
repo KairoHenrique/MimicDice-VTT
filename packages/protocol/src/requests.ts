@@ -120,6 +120,35 @@ export const sheetPingBroadcastSchema = sheetPingRequestSchema.extend({
 });
 export type SheetPingBroadcast = z.infer<typeof sheetPingBroadcastSchema>;
 
+/** GM initiates a blind group skill check where players are invited to roll without knowing which skill it is. */
+export const groupBlindCheckRequestSchema = z.object({
+  checkId: z.string().max(64),
+  skillLabel: z.string().trim().min(1).max(64),
+  attributeKey: z.string().max(64).nullable().optional(),
+  attributeLabel: z.string().max(64).nullable().optional(),
+  dc: z.number().int().min(0).max(100).nullable().optional(),
+  message: z.string().trim().max(200).optional(),
+  targetActorIds: z.array(documentIdSchema).min(1).max(50),
+});
+export type GroupBlindCheckRequest = z.infer<typeof groupBlindCheckRequestSchema>;
+
+/** Broadcast sent to players: skillLabel and attributeKey are omitted so players cannot inspect or cheat. */
+export const groupBlindCheckBroadcastSchema = z.object({
+  checkId: z.string().max(64),
+  message: z.string().max(200).optional(),
+  targetActorIds: z.array(documentIdSchema).min(1).max(50),
+  authorName: z.string().max(64).optional(),
+  userId: documentIdSchema,
+});
+export type GroupBlindCheckBroadcast = z.infer<typeof groupBlindCheckBroadcastSchema>;
+
+/** Player's action when they click to roll the blind check. */
+export const groupBlindCheckRollSchema = z.object({
+  checkId: z.string().max(64),
+  actorId: documentIdSchema,
+});
+export type GroupBlindCheckRoll = z.infer<typeof groupBlindCheckRollSchema>;
+
 /** Live position of tokens while their owner drags them; `ended` tells others to drop the preview. Nothing is saved. */
 export const MAX_DRAGGED_TOKENS = 20;
 export const tokenDragRequestSchema = z.object({

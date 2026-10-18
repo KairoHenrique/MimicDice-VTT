@@ -2,6 +2,7 @@ import { Hooks, segmentsCross } from "@tabbletop/api";
 import { findOwnCharacter } from "../ui/actors/ownCharacter";
 import { isScenePaused } from "./scenePause";
 import { isMapLocked } from "./tableControls";
+import { playFootstepSound } from "./audio/soundEffects";
 
 const VIEW_EDGE_MARGIN_RATIO = 0.15;
 const WALK_SPEED_SQUARES_PER_SEC = 4.5;
@@ -19,6 +20,8 @@ let walkRafId: number | null = null;
 let lastFrameTime = 0;
 let walkingTokens: any[] = [];
 let hasMovedInSession = false;
+let stepDistanceAccum = 0;
+let stepVariation = 0;
 
 /** The GM's puppet first, then selected tokens; a player with nothing selected walks their own character. */
 function tokensToMove(): any[] {
@@ -119,11 +122,18 @@ function walkStep(timestamp: number): void {
       }
 
       if (nextX !== current.x || nextY !== current.y) {
+        const dist = Math.hypot(nextX - current.x, nextY - current.y);
         token.position.set(nextX, nextY);
         token.document.x = nextX;
         token.document.y = nextY;
         token.refresh();
         hasMovedInSession = true;
+        stepDistanceAccum += dist;
+        const stepThreshold = Math.max(30, (canvas.grid?.size || 100) * 0.4);
+        if (stepDistanceAccum >= stepThreshold) {
+          playFootstepSound(stepVariation++);
+          stepDistanceAccum = 0;
+        }
       }
     }
 
@@ -176,6 +186,7 @@ async function finishWalking(): Promise<void> {
     walkRafId = null;
   }
   lastFrameTime = 0;
+  stepDistanceAccum = 0;
   const tokens = walkingTokens;
   walkingTokens = [];
 
@@ -195,6 +206,7 @@ async function finishWalking(): Promise<void> {
           token.document.x = target.x;
           token.document.y = target.y;
           token.refresh();
+          playFootstepSound(stepVariation++);
         }
       }
     }

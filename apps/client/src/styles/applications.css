@@ -447,6 +447,116 @@ dialog.application {
   box-shadow: var(--focus-ring);
 }
 
+.client-configuration .audio-config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.client-configuration .audio-config-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.05rem;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.client-configuration .audio-controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.client-configuration .audio-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  background: var(--surface-secondary, rgb(255 255 255 / 4%));
+  border: 1px solid var(--border, rgb(255 255 255 / 8%));
+  border-radius: var(--radius-md, 8px);
+}
+
+.client-configuration .audio-row-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.client-configuration .audio-row-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.client-configuration .audio-row-hint {
+  font-size: 0.8rem;
+  color: var(--muted-foreground, #8e8e93);
+}
+
+.client-configuration .audio-row-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.client-configuration .audio-slider {
+  width: 130px;
+  cursor: pointer;
+  accent-color: var(--primary, #3b82f6);
+}
+
+.client-configuration .audio-val {
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 42px;
+  text-align: right;
+  color: var(--foreground);
+}
+
+.client-configuration .audio-mute-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.client-configuration .audio-mute-btn:hover {
+  background: var(--surface-hover, rgb(255 255 255 / 12%));
+}
+
+.client-configuration .audio-test-btn {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--foreground);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.client-configuration .audio-test-btn:hover {
+  background: var(--surface-hover, rgb(255 255 255 / 12%));
+  border-color: var(--primary, #3b82f6);
+}
+
 .players-list {
   position: fixed;
   left: 12px;

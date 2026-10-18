@@ -1,6 +1,7 @@
 import { sheetPingBroadcastSchema, SOCKET_EVENTS, type SheetPingRequest } from "@tabbletop/protocol";
 import type { Socket } from "socket.io-client";
 import { h } from "../../views/dom";
+import { playAlertSound } from "../../game/audio/soundEffects";
 
 let pingSocket: Socket | null = null;
 const PING_DURATION_MS = 4500;
@@ -105,6 +106,7 @@ export function listenForSheetPings(socket: Socket): void {
     }
 
     if (data.userId !== game.user.id) {
+      playAlertSound();
       const authorName = author?.name ? author.name.trim() : "O mestre";
       ui.notifications.info(`${authorName} destacou "${data.label || "um campo"}" na sua ficha!`);
     }

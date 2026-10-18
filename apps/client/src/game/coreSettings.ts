@@ -65,6 +65,34 @@ export function registerCoreSettings(settings: ClientSettings): void {
     choices: { ...LANGUAGE_NAMES },
     requiresReload: true,
   });
+  settings.register("core", "volumeMaster", {
+    name: "Volume geral",
+    scope: "client",
+    config: false,
+    type: Number,
+    default: 100,
+  });
+  settings.register("core", "volumeDice", {
+    name: "Som dos dados",
+    scope: "client",
+    config: false,
+    type: Number,
+    default: 80,
+  });
+  settings.register("core", "volumeFootsteps", {
+    name: "Som de andar",
+    scope: "client",
+    config: false,
+    type: Number,
+    default: 50,
+  });
+  settings.register("core", "volumeAlerts", {
+    name: "Som de alertas",
+    scope: "client",
+    config: false,
+    type: Number,
+    default: 80,
+  });
   registerPackageFacingSettings(settings);
   registerMimicDiceSettings(settings);
   registerTableSettings(settings);

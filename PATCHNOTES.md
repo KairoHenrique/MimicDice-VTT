@@ -1,5 +1,18 @@
 # Notas de versão
 
+## 1.7.3
+
+- **Teste às cegas em grupo solicitado pelo mestre:** o mestre pode pedir uma rolagem para todos os jogadores (ou personagens selecionados) sem que eles saibam qual perícia ou atributo está sendo testado.
+  - No menu superior do mestre (botão **Teste às cegas** com ícone de olho riscado), o mestre escolhe a perícia, o atributo (ou automático pelo melhor atributo de cada personagem), dificuldade (DT) opcional e mensagem.
+  - Para os jogadores convocados, surge um aviso de **Teste Misterioso às Cegas** com o botão para rolar. Os jogadores rolam normalmente sem ver qual perícia foi avaliada nem o resultado final.
+  - Na tela do mestre, abre-se um painel de acompanhamento em tempo real mostrando quem já rolou, o resultado dos dados, se passou ou falhou na DT e um botão para o mestre rolar por quem estiver ausente. O resultado também é registrado no chat como rolagem às cegas (`blindroll`).
+- **Controle de volumes e sons nas Configurações:** nova aba **Áudio** em Configurações, permitindo que jogadores e mestre regulem o volume ou silenciem:
+  - **Volume Geral:** volume principal de todos os efeitos sonoros.
+  - **Som dos Dados:** volume dos dados rolando na mesa ou no chat.
+  - **Som de Andar:** passos táteis sintetizados ao caminhar com as teclas WASD.
+  - **Som de Alertas e Pings:** avisos sonoros de destaque na ficha, mensagens e notificações.
+  - Cada controle conta com slider de 0% a 100%, botão de silenciar (mute) e botão **Testar** para ouvir o som na hora.
+
 ## 1.7.2
 
 - **Perícias ordenadas por valor:** as perícias agora aparecem automaticamente organizadas da maior para a menor pontuação (por exemplo, perícias com 10 pontos ficam no topo da lista, seguidas pelas de 5 e 0). Em caso de empate, mantêm ordem alfabética.

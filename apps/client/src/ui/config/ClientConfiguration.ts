@@ -5,17 +5,20 @@ import { buildGameMasterRulesTab } from "./gameMasterRulesTab";
 import { buildKeybindingsTab } from "./keybindingsTab";
 import { buildPasswordTab } from "./passwordTab";
 import { buildSettingsTab } from "./settingsTab";
+import { buildAudioTab } from "./audioTab";
 
-type ConfigTab = "settings" | "rules" | "keybindings" | "password";
+type ConfigTab = "settings" | "audio" | "rules" | "keybindings" | "password";
 
 const TABS: ReadonlyArray<{ id: ConfigTab; icon: string; label: string; gameMasterOnly?: boolean }> = [
   { id: "settings", icon: "fas fa-sliders", label: "Geral" },
+  { id: "audio", icon: "fas fa-volume-high", label: "Áudio" },
   { id: "rules", icon: "fas fa-crown", label: "Controle do mestre", gameMasterOnly: true },
   { id: "keybindings", icon: "fas fa-keyboard", label: "Atalhos" },
   { id: "password", icon: "fas fa-key", label: "Senha do mestre", gameMasterOnly: true },
 ];
 
 function buildTabBody(tab: ConfigTab, rerender: () => void): HTMLElement {
+  if (tab === "audio") return buildAudioTab();
   if (tab === "keybindings") return buildKeybindingsTab(rerender);
   if (tab === "rules" && game.user.isGM) return buildGameMasterRulesTab(rerender);
   if (tab === "password" && game.user.isGM) return buildPasswordTab();

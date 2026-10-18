@@ -5,7 +5,7 @@ import { rollFromSheet } from "../sheetRoll";
 import type { BoardContext } from "./boardContext";
 import { allComponents } from "./sheetLayoutRules";
 
-interface AttributeChoice {
+export interface AttributeChoice {
   readonly key: string;
   readonly label: string;
   readonly value: number;
