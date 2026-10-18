@@ -34,8 +34,11 @@ export interface MenuEntry {
 
 const MENU_VIEWPORT_MARGIN_PX = 8;
 
+export type NoteConfigHandler = (note: Note | null, initial: PlainObject) => Promise<PlainObject | null>;
+
 /** Context menus and small configuration dialogs for placeables (DOM only; user text is never parsed as HTML). */
 export class CanvasHud {
+  static noteConfigHandler: NoteConfigHandler | null = null;
   #menu: HTMLElement | null = null;
   #closeMenu = (event: Event) => {
     if (this.#menu && event.target instanceof Node && this.#menu.contains(event.target)) return;
@@ -113,6 +116,15 @@ export class CanvasHud {
       entries.push(this.#combatEntry(token));
       entries.push(this.#pinEntry(token.document));
       entries.push({ label: "Configurar token", icon: "fa-solid fa-gear", onSelect: () => this.configureToken(token) });
+    }
+    if (user?.isGM || token.isOwner) {
+      const currentRotation = Number(token.document.rotation) || 0;
+      const rotateBy = async (delta: number) => {
+        const next = ((Math.round((currentRotation + delta) / 15) * 15 % 360) + 360) % 360;
+        await token.document.update({ rotation: next });
+      };
+      entries.push({ label: "Girar token 45°", icon: "fa-solid fa-rotate-right", onSelect: () => void rotateBy(45) });
+      entries.push({ label: "Girar token 90°", icon: "fa-solid fa-arrows-rotate", onSelect: () => void rotateBy(90) });
     }
     if (token.document.canUserModify?.(user, "delete") && (user?.isGM || user?.can?.("TOKEN_DELETE"))) {
       entries.push({ label: "Remover do mapa", icon: "fa-solid fa-trash", onSelect: () => token.document.delete() });
@@ -196,7 +208,20 @@ export class CanvasHud {
 
   showTileMenu(tile: Tile, event: PIXI.FederatedPointerEvent): void {
     if (!currentGame()?.user?.isGM) return;
-    const entries: MenuEntry[] = [this.#pinEntry(tile.document), { label: "Excluir tile", icon: "fa-solid fa-trash", onSelect: () => tile.document.delete() }];
+    const currentRotation = Number(tile.document.rotation) || 0;
+    const rotateBy = async (delta: number) => {
+      const next = ((Math.round((currentRotation + delta) / 15) * 15 % 360) + 360) % 360;
+      await tile.document.update({ rotation: next });
+    };
+    const entries: MenuEntry[] = [
+      { label: "Girar 90° horário", icon: "fa-solid fa-rotate-right", onSelect: () => void rotateBy(90) },
+      { label: "Girar 45° horário", icon: "fa-solid fa-arrow-rotate-right", onSelect: () => void rotateBy(45) },
+      { label: "Girar 90° anti-horário", icon: "fa-solid fa-rotate-left", onSelect: () => void rotateBy(-90) },
+      { label: "Girar 180°", icon: "fa-solid fa-arrows-rotate", onSelect: () => void rotateBy(180) },
+      { label: "Redefinir rotação (0°)", icon: "fa-solid fa-compass", onSelect: () => void tile.document.update({ rotation: 0 }) },
+      this.#pinEntry(tile.document),
+      { label: "Excluir tile", icon: "fa-solid fa-trash", onSelect: () => tile.document.delete() },
+    ];
     Hooks.callAll("getTileMenuEntries", tile, entries);
     this.#openMenu(entries, event);
   }
@@ -290,16 +315,20 @@ export class CanvasHud {
 
   showNoteMenu(note: Note, event: PIXI.FederatedPointerEvent): void {
     const user = currentGame()?.user;
+    const isPoi = Boolean((note.document._source?.flags as PlainObject | undefined)?.world && (note.document._source?.flags as PlainObject).world && ((note.document._source?.flags as PlainObject).world as PlainObject).poi);
     const entries: MenuEntry[] = [
-      { label: "Abrir nota", icon: "fa-solid fa-book-open", onSelect: () => note.activate() },
-      { label: "Editar nota", icon: "fa-solid fa-pen", onSelect: () => void this.configureNote(note) },
+      { label: isPoi ? "Abrir ponto de interesse" : "Abrir nota", icon: isPoi ? "fa-solid fa-map-pin" : "fa-solid fa-book-open", onSelect: () => note.activate() },
+      { label: isPoi ? "Editar ponto de interesse" : "Editar nota", icon: "fa-solid fa-pen", onSelect: () => void this.configureNote(note) },
     ];
-    if (note.document.canUserModify?.(user, "delete")) entries.push({ label: "Apagar nota", icon: "fa-solid fa-trash", onSelect: () => note.document.delete() });
+    if (note.document.canUserModify?.(user, "delete")) entries.push({ label: isPoi ? "Apagar ponto de interesse" : "Apagar nota", icon: "fa-solid fa-trash", onSelect: () => note.document.delete() });
     Hooks.callAll("getNoteMenuEntries", note, entries);
     this.#openMenu(entries, event);
   }
 
   async configureNote(note: Note | null, _event?: unknown, initial: PlainObject = {}): Promise<PlainObject | null> {
+    if (CanvasHud.noteConfigHandler) {
+      return CanvasHud.noteConfigHandler(note, initial);
+    }
     const source = note?.document ?? initial;
     const journalChoices = (currentGame()?.journal?.contents ?? []).map((entry: any) => ({ value: entry.id, label: entry.name }));
     const values = await this.#formDialog(note ? "Editar nota" : "Nova nota", [

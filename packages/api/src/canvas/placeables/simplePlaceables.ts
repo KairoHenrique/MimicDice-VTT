@@ -65,6 +65,8 @@ export class Tile extends PlaceableObject {
   frame = new PIXI.Graphics();
   /** Size shown while the corner handle is being dragged, before the change is saved. */
   previewSize: { width: number; height: number } | null = null;
+  /** Rotation shown while the rotation handle is being dragged, before the change is saved. */
+  previewRotation: number | null = null;
 
   get layerState(): TileLayerState | null {
     return (this.constructor as typeof Tile).layerStateRule?.(this.document) ?? null;
@@ -113,11 +115,12 @@ export class Tile extends PlaceableObject {
   protected override _refresh(): void {
     const { x, y, width, height } = this.bounds;
     this.position.set(x, y);
+    const rotation = this.previewRotation ?? (Number(this.document.rotation) || 0);
     if (this.mesh) {
       this.mesh.width = width;
       this.mesh.height = height;
       this.mesh.position.set(width / 2, height / 2);
-      this.mesh.angle = Number(this.document.rotation) || 0;
+      this.mesh.angle = rotation;
       this.mesh.tint = colorToNumber(this.document.texture?.tint, 0xffffff);
     }
     const layerState = this.layerState;
@@ -126,10 +129,27 @@ export class Tile extends PlaceableObject {
     this.alpha = (this.#fadedForGameMaster ? 0.5 : Number(this.document.alpha ?? 1)) * (layerState?.opacity ?? 1);
     this.unseenMarker = syncUnseenMarker(this, this.unseenMarker, isGameMaster() && !seesEverything() && this.#concealed, { x: width / 2, y: height / 2 });
     this.frame.clear();
-    if (this.controlled || (this.hover && this.layer?.active)) this.frame.lineStyle(3, this.controlled ? 0x3b82f6 : 0xffffff, 0.9).drawRect(0, 0, width, height);
+    this.frame.position.set(width / 2, height / 2);
+    this.frame.angle = rotation;
+
+    const halfW = width / 2;
+    const halfH = height / 2;
+    if (this.controlled || (this.hover && this.layer?.active)) {
+      this.frame.lineStyle(3, this.controlled ? 0x3b82f6 : 0xffffff, 0.9).drawRect(-halfW, -halfH, width, height);
+    }
     const handle = this.resizable ? this.resizeHandleSize : 0;
-    if (handle > 0) this.frame.lineStyle(2, 0xffffff, 1).beginFill(0x3b82f6, 1).drawRect(width - handle / 2, height - handle / 2, handle, handle).endFill();
-    this.hitArea = new PIXI.Rectangle(0, 0, width + handle / 2, height + handle / 2);
+    if (handle > 0) {
+      this.frame.lineStyle(2, 0xffffff, 1).beginFill(0x3b82f6, 1).drawRect(halfW - handle / 2, halfH - handle / 2, handle, handle).endFill();
+    }
+    if (this.rotatable) {
+      const dist = this.rotateHandleDistance;
+      const r = this.rotateHandleRadius;
+      this.frame.lineStyle(2, 0x3b82f6, 0.9).moveTo(0, -halfH).lineTo(0, -halfH - dist);
+      this.frame.lineStyle(2, 0xffffff, 1).beginFill(0x3b82f6, 1).drawCircle(0, -halfH - dist, r).endFill();
+    }
+    const dist = this.rotatable ? this.rotateHandleDistance + this.rotateHandleRadius : 0;
+    const maxDim = Math.hypot(halfW, halfH) + handle + dist;
+    this.hitArea = new PIXI.Circle(halfW, halfH, maxDim);
   }
 
   /** Objects that do not fill whole squares move by quarter squares so they can sit anywhere inside one. */
@@ -144,16 +164,52 @@ export class Tile extends PlaceableObject {
     return this.controlled && this.canDrag();
   }
 
+  get rotatable(): boolean {
+    return this.controlled && this.canDrag();
+  }
+
   get resizeHandleSize(): number {
     return Math.max(12, Math.round((Number(currentCanvas()?.grid?.size) || 100) * 0.16));
+  }
+
+  get rotateHandleDistance(): number {
+    return Math.max(22, Math.round((Number(currentCanvas()?.grid?.size) || 100) * 0.25));
+  }
+
+  get rotateHandleRadius(): number {
+    return Math.max(7, Math.round((Number(currentCanvas()?.grid?.size) || 100) * 0.08));
+  }
+
+  #toLocalRotated(point: Point): Point {
+    const { x, y, width, height } = this.bounds;
+    const rotation = this.previewRotation ?? (Number(this.document.rotation) || 0);
+    const rad = (-rotation * Math.PI) / 180;
+    const dx = point.x - (x + width / 2);
+    const dy = point.y - (y + height / 2);
+    return {
+      x: dx * Math.cos(rad) - dy * Math.sin(rad),
+      y: dx * Math.sin(rad) + dy * Math.cos(rad),
+    };
   }
 
   /** Whether a canvas point grabs the resize handle (bottom-right corner). */
   grabsResizeHandle(point: Point): boolean {
     if (!this.resizable) return false;
-    const { x, y, width, height } = this.bounds;
+    const local = this.#toLocalRotated(point);
+    const halfW = this.bounds.width / 2;
+    const halfH = this.bounds.height / 2;
     const reach = this.resizeHandleSize;
-    return Math.abs(point.x - (x + width)) <= reach && Math.abs(point.y - (y + height)) <= reach;
+    return Math.abs(local.x - halfW) <= reach && Math.abs(local.y - halfH) <= reach;
+  }
+
+  /** Whether a canvas point grabs the rotation handle (above the top-center edge). */
+  grabsRotateHandle(point: Point): boolean {
+    if (!this.rotatable) return false;
+    const local = this.#toLocalRotated(point);
+    const halfH = this.bounds.height / 2;
+    const dist = this.rotateHandleDistance;
+    const reach = this.rotateHandleRadius * 2;
+    return Math.hypot(local.x, local.y - (-halfH - dist)) <= reach;
   }
 
   override _onClickRight(event: PIXI.FederatedPointerEvent): void {
@@ -472,6 +528,9 @@ export class Note extends PlaceableObject {
     if (isGameMaster()) return true;
     const entry = this.document.entry;
     if (entry && entry.testUserPermission?.(currentGame()?.user, "LIMITED") !== true) return false;
+    const worldFlags = (this.document.flags?.world ?? this.document._source?.flags?.world ?? {}) as Record<string, unknown>;
+    const isHidden = worldFlags.hidden === true || (worldFlags.poi && typeof worldFlags.poi === "object" && (worldFlags.poi as any).hidden === true);
+    if (isHidden) return false;
     return !isConcealed((this.constructor as typeof Note).concealRule, this.document);
   }
 
@@ -493,7 +552,9 @@ export class Note extends PlaceableObject {
   protected override _refresh(): void {
     const size = this.size;
     this.position.set(this.document.x, this.document.y);
-    const concealed = isGameMaster() && isConcealed((this.constructor as typeof Note).concealRule, this.document);
+    const worldFlags = (this.document.flags?.world ?? this.document._source?.flags?.world ?? {}) as Record<string, unknown>;
+    const isHidden = worldFlags.hidden === true || (worldFlags.poi && typeof worldFlags.poi === "object" && (worldFlags.poi as any).hidden === true);
+    const concealed: boolean = Boolean(isGameMaster() && (isConcealed((this.constructor as typeof Note).concealRule, this.document) || isHidden));
     this.alpha = concealed ? 0.5 : 1;
     this.unseenMarker = syncUnseenMarker(this, this.unseenMarker, concealed && !seesEverything(), { x: size / 2, y: -size / 2 });
     if (this.icon) {
@@ -541,6 +602,10 @@ export class Note extends PlaceableObject {
     this.on("pointertap", (event: PIXI.FederatedPointerEvent) => {
       const pressedAt = this.#pressedAt;
       if (!pressedAt || Math.hypot(event.clientX - pressedAt.x, event.clientY - pressedAt.y) > NOTE_CLICK_SLOP_PX) return;
+      if (!this.#canEdit) {
+        this.activate();
+        return;
+      }
       if (this.#pendingOpen) return;
       this.#pendingOpen = setTimeout(() => {
         this.#pendingOpen = null;

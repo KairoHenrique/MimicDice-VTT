@@ -12,7 +12,7 @@ export { actorRoleOf, actorTokenData } from "./canvas/interaction/canvasDrop";
 export type { TokenBadge } from "./canvas/placeables/Token";
 export { ERASE_TOOL } from "./canvas/placeables/PlaceableObject";
 export type { TileLayerState } from "./canvas/placeables/simplePlaceables";
-export type { MenuEntry } from "./canvas/hud/CanvasHud";
+export { CanvasHud, type MenuEntry, type NoteConfigHandler } from "./canvas/hud/CanvasHud";
 export { defaultDrawingColor, setDrawingColor, drawingColorPatch, isGmDrawingsHidden, setGmDrawingsHidden } from "./canvas/hud/drawingFields";
 export { Hooks } from "./hooks/Hooks";
 export { segmentsCross } from "./canvas/geometry";

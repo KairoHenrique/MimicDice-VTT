@@ -147,8 +147,8 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
       tools: { select: selectTool(), light: tool("light", 2, "Colocar luz", "fa-solid fa-lightbulb"), erase: eraseTool("luzes") },
     },
     notes: {
-      name: "notes", order: 7, title: "Notas", icon: "fa-solid fa-bookmark", layer: "notes", activeTool: "select", visible: can("NOTE_CREATE"),
-      tools: { select: selectTool(), journal: tool("journal", 2, "Nova nota", "fa-solid fa-book-medical", { visible: can("NOTE_CREATE") }), erase: eraseTool("notas") },
+      name: "notes", order: 7, title: "Pontos de interesse e notas", icon: "fa-solid fa-map-location-dot", layer: "notes", activeTool: "select", visible: can("NOTE_CREATE"),
+      tools: { select: selectTool(), journal: tool("journal", 2, "Criar ponto de interesse ou nota", "fa-solid fa-location-dot", { visible: can("NOTE_CREATE") }), erase: eraseTool("pontos e notas") },
     },
   };
 }

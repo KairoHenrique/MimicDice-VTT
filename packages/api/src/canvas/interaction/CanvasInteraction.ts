@@ -28,7 +28,8 @@ type Session =
   | { kind: "create"; origin: Point; tool: CreationTool; points: number[]; startedAt: number }
   | { kind: "move"; origin: Point; objects: PlaceableObject[] }
   | { kind: "endpoint"; wall: Wall; index: 0 | 1 }
-  | { kind: "resize"; tile: Tile };
+  | { kind: "resize"; tile: Tile }
+  | { kind: "rotate"; tile: Tile; center: Point; initialRotation: number };
 
 export type MovePathMode = "modifier" | "always" | "never";
 
@@ -96,9 +97,19 @@ export class CanvasInteraction {
         return;
       }
     }
-    if (placeable.document.documentName === "Tile" && (placeable as Tile).grabsResizeHandle(this.#toWorld(event))) {
-      this.#session = { kind: "resize", tile: placeable as Tile };
-      return;
+    if (placeable.document.documentName === "Tile") {
+      const tile = placeable as Tile;
+      const world = this.#toWorld(event);
+      if (tile.grabsRotateHandle(world)) {
+        const bounds = tile.bounds;
+        const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+        this.#session = { kind: "rotate", tile, center, initialRotation: Number(tile.document.rotation) || 0 };
+        return;
+      }
+      if (tile.grabsResizeHandle(world)) {
+        this.#session = { kind: "resize", tile };
+        return;
+      }
     }
     const pool = placeable.controlled ? (placeable.layer.controlled as PlaceableObject[]) : [placeable];
     const objects = pool.filter((object) => object.canDrag());
@@ -185,6 +196,9 @@ export class CanvasInteraction {
       case "resize":
         this.#previewResize(session.tile, this.#resizedArea(session.tile, world, event.shiftKey));
         break;
+      case "rotate":
+        this.#previewRotate(session.tile, session.center, world, event.shiftKey);
+        break;
     }
   }
 
@@ -192,7 +206,22 @@ export class CanvasInteraction {
   #resizedArea(tile: Tile, world: Point, free: boolean): { width: number; height: number } {
     const corner = free ? world : this.canvas.grid.getSnappedPoint(world, { mode: "quarter" });
     const smallest = Math.round(this.canvas.grid.size / 4);
-    return { width: Math.max(smallest, Math.round(corner.x - tile.document.x)), height: Math.max(smallest, Math.round(corner.y - tile.document.y)) };
+    const rotation = Number(tile.document.rotation) || 0;
+    if (rotation === 0) {
+      return { width: Math.max(smallest, Math.round(corner.x - tile.document.x)), height: Math.max(smallest, Math.round(corner.y - tile.document.y)) };
+    }
+    const rad = (-rotation * Math.PI) / 180;
+    const { x, y, width, height } = tile.bounds;
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+    const dx = corner.x - centerX;
+    const dy = corner.y - centerY;
+    const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
+    const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
+    return {
+      width: Math.max(smallest, Math.round(localX + width / 2)),
+      height: Math.max(smallest, Math.round(localY + height / 2)),
+    };
   }
 
   #previewResize(tile: Tile, area: { width: number; height: number }): void {
@@ -214,6 +243,35 @@ export class CanvasInteraction {
       currentUi()?.notifications?.warn("Não foi possível mudar o tamanho.");
     } finally {
       tile.previewSize = null;
+      if (!tile.destroyed) tile.refresh();
+    }
+  }
+
+  #previewRotate(tile: Tile, center: Point, world: Point, free: boolean): void {
+    const rad = Math.atan2(world.y - center.y, world.x - center.x);
+    let deg = Math.round((rad * 180) / Math.PI + 90);
+    deg = ((deg % 360) + 360) % 360;
+    if (!free) {
+      const step = 15;
+      deg = (Math.round(deg / step) * step) % 360;
+    }
+    tile.previewRotation = deg;
+    tile.refresh();
+    this.label.text = `${deg}°`;
+    this.label.position.set(center.x, center.y);
+    this.label.visible = true;
+  }
+
+  async #commitRotate(tile: Tile, angle: number): Promise<void> {
+    try {
+      if (!tile.destroyed && angle !== Number(tile.document.rotation)) {
+        await tile.document.update({ rotation: angle });
+      }
+    } catch {
+      currentUi()?.notifications?.warn("Não foi possível mudar a rotação.");
+    } finally {
+      tile.previewRotation = null;
+      this.label.visible = false;
       if (!tile.destroyed) tile.refresh();
     }
   }
@@ -357,6 +415,9 @@ export class CanvasInteraction {
       case "resize":
         void this.#commitResize(session.tile, this.#resizedArea(session.tile, world, event.shiftKey));
         break;
+      case "rotate":
+        void this.#commitRotate(session.tile, session.tile.previewRotation ?? session.initialRotation);
+        break;
       case "pan":
         this.#openBoardMenuOnRightClick(session, event, world);
         break;
@@ -462,6 +523,9 @@ export class CanvasInteraction {
 
   #onWheel(event: WheelEvent): void {
     if (!this.canvas.ready) return;
+    if (event.shiftKey || event.ctrlKey) {
+      if (this.#handleRotateWheel(event)) return;
+    }
     event.preventDefault();
     const stage = this.canvas.stage as PIXI.Container;
     const factor = Math.pow(1.0015, -event.deltaY);
@@ -472,6 +536,34 @@ export class CanvasInteraction {
     stage.scale.set(scale);
     const after = stage.toLocal(screen);
     this.canvas.pan({ x: stage.pivot.x + (before.x - after.x), y: stage.pivot.y + (before.y - after.y), scale });
+  }
+
+  #handleRotateWheel(event: WheelEvent): boolean {
+    const layer = this.canvas.activeLayer;
+    let targets: PlaceableObject[] = ((layer?.controlled ?? []) as PlaceableObject[]).filter((o) => o.canDrag());
+    if (targets.length === 0) {
+      const hovered = ((layer?.placeables ?? []) as PlaceableObject[]).find((p) => p.hover && p.canDrag());
+      if (hovered) targets = [hovered];
+    }
+    if (targets.length === 0) {
+      const tileHovered = ((this.canvas.tiles?.placeables ?? []) as Tile[]).find((t) => t.hover && t.canDrag());
+      if (tileHovered) targets = [tileHovered];
+      else {
+        const tokenHovered = ((this.canvas.tokens?.placeables ?? []) as Token[]).find((t) => t.hover && t.canDrag());
+        if (tokenHovered) targets = [tokenHovered];
+      }
+    }
+    if (targets.length === 0) return false;
+
+    event.preventDefault();
+    const step = event.altKey ? 15 : 45;
+    const delta = event.deltaY < 0 ? step : -step;
+    for (const object of targets) {
+      const current = Number(object.document.rotation) || 0;
+      const next = ((Math.round((current + delta) / step) * step % 360) + 360) % 360;
+      void object.document.update({ rotation: next });
+    }
+    return true;
   }
 
   #onKeyDown(event: KeyboardEvent): void {
@@ -486,6 +578,19 @@ export class CanvasInteraction {
       }
     } else if (event.key === "Escape") {
       this.canvas.activeLayer?.releaseAll?.();
+    } else if (event.key === "r" || event.key === "R" || event.key === "[" || event.key === "]") {
+      const layer = this.canvas.activeLayer;
+      const controlled = ((layer?.controlled ?? []) as PlaceableObject[]).filter((o) => o.canDrag());
+      if (controlled.length > 0) {
+        event.preventDefault();
+        const step = event.altKey ? 15 : 45;
+        const delta = (event.key === "R" || event.key === "[") ? -step : step;
+        for (const object of controlled) {
+          const current = Number(object.document.rotation) || 0;
+          const next = ((Math.round((current + delta) / step) * step % 360) + 360) % 360;
+          void object.document.update({ rotation: next });
+        }
+      }
     }
   }
 

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Sword 1 -->
+  <path d="M54 10l-4-4-18 18 4 4 18-18z" fill="#ffffff"/>
+  <path d="M34 26l-16 16-4-1-1 4 4 1 1-4 4 1 12-12-4-4z" fill="#ffffff" opacity="0.9"/>
+  <circle cx="11" cy="53" r="3" fill="#ffffff"/>
+  <!-- Sword 2 -->
+  <path d="M10 10l4-4 18 18-4 4-18-18z" fill="#ffffff"/>
+  <path d="M30 26l16 16 4-1 1 4-4 1-1-4-4 1-12-12 4-4z" fill="#ffffff" opacity="0.9"/>
+  <circle cx="53" cy="53" r="3" fill="#ffffff"/>
+  <!-- Cross guards -->
+  <path d="M30 34l4-4-4-4-4 4 4 4z" fill="#ffffff"/>
+</svg>

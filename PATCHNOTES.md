@@ -1,5 +1,17 @@
 # Notas de versão
 
+## 1.7.5
+
+- **Pontos de Interesse (POIs) e pins clicáveis no mapa:** agora você pode criar pontos de clique interativos em locais do mapa (como tavernas, ferreiros, lojas de armas, castelos e templos).
+  - **Ícones temáticos personalizados:** escolha entre ícones exclusivos de taverna, ferreiro, armas, loja, alquimia, templo, castelo, mistério, escudo, crânio e pin de localização.
+  - **Janela de informações:** ao clicar em um ponto no mapa, abre-se uma janela moderna com o título, imagem ilustrativa e descrição detalhada do local.
+  - **Controle do mestre:** defina se o ponto fica visível para os jogadores ou apenas para o mestre (pontos secretos). O mestre pode editar o conteúdo, alterar a imagem e o ícone com dois cliques ou pelo botão direito.
+- **Girar assets e tiles no mapa:** rotação visual fluida e intuitiva de elementos no mapa.
+  - **Alça visual na tela:** selecione o asset para ver a alça de rotação com círculo azul no topo. Arraste para girar com pré-visualização ao vivo, indicador em graus e encaixe de 15° em 15° (ou giro livre segurando Shift).
+  - **Giro pela roda do mouse:** segure Shift e gire a roda do mouse sobre o asset para girar em passos de 45° (ou Shift + Alt para passos de 15°).
+  - **Atalhos de teclado:** selecione o asset e use as teclas **R** ou **]** para girar no sentido horário, e **Shift + R** ou **[** para o sentido anti-horário.
+  - **Menu de contexto:** clique direito no asset para girar rapidamente em 90°, 45°, 180° ou redefinir a rotação para 0°.
+
 ## 1.7.4
 
 - **Notas de versão (Patch Notes) no Launcher:** agora você pode conferir tudo o que mudou no MimicDice VTT diretamente pela janela inicial do aplicativo.

@@ -54,7 +54,7 @@ export class SightMemory {
       for (const placeable of (layer?.placeables ?? []) as MemorablePlaceable[]) {
         placeables.push(placeable);
         if (!placeable.isRevealed) continue;
-        present.set(`${documentName}.${placeable.id}`, { look: lookOf(placeable, documentName), inSight: isAreaInSight(placeable.bounds) });
+        present.set(`${documentName}.${placeable.id}`, { look: lookOf(placeable, documentName), inSight: placeable.document.global === true || isAreaInSight(placeable.bounds) });
       }
     }
     const memory = this.#persist ? this.#memory : new Map<string, RememberedLook>();

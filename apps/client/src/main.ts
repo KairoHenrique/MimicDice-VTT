@@ -10,6 +10,7 @@ import "./styles/imageLibrary.css";
 import "./styles/editors.css";
 import "./styles/sheets.css";
 import "./styles/sheetBoard.css";
+import "./styles/pointsOfInterest.css";
 import { translatePage } from "@tabbletop/i18n";
 import { bootGame } from "./game/bootGame";
 import { readPreferredLanguage } from "./game/languagePreference";

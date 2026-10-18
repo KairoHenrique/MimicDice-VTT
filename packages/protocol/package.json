@@ -1,11 +1,12 @@
 {
   "name": "@tabbletop/protocol",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "private": true,
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
+    "test": "vitest run",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Anvil -->
+  <path d="M10 24h44c0 3-4 5-8 6l-4 6v8h12v6H10v-6h12v-8l-4-6c-6-1-8-3-8-6z" fill="#ffffff"/>
+  <path d="M6 24c0-3 6-5 12-5h38v5H6z" fill="#ffffff" opacity="0.9"/>
+  <!-- Hammer -->
+  <path d="M46 10l6-6 6 6-6 6-3-3-12 12-4-4 12-12-3-3z" fill="#ffffff" opacity="0.85"/>
+  <circle cx="32" cy="14" r="2" fill="#ffffff"/>
+  <circle cx="26" cy="10" r="1.5" fill="#ffffff"/>
+  <circle cx="38" cy="10" r="1.5" fill="#ffffff"/>
+</svg>

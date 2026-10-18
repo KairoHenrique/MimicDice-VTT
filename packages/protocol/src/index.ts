@@ -9,3 +9,4 @@ export * from "./mapLayers";
 export * from "./mapLoot";
 export * from "./concealment";
 export * from "./chests";
+export * from "./pointsOfInterest";
