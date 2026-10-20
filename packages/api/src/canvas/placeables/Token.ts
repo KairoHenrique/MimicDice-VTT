@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import type { PlainObject } from "@tabbletop/common";
 import { CONST } from "../../constants";
-import { currentCanvas, currentGame } from "../../runtime";
+import { currentCanvas, currentGame, currentUi } from "../../runtime";
 import type { Point, Rectangle } from "../geometry";
 import { colorToNumber, loadTexture } from "../textures";
 import { puppetToken, seesEverything } from "../perception/viewpoint";
@@ -199,7 +199,8 @@ export class Token extends PlaceableObject {
     } else {
       this.hitArea = new PIXI.Rectangle(0, 0, w, h);
     }
-    this.cursor = this.canControl() || this.canDrag() ? "pointer" : "default";
+    const isRuler = currentUi()?.controls?.tool?.name === "ruler";
+    this.cursor = isRuler ? "crosshair" : (this.canControl() || this.canDrag() ? "pointer" : "default");
   }
 
   #refreshMesh(width: number, height: number, rotation: number): void {

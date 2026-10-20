@@ -149,6 +149,7 @@ export abstract class PlaceableObject extends PIXI.Container {
 
   canControl(user: any = currentGame()?.user): boolean {
     if (!this.layer?.active) return false;
+    if (currentUi()?.controls?.tool?.name === "ruler") return false;
     return Boolean(user?.isGM) || this.document.testUserPermission?.(user, "OWNER") === true;
   }
 
@@ -212,9 +213,9 @@ export abstract class PlaceableObject extends PIXI.Container {
 
   _onClickRight(_event: PIXI.FederatedPointerEvent): void {}
 
-  /** A left press the board should handle instead (e.g. starting a new object on top of this one). */
+  /** A left press the board should handle instead (e.g. starting a new object on top of this one or measuring with ruler). */
   protected passesPressToBoard(): boolean {
-    return false;
+    return currentUi()?.controls?.tool?.name === "ruler";
   }
 
   #setHover(hovered: boolean): void {
@@ -235,6 +236,7 @@ export abstract class PlaceableObject extends PIXI.Container {
   #onPointerDown(event: PIXI.FederatedPointerEvent): void {
     if (!this.layer?.active && !this.answersOnEveryLayer) return;
     if (event.button === 2) {
+      if (currentUi()?.controls?.tool?.name === "ruler") return;
       event.stopPropagation();
       this._onClickRight(event);
       return;

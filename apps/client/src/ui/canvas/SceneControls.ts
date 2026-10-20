@@ -62,6 +62,18 @@ export class SceneControls extends DomApplication {
     }
     const layer = activeControl.layer ? canvas?.[activeControl.layer] : null;
     if (canvas?.ready && layer?.activate) layer.activate({ tool: this.activeTool ?? undefined });
+    const effectiveTool = this.activeTool;
+    if (effectiveTool === "ruler") {
+      canvas?.tokens?.releaseAll?.();
+      canvas?.tokens?.placeables?.forEach((t: any) => t.refresh?.());
+      canvas?.interaction?.clearStepRuler?.();
+    } else if (effectiveTool === "stepRuler") {
+      canvas?.interaction?.initStepRuler?.();
+      canvas?.tokens?.placeables?.forEach((t: any) => t.refresh?.());
+    } else {
+      canvas?.interaction?.clearStepRuler?.();
+      canvas?.tokens?.placeables?.forEach((t: any) => t.refresh?.());
+    }
     await this.render();
   }
 

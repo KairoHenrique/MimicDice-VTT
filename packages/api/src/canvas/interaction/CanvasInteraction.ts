@@ -49,6 +49,15 @@ export type MovePathMode = "modifier" | "always" | "never";
 export class CanvasInteraction {
   readonly overlay = new PIXI.Graphics();
   readonly label = new PIXI.Text("", new PIXI.TextStyle({ fontFamily: "Signika, Arial, sans-serif", fontSize: 28, fill: 0xffffff, stroke: 0x111111, strokeThickness: 5 }));
+  readonly stepRulerOverlay = new PIXI.Graphics();
+  readonly stepRulerLabel = new PIXI.Text("", new PIXI.TextStyle({ fontFamily: "Signika, Arial, sans-serif", fontSize: 24, fontWeight: "bold", fill: 0xffffff, stroke: 0x111111, strokeThickness: 5 }));
+  #stepRulerState: {
+    tokenId: string;
+    waypoints: Point[];
+    lastCell: { i: number; j: number };
+    totalSteps: number;
+    totalDistance: number;
+  } | null = null;
   #session: Session | null = null;
   #lastWorld: Point = { x: 0, y: 0 };
   /** When a token drop shows the path and waits for confirmation: only while the path key is held, always, or never. */
@@ -56,6 +65,7 @@ export class CanvasInteraction {
   /** Kept current by the client's rebindable "path key" keybinding. */
   pathModifierHeld = false;
   #listeners: Array<[EventTarget, string, EventListener]> = [];
+  #hookEntries: Array<{ hook: string; id: number }> = [];
 
   constructor(private readonly canvas: any) {}
 
@@ -68,6 +78,9 @@ export class CanvasInteraction {
     stage.on("pointerup", (event: PIXI.FederatedPointerEvent) => this.#onPointerUp(event));
     stage.on("pointerupoutside", (event: PIXI.FederatedPointerEvent) => this.#onPointerUp(event));
     this.label.anchor.set(0.5, 1.2);
+    this.stepRulerLabel.anchor.set(0.5, 1.2);
+    this.stepRulerOverlay.eventMode = "none";
+    this.stepRulerLabel.eventMode = "none";
     this.#listen(view, "wheel", (event) => this.#onWheel(event as WheelEvent), { passive: false });
     this.#listen(view, "contextmenu", (event) => event.preventDefault());
     this.#listen(board, "dragover", (event) => event.preventDefault());
@@ -76,6 +89,33 @@ export class CanvasInteraction {
     this.#listen(window, "blur", () => {
       this.pathModifierHeld = false;
     });
+
+    const dragHookId = Hooks.on("dragTokenPreview", (tokens: any[]) => {
+      if (this.#activeTool() !== "stepRuler") return;
+      const state = this.#stepRulerState;
+      if (!state) return;
+      const match = tokens.find((t: any) => t.tokenId === state.tokenId);
+      if (!match) return;
+      const token = (this.canvas.tokens?.placeables ?? []).find((t: PlaceableObject) => t.id === match.tokenId) as Token | undefined;
+      if (!token) return;
+      const center = { x: match.x + token.w / 2, y: match.y + token.h / 2 };
+      this.stepRulerTrackMovement(center);
+    });
+    this.#hookEntries.push({ hook: "dragTokenPreview", id: dragHookId });
+
+    const controlHookId = Hooks.on("controlToken", (token: Token, controlled: boolean) => {
+      if (this.#activeTool() !== "stepRuler") return;
+      if (controlled) {
+        if (!this.#stepRulerState || this.#stepRulerState.tokenId !== token.id) {
+          this.initStepRuler(token);
+        }
+      } else {
+        if (this.#stepRulerState?.tokenId === token.id && (this.canvas.tokens?.controlled?.length ?? 0) === 0) {
+          this.clearStepRuler();
+        }
+      }
+    });
+    this.#hookEntries.push({ hook: "controlToken", id: controlHookId });
   }
 
   get #pathModeActive(): boolean {
@@ -86,6 +126,8 @@ export class CanvasInteraction {
   detach(): void {
     for (const [target, type, listener] of this.#listeners) target.removeEventListener(type, listener);
     this.#listeners = [];
+    for (const entry of this.#hookEntries) Hooks.off(entry.hook, entry.id);
+    this.#hookEntries = [];
   }
 
   get worldPosition(): Point {
@@ -138,6 +180,11 @@ export class CanvasInteraction {
     const pool = placeable.controlled ? (placeable.layer.controlled as PlaceableObject[]) : [placeable];
     const objects = pool.filter((object) => object.canDrag());
     if (objects.length === 0) return;
+    if (this.#activeTool() === "stepRuler" && placeable.document.documentName === "Token") {
+      if (!this.#stepRulerState || this.#stepRulerState.tokenId !== placeable.id) {
+        this.initStepRuler(placeable as Token);
+      }
+    }
     this.#session = { kind: "move", origin: this.#toWorld(event), objects };
   }
 
@@ -202,8 +249,21 @@ export class CanvasInteraction {
       case "move":
         for (const object of session.objects) object.previewOffset(world.x - session.origin.x, world.y - session.origin.y);
         this.#announceTokenDrag(session.objects, false);
-        if (this.#pathModeActive) this.#previewTokenPath(session.objects[0], world.x - session.origin.x, world.y - session.origin.y, !event.shiftKey);
-        else this.#clearOverlay();
+        if (this.#activeTool() === "stepRuler") {
+          const first = session.objects[0];
+          if (first && first.document.documentName === "Token") {
+            const token = first as Token;
+            const currentCenter = {
+              x: token.document.x + (world.x - session.origin.x) + token.w / 2,
+              y: token.document.y + (world.y - session.origin.y) + token.h / 2,
+            };
+            this.stepRulerTrackMovement(currentCenter);
+          }
+        } else if (this.#pathModeActive) {
+          this.#previewTokenPath(session.objects[0], world.x - session.origin.x, world.y - session.origin.y, !event.shiftKey);
+        } else {
+          this.#clearOverlay();
+        }
         break;
       case "create":
         this.#previewCreation(session, world, event.shiftKey);
@@ -677,6 +737,10 @@ export class CanvasInteraction {
         void layer.deleteControlled();
       }
     } else if (event.key === "Escape") {
+      if (this.#activeTool() === "stepRuler" && this.#stepRulerState) {
+        this.resetStepRuler();
+        return;
+      }
       this.canvas.activeLayer?.releaseAll?.();
     } else if (event.key === "h" || event.key === "H") {
       event.preventDefault();
@@ -720,5 +784,146 @@ export class CanvasInteraction {
     const dropData = { ...(data as PlainObject), x: world.x, y: world.y, free: event.shiftKey };
     if (Hooks.call("dropCanvasData", this.canvas, dropData, event) === false) return;
     await handleCanvasDrop(this.canvas, dropData);
+  }
+
+  get stepRulerState(): { tokenId: string; waypoints: Point[]; lastCell: { i: number; j: number }; totalSteps: number; totalDistance: number } | null {
+    return this.#stepRulerState;
+  }
+
+  get #controlledToken(): Token | null {
+    const controlled = (this.canvas.tokens?.controlled ?? []) as Token[];
+    return controlled[0] ?? null;
+  }
+
+  initStepRuler(token?: Token): void {
+    const target = token ?? this.#controlledToken;
+    if (!target || target.destroyed) {
+      this.clearStepRuler();
+      return;
+    }
+    const center = { x: target.document.x + target.w / 2, y: target.document.y + target.h / 2 };
+    const grid = this.canvas.grid;
+    const cell = grid.getOffset(center);
+    const startPoint = grid.isGridless ? center : grid.getCenterPoint(cell);
+    this.#stepRulerState = {
+      tokenId: target.id,
+      waypoints: [startPoint],
+      lastCell: cell,
+      totalSteps: 0,
+      totalDistance: 0,
+    };
+    this.#renderStepRuler();
+  }
+
+  resetStepRuler(): void {
+    const state = this.#stepRulerState;
+    if (!state) return;
+    const token = (this.canvas.tokens?.placeables ?? []).find((t: PlaceableObject) => t.id === state.tokenId) as Token | undefined;
+    if (token && !token.destroyed) {
+      this.initStepRuler(token);
+    } else {
+      this.clearStepRuler();
+    }
+  }
+
+  clearStepRuler(): void {
+    this.#stepRulerState = null;
+    this.stepRulerOverlay.clear();
+    this.stepRulerLabel.visible = false;
+  }
+
+  stepRulerTrackMovement(center: Point): void {
+    const state = this.#stepRulerState;
+    if (!state || this.#activeTool() !== "stepRuler") return;
+    const grid = this.canvas.grid;
+
+    if (grid.isGridless) {
+      const lastPoint = state.waypoints[state.waypoints.length - 1];
+      const dist = Math.hypot(center.x - lastPoint.x, center.y - lastPoint.y);
+      const minStep = Math.max(10, grid.size / 3);
+      if (dist >= minStep) {
+        state.waypoints.push({ x: center.x, y: center.y });
+        state.totalDistance += (dist / grid.size) * grid.distance;
+        state.totalSteps = Math.round((state.totalDistance / grid.distance) * 10) / 10;
+        this.#renderStepRuler();
+      }
+      return;
+    }
+
+    const currentCell = grid.getOffset(center);
+    const lastCell = state.lastCell;
+    if (currentCell.i === lastCell.i && currentCell.j === lastCell.j) return;
+
+    const di = currentCell.i - lastCell.i;
+    const dj = currentCell.j - lastCell.j;
+    const stepsCount = Math.max(Math.abs(di), Math.abs(dj));
+
+    let curI = lastCell.i;
+    let curJ = lastCell.j;
+
+    for (let s = 1; s <= stepsCount; s++) {
+      const targetI = Math.round(lastCell.i + (di * s) / stepsCount);
+      const targetJ = Math.round(lastCell.j + (dj * s) / stepsCount);
+      if (targetI === curI && targetJ === curJ) continue;
+      curI = targetI;
+      curJ = targetJ;
+      state.totalSteps += 1;
+      state.totalDistance += grid.distance;
+      state.waypoints.push(grid.getCenterPoint({ i: curI, j: curJ }));
+    }
+
+    state.lastCell = currentCell;
+    this.#renderStepRuler();
+  }
+
+  #renderStepRuler(): void {
+    const state = this.#stepRulerState;
+    if (!state || this.#activeTool() !== "stepRuler" || state.waypoints.length === 0) {
+      this.stepRulerOverlay.clear();
+      this.stepRulerLabel.visible = false;
+      return;
+    }
+
+    const color = colorToNumber(currentGame()?.user?.color, 0x3b82f6);
+    const waypoints = state.waypoints;
+
+    this.stepRulerOverlay.clear();
+    const g = this.stepRulerOverlay;
+
+    if (waypoints.length > 1) {
+      g.lineStyle(8, 0x000000, 0.55);
+      g.moveTo(waypoints[0].x, waypoints[0].y);
+      for (let i = 1; i < waypoints.length; i++) {
+        g.lineTo(waypoints[i].x, waypoints[i].y);
+      }
+
+      g.lineStyle(4, color, 0.95);
+      g.moveTo(waypoints[0].x, waypoints[0].y);
+      for (let i = 1; i < waypoints.length; i++) {
+        g.lineTo(waypoints[i].x, waypoints[i].y);
+      }
+    }
+
+    for (let i = 0; i < waypoints.length; i++) {
+      const p = waypoints[i];
+      if (i === 0) {
+        g.lineStyle(3, 0x10b981, 1).beginFill(0x000000, 0.6).drawCircle(p.x, p.y, 8).endFill();
+        g.lineStyle(0).beginFill(0x10b981, 1).drawCircle(p.x, p.y, 4).endFill();
+      } else if (i === waypoints.length - 1) {
+        g.lineStyle(3, 0xffffff, 1).beginFill(color, 1).drawCircle(p.x, p.y, 8).endFill();
+      } else {
+        g.lineStyle(2, 0x000000, 0.6).beginFill(color, 0.8).drawCircle(p.x, p.y, 5).endFill();
+      }
+    }
+
+    const last = waypoints[waypoints.length - 1];
+    const grid = this.canvas.grid;
+    const units = this.canvas.dimensions?.units ? ` ${this.canvas.dimensions.units}` : "";
+    const distStr = String(Math.round(state.totalDistance * 100) / 100).replace(".", ",");
+    const squareStr = state.totalSteps === 1 ? "quadrado" : "quadrados";
+
+    this.stepRulerLabel.text = `${state.totalSteps} ${squareStr} (${distStr}${units})`;
+    this.stepRulerLabel.position.set(last.x, last.y - (grid.size / 2 + 12));
+    this.stepRulerLabel.visible = true;
   }
 }

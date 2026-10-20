@@ -1,5 +1,17 @@
 # Notas de versão
 
+## 1.7.9
+
+- **Régua padrão (Medir distância) aprimorada:**
+  - Clicar sobre personagens ou no mapa com a ferramenta de régua ativa não seleciona mais os personagens nem arrasta tokens acidentalmente; ela forma exclusivamente a régua de medição.
+  - Ao ativar a régua, qualquer seleção anterior é desfeita e o cursor sobre os personagens vira uma mira precisa (`crosshair`).
+- **Novo modo da régua: Medir passos do personagem:**
+  - Nova ferramenta **Medir passos** na barra de ferramentas dos tokens (ícone de pegadas).
+  - Permite selecionar um personagem e andar com ele pelo teclado (`W`, `A`, `S`, `D`) ou arrastando com o mouse.
+  - Cada passo/quadrado percorrido é somado continuamente ao valor da régua, desenhando a trilha da rota com marcadores a cada etapa e exibindo a distância total em tempo real (ex.: `4 quadrados (6 m)`).
+  - **Passos voltando também são contabilizados:** se o personagem andar para trás ou refizer o caminho, os passos continuam sendo somados ao valor total do deslocamento.
+  - Pressionar `Esc` ou clicar novamente no personagem zera a contagem para reiniciar a medição.
+
 ## 1.7.8
 
 - **Janela de Notas de versão corrigida:** o botão de fechar (✕) agora fecha a janela de verdade, que também passa a abrir centralizada sobre o launcher com fundo escurecido.

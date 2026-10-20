@@ -61,7 +61,24 @@ export const HELP_TOPICS: readonly HelpTopic[] = [
     icon: "fa-solid fa-ruler",
     audience: "all",
     summary: "Medir distâncias no mapa.",
-    steps: ["Escolha a régua e arraste do ponto de partida até o destino.", "A distância aparece nas unidades da cena (metros, pés...)."],
+    steps: [
+      "Escolha a régua e arraste do ponto de partida até o destino.",
+      "Com a régua ativa, personagens não são selecionados por engano; ela apenas forma a linha de medição.",
+      "A distância aparece nas unidades da cena (metros, pés...).",
+    ],
+  },
+  {
+    id: "tool:stepRuler",
+    title: "Medir passos",
+    icon: "fa-solid fa-shoe-prints",
+    audience: "all",
+    summary: "Medir passos e movimentação do personagem no mapa.",
+    steps: [
+      "Selecione a ferramenta de passos e escolha o personagem.",
+      "Ande com o personagem usando as teclas W, A, S e D ou arrastando com o mouse.",
+      "Cada passo ou quadrado percorrido adiciona ao valor da régua, inclusive os passos voltando para trás.",
+      "Aperte Escape para reiniciar a contagem deste personagem.",
+    ],
   },
   {
     id: "control:templates",

@@ -335,6 +335,7 @@ export class Wall extends PlaceableObject {
 
   /** With a wall or door tool, an unselected wall ignores the press so a new wall can start on top of it. */
   protected override passesPressToBoard(): boolean {
+    if (super.passesPressToBoard()) return true;
     if (!this.layer?.active || this.controlled) return false;
     const toolName = currentUi()?.controls?.tool?.name ?? "";
     return CREATION_TOOLS[this.layer.name ?? ""]?.[toolName]?.documentName === "Wall";
@@ -605,6 +606,7 @@ export class Note extends PlaceableObject {
   #listenForClicks(): void {
     if (this.listenerCount("pointertap") > 0) return;
     this.on("pointerdown", (event: PIXI.FederatedPointerEvent) => {
+      if (currentUi()?.controls?.tool?.name === "ruler") return;
       this.#pressedAt = event.button === 0 ? { x: event.clientX, y: event.clientY } : null;
     });
     this.on("pointertap", (event: PIXI.FederatedPointerEvent) => {

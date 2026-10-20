@@ -94,7 +94,11 @@ export function buildDefaultSceneControls(): Record<string, SceneControl> {
   return {
     tokens: {
       name: "tokens", order: 1, title: "Tokens", icon: "fa-solid fa-user", layer: "tokens", activeTool: "select", visible: true,
-      tools: { select: selectTool(), ruler: tool("ruler", 2, "Medir distância", "fa-solid fa-ruler") },
+      tools: {
+        select: selectTool(),
+        ruler: tool("ruler", 2, "Medir distância", "fa-solid fa-ruler"),
+        stepRuler: tool("stepRuler", 3, "Medir passos do personagem", "fa-solid fa-shoe-prints"),
+      },
     },
     templates: {
       name: "templates", order: 2, title: "Áreas de efeito", icon: "fa-solid fa-ruler-combined", layer: "templates", activeTool: "circle", visible: can("TEMPLATE_CREATE"),

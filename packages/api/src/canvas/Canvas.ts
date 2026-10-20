@@ -156,7 +156,7 @@ export class Canvas {
     for (const layer of this.layers) if (!this.#packageLayers.includes(layer)) layer.zIndex = layer.options.zIndex;
     for (const decoration of [this.background, this.primary, this.effects, this.interface, this.gridLayer, this.visibility]) decoration.eventMode = "none";
     for (const layer of this.placeableLayers) layer.eventMode = "passive";
-    this.interface.addChild(this.interaction.overlay, this.interaction.label);
+    this.interface.addChild(this.interaction.overlay, this.interaction.label, this.interaction.stepRulerOverlay, this.interaction.stepRulerLabel);
     this.interface.sortableChildren = true;
     this.#pings = new PingEffects(this.interface, app.ticker);
     this.interface.grid = this.gridLayer;
