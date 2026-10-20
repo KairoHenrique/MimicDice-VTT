@@ -45,6 +45,7 @@ vi.stubGlobal("document", {
 import { CanvasInteraction } from "./CanvasInteraction";
 import { SquareGrid } from "../grid";
 import { PlaceableObject } from "../placeables/PlaceableObject";
+import { Token } from "../placeables/Token";
 
 function createMockCanvas(activeTool = "stepRuler") {
   const grid = new SquareGrid({
@@ -90,6 +91,8 @@ function createMockCanvas(activeTool = "stepRuler") {
       tool: { name: activeTool },
     },
   };
+
+  (globalThis as any).canvas = canvas;
 
   return { canvas, mockToken };
 }
@@ -225,4 +228,98 @@ describe("stepRuler", () => {
     expect(placeable.canControl()).toBe(true);
     expect((placeable as any).testPasses).toBe(false);
   });
+
+  it("counts exactly 1 step on diagonal movement without doubling steps", () => {
+    const { canvas, mockToken } = createMockCanvas("stepRuler");
+    const interaction = new CanvasInteraction(canvas);
+
+    interaction.initStepRuler(mockToken as any);
+
+    // Diagonal move from cell (1, 1) -> center (150, 150) to cell (2, 2) -> center (250, 250)
+    interaction.stepRulerTrackMovement({ x: 250, y: 250 });
+
+    expect(interaction.stepRulerState?.totalSteps).toBe(1);
+    expect(interaction.stepRulerState?.totalDistance).toBe(1.5);
+    expect(interaction.stepRulerState?.waypoints.length).toBe(2);
+    expect(interaction.stepRulerState?.waypoints[1]).toEqual({ x: 250, y: 250 });
+  });
+
+  it("snaps an off-grid token to nearest grid cell when initStepRuler is called", () => {
+    const { canvas } = createMockCanvas("stepRuler");
+    const interaction = new CanvasInteraction(canvas);
+
+    const updatedData: any = {};
+    const offGridToken: any = {
+      id: "token-offgrid",
+      document: {
+        documentName: "Token",
+        id: "token-offgrid",
+        x: 123,
+        y: 145,
+        width: 1,
+        height: 1,
+        update: vi.fn(async (data: any) => {
+          Object.assign(updatedData, data);
+        }),
+      },
+      w: 100,
+      h: 100,
+      destroyed: false,
+      canDrag: () => true,
+      position: {
+        x: 123,
+        y: 145,
+        set: vi.fn(),
+      },
+    };
+
+    interaction.initStepRuler(offGridToken);
+
+    // Should snap to nearest grid corner: 123 -> 100, 145 -> 100
+    expect(offGridToken.position.set).toHaveBeenCalledWith(100, 100);
+    expect(offGridToken.document.update).toHaveBeenCalledWith({ x: 100, y: 100 });
+    // Ruler center should be at cell (1, 1) center: (150, 150)
+    expect(interaction.stepRulerState?.waypoints[0]).toEqual({ x: 150, y: 150 });
+  });
+
+  it("Token.getMoveUpdate snaps to grid when step ruler is active on the token", () => {
+    const { canvas } = createMockCanvas("stepRuler");
+    const interaction = new CanvasInteraction(canvas);
+
+    class TestToken extends Token {
+      protected override async _draw() {}
+      protected override _refresh() {}
+    }
+
+    const doc = {
+      id: "token-snap-test",
+      documentName: "Token",
+      x: 100,
+      y: 100,
+      width: 1,
+      height: 1,
+      layer: { active: true },
+      testUserPermission: () => true,
+    };
+    const token = new TestToken(doc);
+
+    // Initialize ruler on this token
+    interaction.initStepRuler(token);
+
+    // Move by (48, 52) pixels - without ruler snap, it would be (148, 152)
+    // With step ruler active on this token, it snaps to grid: (100, 100) -> (200, 200) since +52 >= 50
+    const update = token.getMoveUpdate(48, 52, false);
+    expect(update.x).toBe(100);
+    expect(update.y).toBe(200);
+
+    // When tool is switched away from stepRuler
+    (globalThis as any).ui.controls.tool.name = "select";
+    interaction.clearStepRuler();
+
+    // Now token moves freely without snap
+    const freeUpdate = token.getMoveUpdate(48, 52, false);
+    expect(freeUpdate.x).toBe(148);
+    expect(freeUpdate.y).toBe(152);
+  });
 });
+

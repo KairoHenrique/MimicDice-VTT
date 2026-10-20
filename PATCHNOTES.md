@@ -1,5 +1,12 @@
 # Notas de versão
 
+## 1.7.10
+
+- **Correção na régua contadora de passos (Snap to Grid):**
+  - Corrigido problema em que passos eram contabilizados em duplicidade durante movimentos diagonais ou ao cruzar bordas de células.
+  - O token agora fica com **snap to grid** ativado automaticamente enquanto a régua contadora de passos estiver ativa no personagem, alinhando-se com precisão às células da grade tanto durante o arrasto quanto ao soltar o token.
+  - Caso o token estivesse fora da grade antes de ativar a medição, ele é alinhado automaticamente à célula mais próxima ao inicializar a régua.
+
 ## 1.7.9
 
 - **Régua padrão (Medir distância) aprimorada:**

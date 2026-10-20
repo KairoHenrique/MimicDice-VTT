@@ -67,7 +67,9 @@ export class CanvasInteraction {
   #listeners: Array<[EventTarget, string, EventListener]> = [];
   #hookEntries: Array<{ hook: string; id: number }> = [];
 
-  constructor(private readonly canvas: any) {}
+  constructor(private readonly canvas: any) {
+    if (this.canvas) this.canvas.interaction = this;
+  }
 
   attach(view: HTMLCanvasElement, board: HTMLElement): void {
     const stage = this.canvas.stage as PIXI.Container;
@@ -98,7 +100,10 @@ export class CanvasInteraction {
       if (!match) return;
       const token = (this.canvas.tokens?.placeables ?? []).find((t: PlaceableObject) => t.id === match.tokenId) as Token | undefined;
       if (!token) return;
-      const center = { x: match.x + token.w / 2, y: match.y + token.h / 2 };
+      const grid = this.canvas.grid;
+      const rawPos = { x: match.x, y: match.y };
+      const snappedPos = grid.isGridless ? rawPos : grid.getSnappedPoint(rawPos, { mode: token.snapMode ?? "corner" });
+      const center = { x: snappedPos.x + token.w / 2, y: snappedPos.y + token.h / 2 };
       this.stepRulerTrackMovement(center);
     });
     this.#hookEntries.push({ hook: "dragTokenPreview", id: dragHookId });
@@ -246,25 +251,40 @@ export class CanvasInteraction {
         this.canvas.pan({ x: session.startPivot.x - (event.clientX - session.startClient.x) / scale, y: session.startPivot.y - (event.clientY - session.startClient.y) / scale });
         break;
       }
-      case "move":
+      case "move": {
+        const isStepRuler = this.#activeTool() === "stepRuler";
+        const first = session.objects[0];
+        if (isStepRuler && first && first.document.documentName === "Token") {
+          const token = first as Token;
+          const deltaX = world.x - session.origin.x;
+          const deltaY = world.y - session.origin.y;
+          const rawDest = { x: token.document.x + deltaX, y: token.document.y + deltaY };
+          const snappedDest = this.canvas.grid.isGridless
+            ? rawDest
+            : this.canvas.grid.getSnappedPoint(rawDest, { mode: token.snapMode ?? "corner" });
+          const snappedDeltaX = snappedDest.x - token.document.x;
+          const snappedDeltaY = snappedDest.y - token.document.y;
+
+          for (const object of session.objects) object.previewOffset(snappedDeltaX, snappedDeltaY);
+          this.#announceTokenDrag(session.objects, false);
+
+          const currentCenter = {
+            x: snappedDest.x + token.w / 2,
+            y: snappedDest.y + token.h / 2,
+          };
+          this.stepRulerTrackMovement(currentCenter);
+          break;
+        }
+
         for (const object of session.objects) object.previewOffset(world.x - session.origin.x, world.y - session.origin.y);
         this.#announceTokenDrag(session.objects, false);
-        if (this.#activeTool() === "stepRuler") {
-          const first = session.objects[0];
-          if (first && first.document.documentName === "Token") {
-            const token = first as Token;
-            const currentCenter = {
-              x: token.document.x + (world.x - session.origin.x) + token.w / 2,
-              y: token.document.y + (world.y - session.origin.y) + token.h / 2,
-            };
-            this.stepRulerTrackMovement(currentCenter);
-          }
-        } else if (this.#pathModeActive) {
+        if (this.#pathModeActive) {
           this.#previewTokenPath(session.objects[0], world.x - session.origin.x, world.y - session.origin.y, !event.shiftKey);
         } else {
           this.#clearOverlay();
         }
         break;
+      }
       case "create":
         this.#previewCreation(session, world, event.shiftKey);
         break;
@@ -545,7 +565,7 @@ export class CanvasInteraction {
     switch (session.kind) {
       case "move":
         this.#announceTokenDrag(session.objects, true);
-        void this.#commitMove(session.objects, world.x - session.origin.x, world.y - session.origin.y, !event.shiftKey, this.#pathModeActive);
+        void this.#commitMove(session.objects, world.x - session.origin.x, world.y - session.origin.y, this.#activeTool() === "stepRuler" || !event.shiftKey, this.#pathModeActive);
         break;
       case "create":
         void this.#commitCreation(session, event.shiftKey ? world : this.canvas.grid.getSnappedPoint(world, { mode: session.tool.snapMode }), world);
@@ -801,8 +821,21 @@ export class CanvasInteraction {
       this.clearStepRuler();
       return;
     }
-    const center = { x: target.document.x + target.w / 2, y: target.document.y + target.h / 2 };
     const grid = this.canvas.grid;
+    let startX = target.document.x;
+    let startY = target.document.y;
+    if (!grid.isGridless) {
+      const snapped = grid.getSnappedPoint({ x: target.document.x, y: target.document.y }, { mode: target.snapMode ?? "corner" });
+      if (snapped.x !== target.document.x || snapped.y !== target.document.y) {
+        startX = snapped.x;
+        startY = snapped.y;
+        target.position?.set?.(snapped.x, snapped.y);
+        if (typeof target.document?.update === "function" && (target.canDrag?.() || currentGame()?.user?.isGM)) {
+          void target.document.update({ x: snapped.x, y: snapped.y });
+        }
+      }
+    }
+    const center = { x: startX + target.w / 2, y: startY + target.h / 2 };
     const cell = grid.getOffset(center);
     const startPoint = grid.isGridless ? center : grid.getCenterPoint(cell);
     this.#stepRulerState = {

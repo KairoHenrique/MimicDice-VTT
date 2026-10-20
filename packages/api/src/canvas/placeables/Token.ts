@@ -296,13 +296,25 @@ export class Token extends PlaceableObject {
     super._onUpdate(changed, options, userId);
   }
 
+  get isStepRulerActive(): boolean {
+    if (currentUi()?.controls?.tool?.name !== "stepRuler") return false;
+    const rulerState = currentCanvas()?.interaction?.stepRulerState;
+    if (rulerState && rulerState.tokenId === this.id) return true;
+    if (this.controlled) return true;
+    return false;
+  }
+
   override get snapMode(): "corner" | "center" | "half" {
     return "corner";
   }
 
-  /** Tokens are always placed freely, never fitted to the grid. */
-  override getMoveUpdate(deltaX: number, deltaY: number, _snap: boolean): PlainObject {
-    return super.getMoveUpdate(deltaX, deltaY, false);
+  /** Tokens are placed freely by default, but snap to grid when step ruler is active on the token. */
+  override getMoveUpdate(deltaX: number, deltaY: number, snap: boolean): PlainObject {
+    const shouldSnap = this.isStepRulerActive || snap;
+    if (!shouldSnap) {
+      return super.getMoveUpdate(deltaX, deltaY, false);
+    }
+    return super.getMoveUpdate(deltaX, deltaY, true);
   }
 
   override _onClickLeft2(): void {

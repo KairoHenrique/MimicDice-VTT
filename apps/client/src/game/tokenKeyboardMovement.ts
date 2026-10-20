@@ -213,6 +213,16 @@ async function finishWalking(): Promise<void> {
   }
   lastTapAction = null;
 
+  if ((window as any).ui?.controls?.tool?.name === "stepRuler" && canvas.grid && !canvas.grid.isGridless) {
+    for (const token of tokens) {
+      const snapped = canvas.grid.getSnappedPoint({ x: token.position.x, y: token.position.y }, { mode: token.snapMode ?? "corner" });
+      token.position.set(snapped.x, snapped.y);
+      token.document.x = snapped.x;
+      token.document.y = snapped.y;
+      token.refresh();
+    }
+  }
+
   announceDrag(tokens, true);
   await commitMovement(tokens);
 }
