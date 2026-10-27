@@ -111,6 +111,8 @@ export class WindowManager {
         return {
           action: "allow",
           overrideBrowserWindowOptions: {
+            width: 1200,
+            height: 800,
             autoHideMenuBar: true,
             icon: this.options.icon,
             backgroundColor: BACKGROUND_COLOR,

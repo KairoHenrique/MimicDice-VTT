@@ -1,5 +1,16 @@
 # Notas de versão
 
+## 1.7.11
+
+- **Exportação e importação de fichas prontas (personagens completos):**
+  - Agora você pode exportar personagens completos com todos os atributos preenchidos, perícias, itens de inventário, armas, magias, token configurado e modelo de layout em formato `.mimicdice.json`.
+  - Compartilhe seus personagens, PNJs e criaturas com qualquer outra mesa com total fidelidade.
+  - **Exportar com 1 clique:** novo botão direto no menu da ficha do personagem ("Exportar ficha completa") e no painel lateral de Atores na lista de personagens.
+  - **Importação inteligente:** botão "Importar personagem" no painel de Atores e na própria ficha. Suporta tanto criar como novo ator na mesa quanto atualizar os dados da ficha atual, mantendo ou ajustando o papel (Jogador, Aliado, Inimigo ou Neutro). Jogadores também podem importar seus próprios personagens diretamente.
+- **Correção em "Arquivos da campanha":**
+  - Corrigido problema em que a página de arquivos da campanha não abria ou redirecionava para a mesa devido a bloqueio do cookie de sessão SameSite em novas janelas. A política agora utiliza `Lax`, garantindo autenticação suave e segura.
+  - Adicionadas rotas de proxy no ambiente de desenvolvimento Vite e dimensões padronizadas para janelas popout no desktop.
+
 ## 1.7.10
 
 - **Correção na régua contadora de passos (Snap to Grid):**

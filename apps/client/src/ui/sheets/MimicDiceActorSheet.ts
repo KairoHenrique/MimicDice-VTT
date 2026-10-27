@@ -11,6 +11,7 @@ import { BoardEditor } from "./layout/editor/BoardEditor";
 import { SheetTemplateEditor } from "./layout/editor/SheetTemplateEditor";
 import { allComponents, EMPTY_LAYOUT, readLayout } from "./layout/sheetLayoutRules";
 import { exportActorSheet, importActorSheet } from "./layout/sheetExchange";
+import { exportReadyActor, importReadyActorDialog } from "../actors/actorExchange";
 import { defaultTemplateFor } from "./layout/sheetTemplateStore";
 import { valueRootForActorType } from "./layout/sheetValueRoot";
 import { chooseTemplateDialog, roleSelect, saveTemplateDialog } from "./layout/templateDialogs";
@@ -230,10 +231,16 @@ export class MimicDiceActorSheet extends GenericDocumentSheet {
         { icon: "fa-solid fa-layer-group", label: "Modelos do jogador", onClick: () => chooseActorVariantsDialog(this.document) },
       );
     }
+    if (this.document.isOwner) {
+      actions.push(
+        { icon: "fa-solid fa-file-export", label: "Exportar ficha completa", onClick: () => exportReadyActor(this.document) },
+        { icon: "fa-solid fa-file-arrow-down", label: "Importar ficha pronta", onClick: () => void importReadyActorDialog(this.document) },
+      );
+    }
     if (this.#canChangeLayout()) {
       actions.push(
-        { icon: "fa-solid fa-file-import", label: "Importar", onClick: () => this.#importSheet(role) },
-        { icon: "fa-solid fa-file-export", label: "Exportar", onClick: () => exportActorSheet(this.document.name, role, this.layout) },
+        { icon: "fa-solid fa-file-import", label: "Importar modelo", onClick: () => this.#importSheet(role) },
+        { icon: "fa-solid fa-file-lines", label: "Exportar modelo", onClick: () => exportActorSheet(this.document.name, role, this.layout) },
       );
     }
     const menu = toolbarMenu(actions);

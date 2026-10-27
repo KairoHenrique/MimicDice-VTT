@@ -178,6 +178,31 @@ export type StoredSheetTemplate = z.infer<typeof storedSheetTemplateSchema>;
 export const SHEET_EXCHANGE_FORMAT = "mimicdice-sheets";
 export const MAX_SHEET_EXCHANGE_FILE_BYTES = 2 * 1024 * 1024;
 
+export const ACTOR_EXCHANGE_FORMAT = "mimicdice-actor";
+export const MAX_ACTOR_EXCHANGE_FILE_BYTES = 10 * 1024 * 1024;
+
+export const exportedActorDataSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  type: z.string().default("character"),
+  img: z.string().optional(),
+  system: z.record(z.string(), z.unknown()).default({}),
+  items: z.array(z.record(z.string(), z.unknown())).default([]),
+  effects: z.array(z.record(z.string(), z.unknown())).default([]),
+  flags: z.record(z.string(), z.unknown()).default({}),
+  prototypeToken: z.record(z.string(), z.unknown()).optional(),
+});
+export type ExportedActorData = z.infer<typeof exportedActorDataSchema>;
+
+export const actorExchangeFileSchema = z.object({
+  format: z.literal(ACTOR_EXCHANGE_FORMAT),
+  version: z.literal(1),
+  title: labelSchema.optional(),
+  exportedAt: z.number().optional(),
+  actor: exportedActorDataSchema.optional(),
+  actors: z.array(exportedActorDataSchema).optional(),
+});
+export type ActorExchangeFile = z.infer<typeof actorExchangeFileSchema>;
+
 /** Shareable file with one sheet or a whole "system" (set of models); ids are regenerated on import. */
 export const sheetExchangeFileSchema = z.object({
   format: z.literal(SHEET_EXCHANGE_FORMAT),

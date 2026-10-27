@@ -23,7 +23,7 @@ export function readSessionToken(cookieHeader: string | undefined): string | und
 export function writeSessionCookie(response: Response, token: string, lifetimeMs: number): void {
   response.cookie(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "lax",
     secure: false,
     path: "/",
     maxAge: lifetimeMs,

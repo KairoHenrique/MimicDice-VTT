@@ -1,6 +1,7 @@
 import type { ActorCategory } from "@tabbletop/protocol";
 import { h } from "../../views/dom";
 import { exportSystemDialog, importSheetsDialog } from "../sheets/layout/sheetExchange";
+import { exportReadyActor, importReadyActorDialog } from "./actorExchange";
 import { DocumentDirectory } from "../sidebar/DocumentDirectory";
 import { ActorCategoryManager, editActorCategoriesDialog } from "./ActorCategoryManager";
 import { addActorsToCategory, readActorCategories } from "./actorCategoryStore";
@@ -55,16 +56,22 @@ export class ActorDirectory extends DocumentDirectory {
   }
 
   protected override buildToolbar(): Node[] {
-    if (!game.user.isGM) return [];
+    if (!game.user.isGM) {
+      const importButton = h("button", { type: "button", title: "Importar ficha pronta (.mimicdice.json)" }, h("i", { class: "fa-solid fa-file-import" }), " Importar personagem");
+      importButton.addEventListener("click", () => void importReadyActorDialog());
+      return [h("div", { class: "md-directory-tools" }, this.#searchInput(), h("div", { class: "md-exchange-row" }, importButton))];
+    }
     return [h("div", { class: "md-directory-tools" }, this.#searchInput(), this.#chipBar(), this.#sheetExchangeButtons())];
   }
 
   #sheetExchangeButtons(): HTMLElement {
-    const importButton = h("button", { type: "button", title: "Importar ficha ou sistema de um arquivo .mimicdice.json" }, h("i", { class: "fa-solid fa-file-import" }), " Importar fichas");
+    const importReadyButton = h("button", { type: "button", title: "Importar ficha de personagem pronta (.mimicdice.json)" }, h("i", { class: "fa-solid fa-user-plus" }), " Importar personagem");
+    importReadyButton.addEventListener("click", () => void importReadyActorDialog());
+    const importButton = h("button", { type: "button", title: "Importar modelos de ficha de um arquivo .mimicdice.json" }, h("i", { class: "fa-solid fa-file-import" }), " Modelos");
     importButton.addEventListener("click", () => void importSheetsDialog());
     const exportButton = h("button", { type: "button", title: "Salvar seus modelos de ficha em um arquivo para compartilhar" }, h("i", { class: "fa-solid fa-file-export" }), " Exportar sistema");
     exportButton.addEventListener("click", () => void exportSystemDialog());
-    return h("div", { class: "md-exchange-row" }, importButton, exportButton);
+    return h("div", { class: "md-exchange-row" }, importReadyButton, importButton, exportButton);
   }
 
   protected override entryThumbnail(entry: any): HTMLElement {
@@ -83,8 +90,14 @@ export class ActorDirectory extends DocumentDirectory {
   }
 
   protected override buildExtraControls(entry: any): HTMLElement[] {
-    if (!game.user.isGM) return [];
-    return [this.control("fa-solid fa-tags", "Categorias", () => editActorCategoriesDialog(entry))];
+    const controls: HTMLElement[] = [];
+    if (entry.isOwner) {
+      controls.push(this.control("fa-solid fa-file-export", "Exportar ficha pronta", () => exportReadyActor(entry)));
+    }
+    if (game.user.isGM) {
+      controls.push(this.control("fa-solid fa-tags", "Categorias", () => editActorCategoriesDialog(entry)));
+    }
+    return controls;
   }
 
   #searchInput(): HTMLElement {
